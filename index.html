@@ -1101,7 +1101,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.07 N";
+const APP_VERSION = "2026.07.07 O";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150710", "area": "大甲區", "cat": "透天", "budget": "4350萬", "rooms": "3房", "parking": "平面車位", "cust": "趙哥", "tel": "0982603040", "line": "", "ask": "", "need": "低公設、採光好、雙衛浴"},
@@ -2941,7 +2941,7 @@ let syncConnected = false, syncEmail = null;
    冪等合併，樂觀併發，啟動/變更/輪詢/焦點觸發，外加每日快照當保險)
    ========================================================================= */
 (function(){
-  const CLIENT_ID = "50147242388-jqhblfo5uh482gv69qn6ee28foevrkbi.apps.googleusercontent.com";
+  const CLIENT_ID = "970345889249-9btcuh0j6gvofgg0segcgb3q68kt17ok.apps.googleusercontent.com";
   const SCOPES = "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email";
   const MAIN_NAME = "customer-sync-main.json";
   const POLL_MS = 10000;
@@ -3065,7 +3065,7 @@ let syncConnected = false, syncEmail = null;
       catch (e){ reject(e); }
     });
   }
-  const PICKER_KEY = "AIzaSyB25vpOEfkBH7o3ERwhOluIGUp8EW0Zim4";
+  const PICKER_KEY = "AIzaSyBw2xZUPFTaY_UsBaGO__LMHH6yrT1vOhg";
   let pickerLoaded = false;
   function lockBg(){ document.documentElement.classList.add("picker-open"); document.body.classList.add("picker-open"); }
   function unlockBg(){ document.documentElement.classList.remove("picker-open"); document.body.classList.remove("picker-open"); }
