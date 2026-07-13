@@ -531,6 +531,13 @@
   .row-343{grid-template-columns:minmax(0,3fr) minmax(0,4fr) minmax(0,3fr);}
   .f-need{flex:1 1 auto;min-height:0;}
   .f-need textarea{flex:1;}
+  .f-need3{display:flex;flex-direction:column;gap:16px;flex:none;}
+  .fneed-seg{display:flex;flex-direction:column;gap:5px;}
+  .f-need3 .fneed-t{font-family:inherit;font-size:.82rem;font-weight:700;color:var(--text-faint);background:transparent!important;border:0!important;border-radius:0!important;padding:0 2px 3px!important;outline:none;box-shadow:none!important;width:auto;max-width:100%;letter-spacing:.02em;}
+  .f-need3 .fneed-t::placeholder{color:var(--text-faint);opacity:.55;}
+  .f-need3 .fneed-t:focus{color:var(--accent-deep);background:transparent!important;border:0!important;box-shadow:none!important;}
+  .fneed-c{font-family:inherit;font-size:.95rem;line-height:1.6;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 12px;outline:none;resize:vertical;min-height:64px;}
+  .fneed-c:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(43,92,168,.12);}
 
   /* Custom category dropdown */
   .cselect{position:relative;}
@@ -684,6 +691,7 @@
     .modal-body .row3{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
     .f-cust,.f-ask{grid-column:1 / -1;}
     .f-need textarea{min-height:140px;}
+    .f-need3 .fneed-c{min-height:60px;}
     @keyframes modalUp{from{transform:translateY(14px);opacity:.6;}to{transform:translateY(0);opacity:1;}}
   }
   .table-wrap{margin:12px 18px 20px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
@@ -795,6 +803,9 @@
   .nseg-t{font-size:.8rem;font-weight:700;color:var(--accent-deep);outline:none;border-radius:6px;padding:2px 5px;margin:-2px -5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .nseg-t[contenteditable="true"]{border-bottom:1px dashed var(--border-2);cursor:text;}
   .nseg-t[contenteditable="true"]:focus{background:var(--surface-1);border-bottom-color:var(--accent);}
+  .nseg-hbtn{flex:none;font-family:inherit;font-size:.8rem;font-weight:600;color:var(--accent-deep);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;}
+  .nseg-hbtn:active{opacity:.55;}
+  .nseg-hbtn-ph{visibility:hidden;pointer-events:none;}
   @media (max-width:860px){ .nseg-grid{grid-template-columns:1fr;} }
   .needexp-ed{width:100%;box-sizing:border-box;font-family:inherit;font-size:.92rem;line-height:1.7;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 14px;outline:none;min-height:104px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;}
   .needexp-ed:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(43,92,168,.12);}
@@ -1095,7 +1106,11 @@
             <div class="cselect opt-sel" id="pnumSel"><button type="button" class="cselect-btn" id="pnumBtn" aria-haspopup="listbox"><span class="cselect-txt" id="pnumTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="pnumMenu" role="listbox"></div></div>
           </label>
         </div>
-        <label class="f-need">客戶需求<textarea id="f_need" rows="4"></textarea></label>
+        <div class="f-need f-need3">
+          <div class="fneed-seg"><input class="fneed-t" id="f_t1" placeholder="標題"><textarea class="fneed-c" id="f_need" rows="3"></textarea></div>
+          <div class="fneed-seg"><input class="fneed-t" id="f_t2" placeholder="標題"><textarea class="fneed-c" id="f_need2" rows="3"></textarea></div>
+          <div class="fneed-seg"><input class="fneed-t" id="f_t3" placeholder="標題"><textarea class="fneed-c" id="f_need3" rows="3"></textarea></div>
+        </div>
       </div>
       <div class="modal-foot">
         <button class="btn-del" id="modalDelete">刪除</button>
@@ -1200,7 +1215,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.08 S";
+const APP_VERSION = "2026.07.08 X";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1682,9 +1697,11 @@ function openNeedExp(tr, doFocus){
   const head = (sg) => {
     const ti = needTitle(it, sg);
     const thtml = `<span class="nseg-t" contenteditable="${editMode?"true":"false"}" data-seg="${sg}" data-titleedit="1" spellcheck="false">${esc(ti)}</span>`;
-    const bhtml = editMode
-      ? `<button type="button" class="needexp-hbtn nseg-hbtn" data-seg="${sg}" title="把選取的文字設為／取消標題">標題</button>`
-      : `<span class="needexp-hbtn needexp-hbtn-ph" aria-hidden="true">標題</span>`;
+    const bhtml = (sg === 3)
+      ? (editMode
+          ? `<button type="button" class="nseg-hbtn" title="把選取中的文字設為／取消標題">標題</button>`
+          : `<span class="nseg-hbtn nseg-hbtn-ph" aria-hidden="true">標題</span>`)
+      : "";
     return `<div class="nseg-head">${thtml}${bhtml}</div>`;
   };
   const body = (sg) => editMode
@@ -1700,9 +1717,13 @@ function openNeedExp(tr, doFocus){
     ed.innerHTML = v ? needToEditHTML(v) : (editMode ? "<div><br></div>" : '<div class="tneed-ph">（無內容）</div>');
   });
   if (editMode){
-    exp.querySelectorAll(".nseg-hbtn").forEach(btn => btn.addEventListener("click", ev => {
-      ev.preventDefault(); const ed = exp.querySelector(`.nseg-ed[data-seg="${btn.dataset.seg}"]`); if (ed) toggleLineHeading(ed);
-    }));
+    let _activeSeg = 1;
+    [1,2,3].forEach(sg => { const ed = exp.querySelector(`.nseg-ed[data-seg="${sg}"]`); if (ed) ed.addEventListener("focus", () => { _activeSeg = sg; }); });
+    const hb = exp.querySelector(".nseg-hbtn");
+    if (hb) hb.addEventListener("pointerdown", ev => {
+      ev.preventDefault();
+      const ed = exp.querySelector(`.nseg-ed[data-seg="${_activeSeg}"]`); if (ed) toggleLineHeading(ed);
+    });
     if (doFocus){ const f = exp.querySelector('.nseg-ed[data-seg="1"]'); if (f) f.focus(); }
   }
 }
@@ -2347,6 +2368,11 @@ const F = {
   line:document.getElementById("f_line"),
   ask:document.getElementById("f_ask"),
   need:document.getElementById("f_need"),
+  need2:document.getElementById("f_need2"),
+  need3:document.getElementById("f_need3"),
+  t1:document.getElementById("f_t1"),
+  t2:document.getElementById("f_t2"),
+  t3:document.getElementById("f_t3"),
 };
 if (F.ask) F.ask.addEventListener("blur", () => { const v = normAsk(F.ask.value); if (F.ask.value !== v) F.ask.value = v; });
 
@@ -2561,7 +2587,12 @@ function openForm(id){
   F.tel.value     = d ? d.tel||""     : "";
   F.line.value    = d ? d.line||""    : "";
   F.ask.value     = d ? d.ask||""     : "";
-  F.need.value    = d ? d.need||""    : "";
+  F.need.value  = d ? d.need||""  : "";
+  F.need2.value = d ? d.need2||"" : "";
+  F.need3.value = d ? d.need3||"" : "";
+  F.t1.value = d ? (d.t1||"客戶需求") : "客戶需求";
+  F.t2.value = d ? (d.t2||"想看") : "想看";
+  F.t3.value = d ? (d.t3||"看過") : "看過";
   modalBg.classList.add("open");
   if (!id) setTimeout(() => F.cust.focus(), 50);
 }
@@ -2584,6 +2615,11 @@ function saveForm(){
     line: F.line.value.trim(),
     ask: normAsk(F.ask.value.trim()),
     need: F.need.value.trim(),
+    need2: F.need2.value.trim(),
+    need3: F.need3.value.trim(),
+    t1: F.t1.value.trim() || "客戶需求",
+    t2: F.t2.value.trim() || "想看",
+    t3: F.t3.value.trim() || "看過",
   };
   if (editingId){
     const i = items.findIndex(x => x.id === editingId);
@@ -3163,11 +3199,18 @@ let syncConnected = false, syncEmail = null;
   }
 
   // ---- Drive REST helpers ----
+  function tfetch(url, opts, ms){
+    ms = ms || 15000;
+    const ac = new AbortController();
+    const timer = setTimeout(function(){ ac.abort(); }, ms);
+    const o = Object.assign({}, opts, { signal: ac.signal });
+    return fetch(url, o).finally(function(){ clearTimeout(timer); });
+  }
   async function dfetch(url, opts){
     const token = await ensureToken();
     opts = opts || {}; opts.headers = Object.assign({}, opts.headers, { Authorization: "Bearer " + token });
-    let res = await fetch(url, opts);
-    if (res.status === 401){ accessToken = null; const t2 = await requestToken(false); opts.headers.Authorization = "Bearer " + t2; res = await fetch(url, opts); }
+    let res = await tfetch(url, opts);
+    if (res.status === 401){ accessToken = null; const t2 = await requestToken(false); opts.headers.Authorization = "Bearer " + t2; res = await tfetch(url, opts); }
     return res;
   }
   async function findFile(name){
@@ -3457,6 +3500,7 @@ let syncConnected = false, syncEmail = null;
     if (!syncConnected || inFlight) return;
     if (window.isTableBusy && window.isTableBusy()){ clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 2000); return; }
     inFlight = true; setStatus("同步中…", "busy");
+    let __wd = setTimeout(function(){ if (inFlight){ inFlight = false; setStatus("同步逾時，稍後重試", "warn"); if (window.refreshLed) window.refreshLed(); } }, 40000);
     try {
       await ensureToken();
       await ensureFileId();
@@ -3486,7 +3530,7 @@ let syncConnected = false, syncEmail = null;
       } else {
         setStatus("同步失敗，稍後重試", "warn");
       }
-    } finally { inFlight = false; }
+    } finally { clearTimeout(__wd); inFlight = false; }
   }
   window.__syncNow = syncNow;
 
