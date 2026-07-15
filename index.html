@@ -980,8 +980,8 @@
   @media (hover:hover){ .exp-open .topt-trigger:hover{background:transparent;} }
   .topt-label:empty::before{content:"—";color:var(--text-faint);}
   /* 空白輸入欄一律顯示「—」佔位:正常/編輯兩種模式、全欄位一致(選單類已由 .topt-label 處理) */
-  .tcell:empty::before{content:"—";color:var(--text-faint);font-size:.85rem;}
-  .tcell:empty:focus::before{content:none;}   /* 游標進入空白格時「—」先消失,避免跟輸入游標疊成十字 */
+  .tcell:empty::before{content:"—";color:var(--text-faint);font-size:.85rem;transition:opacity .12s;}
+  .tcell:empty:focus::before{opacity:0;}   /* 游標進入空白格時「—」淡出(保留盒子不彈跳);透明後不會跟輸入游標疊成十字 */
   #toptmenu{position:fixed;z-index:212;display:none;min-width:180px;max-width:264px;max-height:80vh;overflow-y:auto;overflow-x:hidden;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(22,34,42,.2);padding:5px 5px 0;}
   #toptmenu.show{display:block;}
   /* 客戶需求:滑鼠懸浮預覽三段(桌面);觸控裝置一律不顯示 */
@@ -1338,7 +1338,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.15 Q";
+const APP_VERSION = "2026.07.15 S";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1717,7 +1717,8 @@ function trowHTML(d){
   const dateCell = editMode                                   // 編輯模式:建檔日改為日曆選擇(與卡片檢視同一個日曆)
     ? `<td><button type="button" class="topt-trigger" data-field="date" data-cal="1"><span class="topt-label">${esc(d.date)}</span></button></td>`
     : `<td><div class="tcell tdate" data-field="date" title="${esc(d.date)}">${esc(d.date)}</div></td>`;
-  return `<tr data-id="${esc(d.id)}">`+
+  // 重繪時直接帶上展開狀態:首次排版即為淡化後樣式,聚焦轉場不會重播
+  return `<tr data-id="${esc(d.id)}"${openNeedId===d.id?' class="exp-open"':''}>`+
     dateCell+
     optCell("area","area")+
     catCell+
@@ -1794,8 +1795,8 @@ window.isTableBusy = function(){
 // ---- inline editing ----
 function tFindItem(el){ const tr = el.closest("tr"); return tr ? items.find(x => x.id === tr.dataset.id) : null; }
 function tFlash(el){ el.classList.add("saved"); setTimeout(()=>el.classList.remove("saved"), 700); }
-function tCommitCell(cell){
-  const it = tFindItem(cell); if (!it) return;
+function tCommitCell(cell){                       // 回傳 true=值有變更(呼叫端據此決定要不要閃「已儲存」)
+  const it = tFindItem(cell); if (!it) return false;
   const field = cell.dataset.field;
   let val = cell.textContent.trim();
   if (field === "ask") val = normAsk(val);
@@ -1806,7 +1807,9 @@ function tCommitCell(cell){
     if (field === "pType"){ it.parking = fmtParking(val, it.pNum); }
     else if (field === "pNum"){ const n = parseInt(String(val).replace(/[^\d]/g,""),10)||0; it.pNum = n; it.parking = fmtParking(it.pType, n); const disp = n ? String(n) : ""; if (cell.textContent !== disp) cell.textContent = disp; }
     it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
+    return true;
   }
+  return false;
 }
 function caretEnd(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(false); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
 // 客戶需求:展開列(正常=唯讀完整內容;編輯=大textarea即時存)
@@ -2030,7 +2033,7 @@ function toggleLineHeading(ed){
 
 tableWrap.addEventListener("blur", e=>{
   const c = e.target;
-  if (c.classList && c.classList.contains("tcell")){ tCommitCell(c); tFlash(c); }
+  if (c.classList && c.classList.contains("tcell")){ if (tCommitCell(c)) tFlash(c); }   // 只有真的存了東西才閃綠
   else if (c.classList && c.classList.contains("nseg-ed")){ const w = c.closest(".needexp"); if (w) commitNeedSeg(w.dataset.for, +c.dataset.seg, editToNeed(c)); }
   else if (c.dataset && c.dataset.titleedit){ const w = c.closest(".needexp"); if (w) commitNeedTitle(w.dataset.for, +c.dataset.seg, c.textContent); }
 }, true);
@@ -2191,7 +2194,7 @@ window.addEventListener("pointercancel", _rzEnd);
 tableWrap.addEventListener("keydown", e=>{
   const c = e.target; if (!c.classList || !c.classList.contains("tcell")) return;
   if (e.key === "Enter"){
-    e.preventDefault(); tCommitCell(c); tFlash(c);
+    e.preventDefault(); if (tCommitCell(c)) tFlash(c);
     const tr = c.closest("tr"), nextTr = tr.nextElementSibling;
     if (nextTr){ const nc = nextTr.querySelector(`.tcell[data-field="${c.dataset.field}"]`); if (nc){ nc.focus(); caretEnd(nc); } }
   } else if (e.key === "Escape"){ c.blur(); }
@@ -4330,7 +4333,9 @@ let syncConnected = false, syncEmail = null;
         const remote = await download();
         const local = buildLocal();
         const merged = mergeMain(local, remote);
-        applyMerged(merged);
+        // 合併結果跟本機一致就不套用:applyMerged 會整表重繪,無故執行會偷走使用中的焦點/游標,
+        // 也會讓展開聚焦的淡化轉場重播。只有真的有差異(遠端帶來新東西)才需要重繪。
+        if (canonical(merged) !== canonical(local)) applyMerged(merged);
         const needPush = !remote || canonical(merged) !== canonical(remote);
         if (!needPush){ lastVersion = await getVersion(); break; }
         merged.rev = ((remote && remote.rev) || 0) + 1; merged.lastWriteBy = deviceId; merged.updatedAt = Date.now();
