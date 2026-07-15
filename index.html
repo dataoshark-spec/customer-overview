@@ -1314,7 +1314,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.15 I";
+const APP_VERSION = "2026.07.15 J";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1642,7 +1642,14 @@ function syncToggleUI(){
 function syncTableMode(){
   document.getElementById("app").classList.toggle("table-mode", viewMode==="table" && listView.classList.contains("active"));
 }
-function setViewMode(vm){ viewMode = (vm==="table") ? "table" : "card"; saveViewMode(); applyFilter(); }
+function setViewMode(vm){
+  viewMode = (vm==="table") ? "table" : "card"; saveViewMode();
+  if (viewMode !== "table"){                                     // 離開表格:收合展開,避免殘留的隱藏展開之後把舊內容寫回
+    if (typeof closeNeedExp === "function") closeNeedExp();
+    if (typeof hideNeedHover === "function") hideNeedHover();
+  }
+  applyFilter();
+}
 
 // ---- table rendering ----
 const T_COLS = ["建檔日","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","詢問","客戶需求"];
@@ -3266,7 +3273,6 @@ detailBg.addEventListener("pointerdown", e => { _dtlDownOnBg = (e.target === det
 detailBg.addEventListener("click", e => { if (e.target === detailBg && _dtlDownOnBg) closeDetail(); _dtlDownOnBg = false; });
 document.getElementById("detailBody").addEventListener("click", e => { const cp = e.target.closest("[data-copy]"); if (cp){ e.stopPropagation(); copyFieldText(cp); } });   // 詳情:點欄位值複製
 
-document.addEventListener("keydown", e => { if (e.key === "Escape" && detailBg.classList.contains("open")) closeDetail(); });
 
 function saveForm(){
   const cust = F.cust.value.trim();
@@ -3483,6 +3489,7 @@ modalBg.addEventListener("click", e => { if (e.target === modalBg && _mbDownOnBg
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
   if (confirmBg.classList.contains("open")) closeConfirm();
+  else if (detailBg.classList.contains("open")) closeDetail();   // 客戶資料檢視
   else if (catBg.classList.contains("open")) closeCatManager();
   else if (catSel.classList.contains("open")) closeCatSel();
   else if (sortSel.classList.contains("open")) closeSortSel();
@@ -3491,7 +3498,7 @@ document.addEventListener("keydown", e => {
   else if (toptmenu.classList.contains("show")) closeOptMenu();                                  // 桌面 ESC:先關表格格子下拉
   else if (document.querySelector(".opt-sel.open")){ document.querySelectorAll(".opt-sel.open").forEach(x => x.classList.remove("open")); }   // 再關表單下拉
   else if (modalBg.classList.contains("open")) closeForm();
-  else if (openNeedId) closeNeedExp();        // 桌面按 ESC 收合展開的客戶需求
+  else if (openNeedId && viewMode === "table" && listView.classList.contains("active")) closeNeedExp();   // 桌面按 ESC 收合展開(僅表格檢視中)
 });
 
 // ---- Backup / Import / Cloud / Reset ----
