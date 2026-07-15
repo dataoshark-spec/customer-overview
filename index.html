@@ -344,9 +344,21 @@
 
   .card{
     background:var(--card);border:1px solid var(--line);border-radius:16px;
-    overflow:hidden;display:flex;
+    overflow:hidden;display:flex;position:relative;
     box-shadow:0 1px 2px rgba(22,34,42,.04);
   }
+  /* 編輯模式長按:邊緣跑一顆藍色光點(1.2秒一圈),跑完進刪除多選 */
+  .lp-comet{position:absolute;top:-1.5px;left:0;width:44%;height:3px;border-radius:3px;z-index:6;opacity:0;pointer-events:none;
+    background:linear-gradient(90deg,transparent,var(--accent),#7FB0F0,transparent);
+    offset-path:inset(0 round 16px);offset-distance:0%;}
+  .card.lp-run .lp-comet{opacity:1;animation:lpComet 1200ms linear forwards;}
+  @keyframes lpComet{from{offset-distance:0%;}to{offset-distance:100%;}}
+  @keyframes lpPulse{0%,100%{opacity:.4;}50%{opacity:1;}}
+  @supports not (offset-path: inset(0)){
+    .lp-comet{top:0;left:0;width:auto;height:auto;inset:0;border-radius:16px;background:none;offset-path:none;}
+    .card.lp-run .lp-comet{box-shadow:inset 0 0 0 2px var(--accent);animation:lpPulse .5s ease-in-out infinite;}
+  }
+  @media (prefers-reduced-motion: reduce){ .card.lp-run .lp-comet{animation:none;opacity:.7;box-shadow:inset 0 0 0 2px var(--accent);} }
   .stripe{width:6px;flex:none;}
   .card.cat-tower .stripe{background:var(--cat-tower);}
   .card.cat-office .stripe{background:var(--cat-office);}
@@ -362,6 +374,7 @@
   .name{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.4rem;line-height:1.25;flex:1;}
   .badge{flex:none;font-size:.98rem;font-weight:700;color:var(--text-faint);opacity:.72;letter-spacing:.03em;}
   .addr{font-size:.86rem;color:var(--ink-soft);margin-top:6px;}
+  .addr-sep{color:var(--ink-soft);margin:0 2px;pointer-events:none;}   /* 「／」分隔:不可點,各段自行複製 */
 
   .price{margin:4px 0 12px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 10px;}
   .price-value{display:flex;align-items:baseline;gap:5px;min-width:0;}
@@ -509,7 +522,7 @@
     display:none;align-items:center;justify-content:center;}
   .modal-bg.open{display:flex;}
   .modal{background:var(--card);width:100%;max-width:480px;max-height:90dvh;display:flex;flex-direction:column;
-    border-radius:20px;overflow:hidden;animation:sheet .22s ease;}
+    border-radius:20px;overflow:hidden;animation:sheet .22s ease;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
   @keyframes sheet{from{transform:translateY(26px);opacity:.5;}to{transform:translateY(0);opacity:1;}}
   .modal-head{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line);}
   .modal-head h2{font-family:"Noto Serif TC",serif;font-size:1.25rem;font-weight:700;flex:1;}
@@ -518,9 +531,12 @@
   .modal-head .x:hover{background:var(--surface-3);}
   .modal-body{padding:16px 20px;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:11px;}
   /* 唯讀詳情:摘要資訊列 + 三段需求(沿用展開框樣式,改為直排;空段落框縮小) */
-  .dtl-info{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;align-items:baseline;font-size:.92rem;}
-  .dtl-info .dtl-k{color:var(--text-faint);white-space:nowrap;font-weight:600;}
-  .dtl-info .dtl-v{color:var(--ink);word-break:break-word;}
+  .dtl-info{display:grid;grid-template-columns:76px 1fr;gap:9px 16px;align-items:baseline;}
+  .dtl-info .dtl-k{color:var(--text-faint);white-space:nowrap;font-weight:400;font-size:.8rem;letter-spacing:.06em;}
+  .dtl-info .dtl-v{color:var(--ink);word-break:break-word;font-size:.95rem;font-weight:500;font-variant-numeric:tabular-nums;}
+  .dtl-copy{justify-self:start;cursor:pointer;border-radius:7px;padding:2px 6px;margin:0 -6px;transition:box-shadow .1s;}
+  @media (hover:hover){ .dtl-copy:hover{box-shadow:inset 0 0 0 100px rgba(43,92,168,.07);} }
+  .dtl-copy.copied{animation:cardCopiedFlash .7s ease;}
   .dtl-segs{display:flex;flex-direction:column;gap:14px;}
   .dtl-body .needexp-ed{min-height:auto;}
   .modal-body label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:.8rem;font-weight:600;color:var(--ink-soft);}
@@ -677,9 +693,11 @@
     background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(243,241,233,.95);}
   .cover-vt button:active{background:rgba(255,255,255,.2);transform:scale(.99);}
   .ctrl-right{display:flex;align-items:center;gap:8px;}
-  .list-vt{background:var(--surface-2);border:1px solid var(--line);gap:2px;}
-  .list-vt button{color:var(--ink-soft);height:31px;min-width:46px;padding:0 12px;justify-content:center;}
-  .list-vt button.on{background:var(--card);color:var(--accent-deep);box-shadow:0 1px 3px rgba(22,34,42,.12);}
+  /* 列表頁檢視切換:一顆按鈕(顯示「切過去」的檢視圖示),省空間、與聚焦鈕同款 */
+  .view-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink-soft);cursor:pointer;flex:none;transition:border-color .15s,color .15s,transform .1s;}
+  .view-btn svg{width:18px;height:18px;}
+  @media (hover:hover){ .view-btn:hover{border-color:var(--border-2);color:var(--accent-deep);} }
+  .view-btn:active{transform:scale(.94);}
 
   /* ===== editable table ===== */
   @media (min-width:820px){
@@ -698,6 +716,7 @@
     .tdel{padding:6px 5px;}
     /* 手機:編輯/新增表單改整頁滿版(桌機維持底部面板);確認框用 .modal-bg.center 較具體,仍維持置中小視窗 */
     .modal-bg{align-items:stretch;}
+    #detailBg.modal-bg.center{align-items:stretch;padding:0;}   /* 客戶資料檢視:手機全畫面顯示 */
     .modal{max-width:none;max-height:none;height:100dvh;border-radius:0;animation:modalUp .22s ease;}
     .modal-body{flex:1;min-height:0;}
     .modal-body .row3{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
@@ -819,6 +838,8 @@
   .fopt-main span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .fopt-drag{flex:none;width:22px;height:32px;display:none;place-items:center;color:var(--text-faint);cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;}
   #fltBody.editing .fopt-drag{display:grid;}
+  #fltBody.editing .fopt-main{pointer-events:none;}   /* 排序模式:禁止勾選 */
+  #fltBody.editing .fopt input{display:none;}          /* 排序模式:暫時隱藏勾選方塊(退出後恢復,勾選狀態保留) */
   .fopt-drag:active{cursor:grabbing;}
   .fopt-drag-sp{flex:none;width:22px;display:none;}
   #fltBody.editing .fopt-drag-sp{display:block;}
@@ -1046,10 +1067,7 @@
         </div>
         <div class="ctrl-right">
           <button type="button" class="exp-focus-btn" id="expFocusBtn" title="展開需求時聚焦：其他列變淡" aria-pressed="false" aria-label="展開聚焦"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="2.5" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="21.5" y2="12"/></svg></button>
-          <div class="view-toggle list-vt" id="listVT" role="group" aria-label="檢視模式">
-            <button type="button" data-vm="card" title="卡片檢視"><svg class="vt-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><rect x="6.5" y="8.2" width="4.4" height="4.4" rx="1" fill="currentColor" stroke="none"/><line x1="13.2" y1="9.4" x2="17.5" y2="9.4"/><line x1="13.2" y1="12.2" x2="16.3" y2="12.2"/></svg></button>
-            <button type="button" data-vm="table" title="表格檢視"><svg class="vt-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><line x1="3.5" y1="9.2" x2="20.5" y2="9.2"/><line x1="3.5" y1="14.4" x2="20.5" y2="14.4"/><line x1="9.5" y1="9.2" x2="9.5" y2="19.5"/><line x1="14.8" y1="9.2" x2="14.8" y2="19.5"/></svg></button>
-          </div>
+          <button type="button" class="view-btn" id="viewBtn" title="切換檢視" aria-label="切換檢視"></button>
           <div class="density mode-head" id="modeHead" role="group" aria-label="編輯／正常模式">
             <button type="button" data-m="edit" title="可修改資料">編輯</button>
             <button type="button" data-m="view" title="只瀏覽，點內容可複製">正常</button>
@@ -1296,7 +1314,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.14 W";
+const APP_VERSION = "2026.07.15 H";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1394,8 +1412,8 @@ function cardHTML(d){
     if (d.area) cbits.push(d.area);
     if (d.rooms) cbits.push(d.rooms);
     if (d.parking) cbits.push(/車/.test(d.parking) ? d.parking : d.parking + "車位");
-    const csub = normAsk(cbits.join("／"));
-    return `<article class="card compact-card${sel}" data-id="${d.id}">
+    const csub = cbits.length ? cbits.map(p => { const v = normAsk(p); return `<span class="cv" data-copy="${esc(v)}">${esc(v)}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
+    return `<article class="card compact-card${sel}" data-id="${d.id}"><span class="lp-comet" aria-hidden="true"></span>
     ${selMark(d)}
     <div class="stripe" style="background:${color}"></div>
     <div class="body">
@@ -1404,7 +1422,7 @@ function cardHTML(d){
         <span class="badge">${esc(d.cat)}</span>
       </div>
       <div class="sub-row">
-        <span class="addr">${csub ? `<span class="cv" data-copy="${esc(csub)}">${esc(csub)}</span>` : ``}</span>
+        <span class="addr">${csub}</span>
         ${d.budget ? `<span class="price-tag" data-copy="${esc(d.budget)}">${esc(d.budget)}</span>` : ``}
       </div>
     </div>
@@ -1414,7 +1432,7 @@ function cardHTML(d){
   if (d.date) topBits.push(`<span class="ct-item">建檔 <span class="cv" data-copy="${esc(d.date)}">${esc(d.date)}</span></span>`);
   if (d.area) topBits.push(`<span data-copy="${esc(d.area)}">${esc(d.area)}</span>`);
   const topHTML = topBits.length ? `<div class="card-top">${topBits.join('<span class="dot">／</span>')}</div>` : "";
-  return `<article class="card${sel}" data-id="${d.id}">
+  return `<article class="card${sel}" data-id="${d.id}"><span class="lp-comet" aria-hidden="true"></span>
     ${selMark(d)}
     <div class="stripe" style="background:${color}"></div>
     <div class="body">
@@ -1554,11 +1572,11 @@ const SORTS = [
   {key:"default",   label:"預設順序"},
   {key:"date_desc", label:"建檔日 新→舊"},
   {key:"date_asc",  label:"建檔日 舊→新"},
-  {key:"cust_asc",  label:"客戶稱呼 A→Z"},
 ];
 function loadSort(){ if (storageOK){ try { return localStorage.getItem("customer_app_sort_v1") || "default"; } catch (e) {} } return "default"; }
 function saveSort(){ if (storageOK){ try { localStorage.setItem("customer_app_sort_v1", currentSort); } catch (e) {} } }
 let currentSort = loadSort();
+if (!SORTS.find(s => s.key === currentSort)) currentSort = "default";   // 已移除的排序(如舊的客戶稱呼)回退預設
 function sortList(list){
   const dateNum = d => { const n = parseInt(String(d.date||"").replace(/\D/g,""),10); return isNaN(n) ? null : n; };
   const byDate = dir => (a,b) => { const x=dateNum(a), y=dateNum(b); if(x===null&&y===null)return 0; if(x===null)return 1; if(y===null)return -1; return dir*(x-y); };
@@ -1566,7 +1584,6 @@ function sortList(list){
   switch (currentSort){
     case "date_desc": arr.sort(byDate(-1)); break;
     case "date_asc":  arr.sort(byDate(1));  break;
-    case "cust_asc":  arr.sort((a,b)=>String(a.cust||"").localeCompare(String(b.cust||""),"zh-Hant")); break;
   }
   return arr;
 }
@@ -1603,8 +1620,18 @@ const ICON_EYE   = '<svg class="tmi" viewBox="0 0 24 24" fill="none" stroke="cur
 const ICON_CHEV  = '<svg class="tcat-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
 const ICON_TRASH = '<svg class="tdi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
 
+// 檢視切換鈕的圖示:顯示「點了會切過去」的那個檢視
+const VT_ICON_CARD  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="13" rx="3"/></svg>';
+const VT_ICON_TABLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><line x1="3.5" y1="9.2" x2="20.5" y2="9.2"/><line x1="3.5" y1="14.4" x2="20.5" y2="14.4"/><line x1="9.5" y1="9.2" x2="9.5" y2="19.5"/><line x1="14.8" y1="9.2" x2="14.8" y2="19.5"/></svg>';
+
 function syncToggleUI(){
-  document.querySelectorAll("#listVT button").forEach(b => b.classList.toggle("on", b.dataset.vm === viewMode));
+  const vb = document.getElementById("viewBtn");
+  if (vb){
+    const toTable = (viewMode !== "table");
+    vb.innerHTML = toTable ? VT_ICON_TABLE : VT_ICON_CARD;
+    vb.title = toTable ? "切換為表格檢視" : "切換為卡片檢視";
+    vb.setAttribute("aria-label", vb.title);
+  }
   const mh = document.getElementById("modeHead");
   if (mh){
     mh.querySelectorAll("button").forEach(b => b.classList.toggle("active", (b.dataset.m==="edit") === editMode));
@@ -2496,14 +2523,11 @@ document.getElementById("coverVT").addEventListener("click", e=>{
   viewMode = (b.dataset.vm === "table") ? "table" : "card"; saveViewMode();
   openList("");                       // 進入「全部」;openList 內會一律恢復正常模式
 });
-document.getElementById("listVT").addEventListener("click", e=>{
-  const b = e.target.closest("button"); if (!b) return;
-  const vm = (b.dataset.vm === "table") ? "table" : "card";
-  if (vm !== viewMode){
-    editMode = false; saveEditMode();   // 切換檢視一律恢復正常模式
-    exitSelectMode();                    // 並退出卡片多選(修復:避免刪除列殘留浮在表格上)
-    closeCatMenu(); closeLinkPop();      // 關閉表格的類別/連結浮層,避免懸浮殘留
-  }
+document.getElementById("viewBtn").addEventListener("click", () => {
+  const vm = (viewMode === "table") ? "card" : "table";   // 一顆按鈕:在卡片/表格之間切換
+  editMode = false; saveEditMode();     // 切換檢視一律恢復正常模式
+  exitSelectMode();                      // 並退出卡片多選(避免刪除列殘留浮在表格上)
+  closeCatMenu(); closeLinkPop();        // 關閉表格的類別/連結浮層,避免懸浮殘留
   setViewMode(vm);
 });
 
@@ -2551,7 +2575,7 @@ function openColFlt(f){
   closeOtherOverlays("flt");   // 只留篩選彈窗,關掉其他浮層
   fltField = f;
   document.getElementById("fltTitle").textContent = "篩選：" + (FLT_NAME[f]||f);
-  document.getElementById("fltBody").classList.remove("editing");   // 每次開啟回乾淨(長按才進排序)
+  document.getElementById("fltBody").classList.remove("editing"); document.getElementById("fltClear").textContent = "清除此欄篩選";   // 每次開啟回乾淨(長按才進排序)
   renderFltBody();
   fltBg.classList.add("open");
 }
@@ -2583,6 +2607,7 @@ function renderFltBody(){
 document.getElementById("fltX").addEventListener("click", closeColFlt);
 document.getElementById("fltDone").addEventListener("click", closeColFlt);
 document.getElementById("fltClear").addEventListener("click", () => {
+  if (document.getElementById("fltBody").classList.contains("editing")){ exitFltEditing(); return; }   // 排序模式:此鈕為「返回」→ 退出排序模式
   if (fltField === "budget"){ fltB.lo = null; fltB.hi = null; } else if (fltField){ colFilter[fltField] = null; }
   renderFltBody(); applyFilter();
 });
@@ -2591,6 +2616,9 @@ tableWrap.addEventListener("click", e => { const b = e.target.closest(".th-flt")
 
 // ---- 篩選清單:拖曳排序(沿用類別的握把 + pointer 事件,手機可用) ----
 let fltDrag = null;
+// 進/退篩選排序模式:切換 editing class,並把左下鈕文字在「清除此欄篩選」與「返回」之間切換
+function enterFltEditing(){ const fb=document.getElementById("fltBody"); if(fb) fb.classList.add("editing"); const c=document.getElementById("fltClear"); if(c) c.textContent="返回"; }
+function exitFltEditing(){ const fb=document.getElementById("fltBody"); if(fb) fb.classList.remove("editing"); const c=document.getElementById("fltClear"); if(c) c.textContent="清除此欄篩選"; }
 // 篩選清單:長按進排序模式(才顯示握把);長按當下不勾選
 (function(){
   const fb = document.getElementById("fltBody");
@@ -2600,7 +2628,7 @@ let fltDrag = null;
     if (e.target.closest(".fopt-drag")) return;               // 握把交給拖曳
     const row = e.target.closest(".fopt.fopt-draggable"); if (!row) return;
     lpRow = row; lpX = e.clientX; lpY = e.clientY; clearTimeout(lpTimer);
-    lpTimer = setTimeout(() => { fb.__lp = true; lpRow = null; fb.classList.add("editing"); try{navigator.vibrate&&navigator.vibrate(12);}catch(_){} }, 400);
+    lpTimer = setTimeout(() => { fb.__lp = true; lpRow = null; enterFltEditing(); try{navigator.vibrate&&navigator.vibrate(12);}catch(_){} }, 400);
   });
   fb.addEventListener("pointermove", e => { if (lpRow && (Math.abs(e.clientX-lpX)>10||Math.abs(e.clientY-lpY)>10)){ clearTimeout(lpTimer); lpRow=null; } });
   const lpEnd = () => { clearTimeout(lpTimer); lpRow=null; };
@@ -3194,9 +3222,9 @@ function openDetail(id){
   if (d.tel) info.push(["電話", d.tel]);
   if (d.line) info.push(["LINE", d.line]);
   if (d.ask) info.push(["詢問案名", d.ask]);
-  const infoHTML = info.length ? `<div class="dtl-info">${info.map(([k,v]) => `<span class="dtl-k">${esc(k)}</span><span class="dtl-v">${esc(v)}</span>`).join("")}</div>` : "";
+  const infoHTML = info.length ? `<div class="dtl-info">${info.map(([k,v]) => `<span class="dtl-k">${esc(k)}</span><span class="dtl-v dtl-copy" data-copy="${esc(v)}">${esc(v)}</span>`).join("")}</div>` : "";
   const segs = [[d.t1||"客戶需求", d.need], [d.t2||"想看", d.need2], [d.t3||"看過", d.need3]];
-  const segHTML = `<div class="dtl-segs">${segs.map(([t,c]) => `<div class="nseg"><div class="nseg-head"><span class="nseg-t">${esc(t)}</span></div><div class="needexp-ed needexp-view">${c ? needToViewHTML(c) : '<span class="tneed-ph">（無內容）</span>'}</div></div>`).join("")}</div>`;
+  const segHTML = `<div class="dtl-segs">${segs.map(([t,c]) => `<div class="nseg"><div class="nseg-head"><span class="nseg-t">${esc(t)}</span></div><div class="needexp-ed needexp-view">${c ? needToViewHTML(c) : '<span class="tneed-ph">—</span>'}</div></div>`).join("")}</div>`;
   document.getElementById("detailBody").innerHTML = infoHTML + segHTML;
   detailBg.classList.add("open");
 }
@@ -3205,6 +3233,8 @@ document.getElementById("detailClose").addEventListener("click", closeDetail);
 let _dtlDownOnBg = false;
 detailBg.addEventListener("pointerdown", e => { _dtlDownOnBg = (e.target === detailBg); });
 detailBg.addEventListener("click", e => { if (e.target === detailBg && _dtlDownOnBg) closeDetail(); _dtlDownOnBg = false; });
+document.getElementById("detailBody").addEventListener("click", e => { const cp = e.target.closest("[data-copy]"); if (cp){ e.stopPropagation(); copyFieldText(cp); } });   // 詳情:點欄位值複製
+
 document.addEventListener("keydown", e => { if (e.key === "Escape" && detailBg.classList.contains("open")) closeDetail(); });
 
 function saveForm(){
@@ -3267,7 +3297,7 @@ const selbar = document.getElementById("selbar");
 const selCount = document.getElementById("selCount");
 const selDelete = document.getElementById("selDelete");
 const selCancel = document.getElementById("selCancel");
-let pressTimer = null, pressX = 0, pressY = 0, longPressed = false, pressId = null;
+let pressTimer = null, pressX = 0, pressY = 0, longPressed = false, pressId = null, pressCard = null;
 let suppressClick = false; // set by swipe-back to swallow the trailing ghost click
 const isLink = t => t.closest("a, .chip, .tel");
 
@@ -3304,21 +3334,24 @@ function toggleSelect(id){
   }
   updateSelbar();
 }
-function endPress(){ clearTimeout(pressTimer); pressTimer = null; }
+function endPress(){ clearTimeout(pressTimer); pressTimer = null; if (pressCard){ pressCard.classList.remove("lp-run"); pressCard = null; } }
 
 cardsEl.addEventListener("pointerdown", e => {
   const card = e.target.closest("[data-id]");
   if (!card) return;
   if (!selectMode && isLink(e.target)) return;
-  pressId = card.dataset.id; pressX = e.clientX; pressY = e.clientY; longPressed = false;
+  pressId = card.dataset.id; pressX = e.clientX; pressY = e.clientY; longPressed = false; pressCard = card;
   clearTimeout(pressTimer);
+  const holdMs = editMode ? 1200 : 480;   // 編輯模式長按較久(1.2秒)才進刪除多選,避免誤觸
+  if (editMode && !selectMode) card.classList.add("lp-run");   // 編輯模式:長按跑邊緣光點提示
   pressTimer = setTimeout(() => {
-    if (editMode || selectMode) return;   // 編輯模式:不觸發長按(移除批次刪除,避免誤觸;點一下即可編輯)
+    card.classList.remove("lp-run");
+    if (selectMode) return;
     longPressed = true;
-    if (navigator.vibrate){ try { navigator.vibrate(15); } catch (err){} }
-    // 正常模式:長按切換 正常 ↔ 緊湊(以這張卡片為錨點,切換後停在原位)
-    toggleDensity(pressId);
-  }, 480);
+    if (navigator.vibrate){ try { navigator.vibrate(editMode ? 20 : 15); } catch (err){} }
+    if (editMode){ enterSelectMode(); toggleSelect(pressId); }   // 編輯模式:長按進刪除多選,並選取這張
+    else { toggleDensity(pressId); }                             // 正常模式:長按切換 正常↔緊湊
+  }, holdMs);
 });
 cardsEl.addEventListener("pointermove", e => {
   if (pressTimer && (Math.abs(e.clientX - pressX) > 10 || Math.abs(e.clientY - pressY) > 10)) endPress();
@@ -3383,7 +3416,7 @@ cardsEl.addEventListener("click", e => {
   }
   if (isLink(e.target)) return;   // 電話撥號 / 連結開啟:兩模式皆維持原生動作
   if (editMode){
-    openForm(id);                 // 編輯模式:點卡片進編輯表單
+    openForm(id);                 // 編輯模式:點一下進編輯表單(長按才進刪除多選)
   } else {
     const cp = e.target.closest("[data-copy]");   // 正常模式:點欄位複製內容
     if (cp) copyFieldText(cp);
@@ -3422,6 +3455,7 @@ document.addEventListener("keydown", e => {
   else if (catBg.classList.contains("open")) closeCatManager();
   else if (catSel.classList.contains("open")) closeCatSel();
   else if (sortSel.classList.contains("open")) closeSortSel();
+  else if (fltBg.classList.contains("open")){ if (document.getElementById("fltBody").classList.contains("editing")) exitFltEditing(); else closeColFlt(); }   // 篩選:排序模式先退出,否則關彈窗
   else if (catmenu.classList.contains("show")) closeCatMenu();                                   // 桌面 ESC:表格類型選單
   else if (toptmenu.classList.contains("show")) closeOptMenu();                                  // 桌面 ESC:先關表格格子下拉
   else if (document.querySelector(".opt-sel.open")){ document.querySelectorAll(".opt-sel.open").forEach(x => x.classList.remove("open")); }   // 再關表單下拉
