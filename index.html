@@ -316,10 +316,18 @@
   }
   .search input::placeholder{color:var(--text-faint);}
   .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(43,92,168,.12);}
-  .density{flex:none;display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px;}
-  .density button{font-family:inherit;font-size:.8rem;font-weight:700;color:var(--ink-soft);background:none;border:none;
-    border-radius:8px;height:31px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;white-space:nowrap;transition:background .15s ease,color .15s ease;}
-  .density button.active{background:var(--ink);color:#fff;}
+  /* 編輯/正常:一顆切換鈕(亮起=編輯模式);清除篩選鈕:有篩選時才出現 */
+  .mode-btn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink-soft);cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .1s;}
+  .mode-btn svg{width:18px;height:18px;}
+  .mode-btn.on{background:var(--ink);border-color:var(--ink);color:#fff;}
+  @media (hover:hover){ .mode-btn:not(.on):hover{border-color:var(--border-2);color:var(--ink);} }
+  .mode-btn:active{transform:scale(.94);}
+  .flt-clear-btn{display:none;}
+  .flt-clear-btn.on{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--accent);border-radius:9px;background:var(--card);color:var(--accent);cursor:pointer;flex:none;transition:background .15s,transform .1s;animation:fcIn .18s ease;}
+  .flt-clear-btn svg{width:17px;height:17px;}
+  @media (hover:hover){ .flt-clear-btn.on:hover{background:var(--accent-tint);} }
+  .flt-clear-btn.on:active{transform:scale(.94);}
+  @keyframes fcIn{from{opacity:0;transform:scale(.7);}to{opacity:1;transform:scale(1);}}
   .controls{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 18px 0;}
   .sortsel .cselect-btn{width:auto;gap:6px;padding:9px 12px;font-size:.85rem;font-weight:600;border-radius:11px;background:var(--card);}
   .sortsel .sort-ic{flex:none;font-size:.95rem;color:var(--accent);font-weight:700;line-height:1;}
@@ -350,7 +358,7 @@
   /* 編輯模式長按:邊緣跑一顆藍色光點(1.2秒一圈),跑完進刪除多選 */
   .lp-comet{position:absolute;top:-1.5px;left:0;width:44%;height:3px;border-radius:3px;z-index:6;opacity:0;pointer-events:none;
     background:linear-gradient(90deg,transparent,var(--accent),#7FB0F0,transparent);
-    offset-path:inset(0 round 16px);offset-distance:0%;}
+    offset-path:inset(0 round 16px);offset-distance:0%;offset-rotate:auto;will-change:offset-distance;}
   .card.lp-run .lp-comet{opacity:1;animation:lpComet 1200ms linear forwards;}
   @keyframes lpComet{from{offset-distance:0%;}to{offset-distance:100%;}}
   @keyframes lpPulse{0%,100%{opacity:.4;}50%{opacity:1;}}
@@ -531,13 +539,29 @@
   .modal-head .x:hover{background:var(--surface-3);}
   .modal-body{padding:16px 20px;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:11px;}
   /* 唯讀詳情:摘要資訊列 + 三段需求(沿用展開框樣式,改為直排;空段落框縮小) */
-  .dtl-info{display:grid;grid-template-columns:76px 1fr;gap:9px 16px;align-items:baseline;}
-  .dtl-info .dtl-k{color:var(--text-faint);white-space:nowrap;font-weight:400;font-size:.8rem;letter-spacing:.06em;}
-  .dtl-info .dtl-v{color:var(--ink);word-break:break-word;font-size:.95rem;font-weight:500;font-variant-numeric:tabular-nums;}
-  .dtl-copy{justify-self:start;cursor:pointer;border-radius:7px;padding:2px 6px;margin:0 -6px;transition:box-shadow .1s;}
+  /* 客戶資料檢視:分區排版(圖示標題 + 白卡格線) */
+  .dtl-body{gap:15px;}
+  .dtl-sec{display:flex;flex-direction:column;gap:8px;}
+  .dtl-h{display:flex;align-items:center;gap:7px;font-size:.86rem;font-weight:800;color:var(--ink);letter-spacing:.02em;}
+  .dtl-h svg{width:15px;height:15px;color:var(--accent);flex:none;}
+  .dtl-h .dtl-tg{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:0;background:none;color:var(--text-faint);cursor:pointer;border-radius:7px;padding:0;}
+  .dtl-h .dtl-tg svg{width:12px;height:12px;color:currentColor;transition:transform .18s ease;}
+  .dtl-h .dtl-tg.open svg{transform:rotate(180deg);}
+  @media (hover:hover){ .dtl-tg:hover{background:var(--surface-2);color:var(--ink-soft);} }
+  .dtl-card{border:1px solid var(--line);border-radius:12px;background:var(--card);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
+  .dtl-cell{display:flex;align-items:center;gap:8px;padding:11px 13px;min-width:0;}
+  .dtl-cell:nth-child(even){border-left:1px solid var(--line);}
+  .dtl-cell:nth-child(n+3){border-top:1px solid var(--line);}
+  .dtl-cell > svg{width:13px;height:13px;color:var(--text-faint);flex:none;}
+  .dtl-k{color:var(--text-faint);font-size:.78rem;letter-spacing:.05em;flex:none;font-weight:400;}
+  .dtl-v{color:var(--ink);font-weight:600;font-size:.93rem;min-width:0;word-break:break-word;font-variant-numeric:tabular-nums;}
+  .dtl-empty{color:var(--text-faint);font-weight:500;}
+  .dtl-meta{display:none;}
+  .dtl-meta.open{display:flex;flex-direction:column;gap:8px;animation:metaIn .16s ease;}
+  @keyframes metaIn{from{opacity:0;transform:translateY(-3px);}to{opacity:1;transform:translateY(0);}}
+  .dtl-copy{cursor:pointer;border-radius:7px;padding:2px 6px;margin:-2px -6px;transition:box-shadow .1s;}
   @media (hover:hover){ .dtl-copy:hover{box-shadow:inset 0 0 0 100px rgba(43,92,168,.07);} }
   .dtl-copy.copied{animation:cardCopiedFlash .7s ease;}
-  .dtl-segs{display:flex;flex-direction:column;gap:14px;}
   .dtl-body .needexp-ed{min-height:auto;}
   .modal-body label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:.8rem;font-weight:600;color:var(--ink-soft);}
   .modal-body input,.modal-body select,.modal-body textarea{width:100%;min-width:0;box-sizing:border-box;font-family:inherit;font-size:1rem;color:var(--ink);background:var(--card);
@@ -642,9 +666,10 @@
   .btn-danger:hover{filter:brightness(.93);}
   #calBg{z-index:60;}
   #f_date{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%2394a0ac' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='4.5' width='18' height='16' rx='2.5'/%3E%3Cpath d='M3 9.5h18M8 2.5v4M16 2.5v4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;background-size:18px;padding:10px 40px 10px 12px;cursor:pointer;}
-  /* 日曆彈窗:遮罩近乎全不透明並拉高層級,把後面的編輯視窗完全蓋住,不再有「疊視窗」感 */
-  #calBg{z-index:60;background:rgba(255,255,255,.99);}
-  [data-theme="dark"] #calBg{background:rgba(6,10,13,.99);}
+  /* 日曆彈窗:一般情況維持標準遮罩;只有疊在「編輯客戶」表單上時才用近乎不透明的底,避免疊視窗感 */
+  #calBg{z-index:60;}
+  #calBg.over-modal{background:rgba(255,255,255,.99);}
+  [data-theme="dark"] #calBg.over-modal{background:rgba(6,10,13,.99);}
   .cal{background:var(--card);width:100%;max-width:420px;border-radius:26px;padding:20px 22px 22px;box-shadow:0 22px 60px rgba(22,34,42,.32);}
   .cal-fmt{display:flex;justify-content:flex-end;margin-bottom:2px;}
   .cal-fmt button{border:1px solid var(--line);background:var(--surface-1);color:var(--ink-soft);font-size:.82rem;font-weight:700;padding:8px 14px;border-radius:999px;cursor:pointer;}
@@ -748,7 +773,6 @@
   .ptable thead th{position:relative;background:var(--accent-deep);color:var(--accent-tint);font-weight:700;font-size:.8rem;
     text-align:center;padding:11px 11px;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08);}
   .ptable .tcell{text-align:center;}
-  .ptable .tcell[data-field="ask"],
   .ptable .tcell[data-field="need"]{text-align:left;}
   .ptable .tcell:empty{text-align:center;}   /* 空白格的「—」一律置中(含靠左欄位) */
   .ptable thead th:last-child{border-right:none;}
@@ -759,7 +783,6 @@
   .ptable td.tdel{border-left:none;}
   .ptable thead th:nth-last-child(2){border-right:none;}
   @media (hover:hover){ .ptable tbody tr:not(.exp-open):not(.needexp):hover td{background:var(--surface-1);} }
-  .ptable tbody tr:last-child td{border-bottom:none;}
   .tcell{padding:9px 10px;min-height:40px;line-height:22px;outline:none;cursor:text;transition:background .12s,box-shadow .12s;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .tcell[data-field="tel"],.tcell[data-field="line"]{font-size:.72rem;}
@@ -770,6 +793,8 @@
   .exp-open .tneed{color:var(--accent-deep);font-weight:600;}
   /* 展開中:父列與展開區同用淡藍底,連成一塊聚焦區;用 !important 鎖定,任何 hover 都不會蓋掉 */
   .ptable tbody tr.exp-open td{background:var(--accent-tint) !important;border-bottom:none;}
+  /* 已展開的那一列:整列先不可編輯/不可開下拉,點一下=收合;收合後自動恢復 */
+  tr.exp-open .tcell[contenteditable],tr.exp-open .topt-trigger,tr.exp-open .tcat-trigger,tr.exp-open .tchip{pointer-events:none;}
   .ptable tbody tr.exp-open td:first-child{box-shadow:inset 3px 0 0 var(--accent);}
   tr.needexp > td{padding:0;height:auto;background:var(--accent-tint) !important;border-bottom:1px solid var(--accent-tint-bd);border-right:none;border-radius:0 0 13px 13px;box-shadow:inset 3px 0 0 var(--accent), 0 18px 26px -12px rgba(22,34,42,.24);}
   .needexp-wrap{position:sticky;left:0;box-sizing:border-box;padding:13px 16px 15px;}
@@ -956,6 +981,7 @@
   .topt-label:empty::before{content:"—";color:var(--text-faint);}
   /* 空白輸入欄一律顯示「—」佔位:正常/編輯兩種模式、全欄位一致(選單類已由 .topt-label 處理) */
   .tcell:empty::before{content:"—";color:var(--text-faint);font-size:.85rem;}
+  .tcell:empty:focus::before{content:none;}   /* 游標進入空白格時「—」先消失,避免跟輸入游標疊成十字 */
   #toptmenu{position:fixed;z-index:212;display:none;min-width:180px;max-width:264px;max-height:80vh;overflow-y:auto;overflow-x:hidden;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(22,34,42,.2);padding:5px 5px 0;}
   #toptmenu.show{display:block;}
   /* 客戶需求:滑鼠懸浮預覽三段(桌面);觸控裝置一律不顯示 */
@@ -1066,12 +1092,10 @@
           <div class="cselect-menu" id="sortMenu" role="listbox"></div>
         </div>
         <div class="ctrl-right">
+          <button type="button" class="flt-clear-btn" id="fltClearAll" title="清除所有欄位篩選" aria-label="清除所有欄位篩選"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h14l-5.4 6.4V18l-3.2 1.6v-8.2L3.5 5Z"/><path d="m17 16 4.5 4.5M21.5 16 17 20.5"/></svg></button>
           <button type="button" class="exp-focus-btn" id="expFocusBtn" title="展開需求時聚焦：其他列變淡" aria-pressed="false" aria-label="展開聚焦"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="2.5" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="21.5" y2="12"/></svg></button>
           <button type="button" class="view-btn" id="viewBtn" title="切換檢視" aria-label="切換檢視"></button>
-          <div class="density mode-head" id="modeHead" role="group" aria-label="編輯／正常模式">
-            <button type="button" data-m="edit" title="可修改資料">編輯</button>
-            <button type="button" data-m="view" title="只瀏覽，點內容可複製">正常</button>
-          </div>
+          <button type="button" class="mode-btn" id="modeBtn" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20Z"/><path d="m13.5 7.5 3.5 3.5"/></svg></button>
         </div>
       </div>
     </div>
@@ -1314,7 +1338,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.15 J";
+const APP_VERSION = "2026.07.15 Q";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1632,10 +1656,15 @@ function syncToggleUI(){
     vb.title = toTable ? "切換為表格檢視" : "切換為卡片檢視";
     vb.setAttribute("aria-label", vb.title);
   }
-  const mh = document.getElementById("modeHead");
-  if (mh){
-    mh.querySelectorAll("button").forEach(b => b.classList.toggle("active", (b.dataset.m==="edit") === editMode));
+  const mb = document.getElementById("modeBtn");
+  if (mb){
+    mb.classList.toggle("on", editMode);
+    mb.title = editMode ? "編輯模式：可修改資料（點一下切回正常）" : "正常模式：點內容可複製（點一下切為編輯）";
+    mb.setAttribute("aria-label", mb.title);
+    mb.setAttribute("aria-pressed", editMode ? "true" : "false");
   }
+  const fc = document.getElementById("fltClearAll");
+  if (fc) fc.classList.toggle("on", typeof anyColFilter === "function" && anyColFilter());   // 有欄位篩選時才出現
   const ce = document.getElementById("cards");
   if (ce) ce.classList.toggle("cmode-view", !editMode);
 }
@@ -1685,8 +1714,11 @@ function trowHTML(d){
       ? `<td><button type="button" class="topt-trigger" data-field="${f}" data-optkey="${optKey}"><span class="topt-label">${esc(dv)}</span></button></td>`
       : `<td><div class="tcell" data-field="${f}" title="${esc(dv)}">${esc(dv)}</div></td>`;
   };
+  const dateCell = editMode                                   // 編輯模式:建檔日改為日曆選擇(與卡片檢視同一個日曆)
+    ? `<td><button type="button" class="topt-trigger" data-field="date" data-cal="1"><span class="topt-label">${esc(d.date)}</span></button></td>`
+    : `<td><div class="tcell tdate" data-field="date" title="${esc(d.date)}">${esc(d.date)}</div></td>`;
   return `<tr data-id="${esc(d.id)}">`+
-    cell("date","tdate")+
+    dateCell+
     optCell("area","area")+
     catCell+
     cell("budget")+
@@ -1779,7 +1811,13 @@ function tCommitCell(cell){
 function caretEnd(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(false); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
 // 客戶需求:展開列(正常=唯讀完整內容;編輯=大textarea即時存)
 function needSeg(it, sg){ return sg===2 ? (it.need2||"") : sg===3 ? (it.need3||"") : (it.need||""); }
-function needTitle(it, sg){ return sg===2 ? (it.t2||"想看") : sg===3 ? (it.t3||"看過") : (it.t1||"客戶需求"); }
+function needDefTitle(sg){ return sg===2 ? "想看" : sg===3 ? "看過" : "需求"; }
+function needTitle(it, sg){
+  const t = sg===2 ? it.t2 : sg===3 ? it.t3 : it.t1;
+  if (!t) return needDefTitle(sg);
+  if (sg===1 && t === "客戶需求") return "需求";   // 舊資料存的舊預設 → 顯示新預設
+  return t;
+}
 function commitNeedSeg(id, sg, val){
   const it = items.find(x => x.id === id); if (!it) return;
   val = (val || "").replace(/\s+$/,"");
@@ -1794,7 +1832,7 @@ function commitNeedSeg(id, sg, val){
 }
 function commitNeedTitle(id, sg, val){
   const it = items.find(x => x.id === id); if (!it) return;
-  const def = sg===2 ? "想看" : sg===3 ? "看過" : "客戶需求";
+  const def = needDefTitle(sg);
   val = (val || "").replace(/\n/g," ").trim() || def;
   if (needTitle(it,sg) === val) return;
   if (sg===2) it.t2 = val; else if (sg===3) it.t3 = val; else it.t1 = val;
@@ -2159,11 +2197,19 @@ tableWrap.addEventListener("keydown", e=>{
   } else if (e.key === "Escape"){ c.blur(); }
 });
 tableWrap.addEventListener("click", e=>{
+  // 點「已展開的那一列」任一處 = 先收合(正常/編輯皆同);收合後才恢復編輯、下拉、複製、連結
+  const openTr = e.target.closest("tr.exp-open");
+  if (openTr){ e.stopPropagation(); hideNeedHover(); closeNeedExp(); return; }
   // 類別下拉(僅編輯模式有觸發鈕)
   const trig = e.target.closest(".tcat-trigger");
   if (trig){ e.stopPropagation(); openCatMenu(trig); return; }
   const otrig = e.target.closest(".topt-trigger");
-  if (otrig){ e.stopPropagation(); openOptMenu(otrig); return; }
+  if (otrig){
+    e.stopPropagation();
+    if (otrig.dataset.cal) openTableCal(otrig);   // 建檔日 → 共用日曆
+    else openOptMenu(otrig);
+    return;
+  }
   // 連結:編輯模式→開編輯框;正常模式→直接開啟
   const chip = e.target.closest(".tchip");
   if (chip){
@@ -2209,7 +2255,7 @@ function showNeedHover(cell, it){
     const bd = content ? needToViewHTML(content) : '<span class="nh-empty">（無內容）</span>';
     return `<div class="nh-seg"><div class="nh-tt">${esc(title)}</div><div class="nh-bd">${bd}</div></div>`;
   };
-  needHover.innerHTML = seg(1,"客戶需求") + seg(2,"想看") + seg(3,"看過");
+  needHover.innerHTML = seg(1,"需求") + seg(2,"想看") + seg(3,"看過");
   needHover.style.visibility = "hidden";
   needHover.classList.add("show");
   // 位置:貼齊該列正下方、寬度與表格可視範圍相同(跟展開出現的位置一致);太靠底部則翻到列上方
@@ -2377,6 +2423,22 @@ function openOptMenu(trigger){
 }
 function toptOutside(e){ if (e.target.closest("#toptmenu") || e.target.closest(".topt-trigger")) return; closeOptMenu(); }
 function closeOptMenu(){ document.removeEventListener("click", toptOutside); toptmenu.classList.remove("show"); toptTrigger = null; if (window.refreshLed) window.refreshLed(); }
+// 表格編輯模式:建檔日 → 開共用日曆(與卡片檢視同一個);存檔方式比照 setOptValue(就地更新,不重排)
+function openTableCal(trigger){
+  const it = tFindItem(trigger); if (!it) return;
+  if (typeof closeOtherOverlays === "function") closeOtherOverlays("");   // 先關其他浮層
+  if (typeof window.openCalFor !== "function") return;
+  window.openCalFor({
+    get: () => it.date || "",
+    set: v => {
+      const nv = String(v||"").trim();
+      if ((it.date||"") === nv) return;
+      it.date = nv; it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
+      const lbl = trigger.querySelector(".topt-label");
+      if (lbl) lbl.textContent = nv;
+    }
+  });
+}
 function setOptValue(v){
   const it = tFindItem(toptTrigger); if (!it) return;
   if (toptField === "pNum"){ const n = parseInt(String(v).replace(/[^\d]/g,""),10)||0; it.pNum = n; it.parking = fmtParking(it.pType, n); }
@@ -2554,13 +2616,26 @@ function applyExpFocus(){
   if (b){ b.classList.toggle("on", expFocus); b.setAttribute("aria-pressed", expFocus ? "true" : "false"); }
 }
 (function(){ const b = document.getElementById("expFocusBtn"); if (b) b.addEventListener("click", () => { expFocus = !expFocus; saveExpFocus(); applyExpFocus(); onLocalChange("settings"); toast(expFocus ? "展開聚焦：開" : "展開聚焦：關"); }); applyExpFocus(); })();
-document.getElementById("modeHead").addEventListener("click", e=>{
-  const b = e.target.closest("button"); if (!b) return;
-  setEditMode(b.dataset.m === "edit");
+document.getElementById("modeBtn").addEventListener("click", () => setEditMode(!editMode));
+document.getElementById("fltClearAll").addEventListener("click", () => {
+  if (!anyColFilter()) return;
+  if (typeof closeOtherOverlays === "function") closeOtherOverlays("");   // 先關掉篩選彈窗/下拉/展開
+  clearAllColFilters();
+  applyFilter();
+  toast("已清除所有欄位篩選");
 });
 
 // ---- 表格欄位篩選(區域/類型/預算/車位) ----
 const colFilter = { area:null, cat:null, rooms:null, pType:null, pNum:null };
+// 是否有任何欄位篩選生效(含預算上下限);供工具列的「清除所有欄位篩選」鈕顯示與清除
+function anyColFilter(){
+  if (typeof fltB !== "undefined" && (fltB.lo != null || fltB.hi != null)) return true;
+  return Object.keys(colFilter).some(k => colFilter[k] && colFilter[k].size);
+}
+function clearAllColFilters(){
+  Object.keys(colFilter).forEach(k => colFilter[k] = null);
+  if (typeof fltB !== "undefined"){ fltB.lo = null; fltB.hi = null; }
+}
 // 篩選選項的自訂順序(每欄一份);拖曳調整後記住並同步。新出現的值自動補在後面(照筆劃)。
 function loadFltOrder(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_fltorder_v1") || "null"); if (s && typeof s === "object") return s; } catch(e){} } return {}; }
 let filterOrder = loadFltOrder();
@@ -2978,6 +3053,8 @@ catSelMenu.addEventListener("click", e => { const o = e.target.closest(".cselect
     return String(dt.getFullYear()-1911) + String(dt.getMonth()+1).padStart(2,"0") + String(dt.getDate()).padStart(2,"0");
   }
   let calFmtROC = true;
+  const FORM_TARGET = { get: () => F.date.value, set: v => { F.date.value = v; } };   // 預設目標:表單的建檔日
+  let calTarget = FORM_TARGET;
   function render(){
     calTitle.textContent = calFmtROC
       ? "民國 " + (calY-1911) + " 年 " + (calM+1) + " 月"
@@ -2985,7 +3062,7 @@ catSelMenu.addEventListener("click", e => { const o = e.target.closest(".cselect
     const first = new Date(calY, calM, 1).getDay();
     const days = new Date(calY, calM+1, 0).getDate();
     const today = dateToRoc(new Date());
-    const sel = String(F.date.value||"").replace(/\D/g,"");
+    const sel = String(calTarget.get()||"").replace(/\D/g,"");
     let h = "";
     for (let i=0;i<first;i++) h += '<button type="button" class="cal-day empty" tabindex="-1"></button>';
     for (let dd=1;dd<=days;dd++){
@@ -3000,22 +3077,25 @@ catSelMenu.addEventListener("click", e => { const o = e.target.closest(".cselect
     }
     calGrid.innerHTML = h;
   }
-  function openCal(){
+  function openCal(target){
     if (calBg.classList.contains("open")) return;
-    const cur = rocToDate(F.date.value) || new Date();
+    calTarget = target || FORM_TARGET;
+    calBg.classList.toggle("over-modal", modalBg.classList.contains("open"));   // 只有疊在編輯表單上時才用不透明遮罩
+    const cur = rocToDate(calTarget.get()) || new Date();
     calY = cur.getFullYear(); calM = cur.getMonth();
     render(); calBg.classList.add("open");
   }
-  function closeCal(){ calBg.classList.remove("open"); }
+  function closeCal(){ calBg.classList.remove("open"); calTarget = FORM_TARGET; }
   document.getElementById("calPrev").addEventListener("click", () => { calM--; if (calM<0){calM=11;calY--;} render(); });
   document.getElementById("calNext").addEventListener("click", () => { calM++; if (calM>11){calM=0;calY++;} render(); });
-  calGrid.addEventListener("click", e => { const b = e.target.closest(".cal-day[data-roc]"); if (b){ F.date.value = b.dataset.roc; closeCal(); } });
-  document.getElementById("calToday").addEventListener("click", () => { F.date.value = todayROC(); closeCal(); });
-  document.getElementById("calClear").addEventListener("click", () => { F.date.value = ""; closeCal(); });
+  calGrid.addEventListener("click", e => { const b = e.target.closest(".cal-day[data-roc]"); if (b){ calTarget.set(b.dataset.roc); closeCal(); } });
+  document.getElementById("calToday").addEventListener("click", () => { calTarget.set(todayROC()); closeCal(); });
+  document.getElementById("calClear").addEventListener("click", () => { calTarget.set(""); closeCal(); });
   document.getElementById("calCancel").addEventListener("click", closeCal);
   document.getElementById("calFmt").addEventListener("click", () => { calFmtROC = !calFmtROC; render(); });
   calBg.addEventListener("click", e => { if (e.target === calBg) closeCal(); });
-  if (F.date){ F.date.setAttribute("readonly",""); F.date.addEventListener("click", openCal); }
+  if (F.date){ F.date.setAttribute("readonly",""); F.date.addEventListener("click", () => openCal(FORM_TARGET)); }
+  window.openCalFor = openCal;   // 供表格編輯模式的建檔日共用同一個日曆
 })();
 
 document.addEventListener("click", e => { if (!catSel.contains(e.target)) closeCatSel(); });
@@ -3237,7 +3317,7 @@ function openForm(id){
   F.need.innerHTML  = (d && d.need)  ? needToFormHTML(d.need)  : "<div><br></div>";
   F.need2.innerHTML = (d && d.need2) ? needToFormHTML(d.need2) : "<div><br></div>";
   F.need3.innerHTML = (d && d.need3) ? needToFormHTML(d.need3) : "<div><br></div>";
-  F.t1.value = d ? (d.t1||"客戶需求") : "客戶需求";
+  F.t1.value = d ? needTitle(d, 1) : "需求";
   F.t2.value = d ? (d.t2||"想看") : "想看";
   F.t3.value = d ? (d.t3||"看過") : "看過";
   modalBg.classList.add("open");
@@ -3250,20 +3330,38 @@ const detailBg = document.getElementById("detailBg");
 function openDetail(id){
   const d = items.find(x => x.id === id); if (!d) return;
   document.getElementById("detailTitle").textContent = d.cust || "（未填稱呼）";
-  const info = [];
-  if (d.cat) info.push(["類型", d.cat]);
-  if (d.date) info.push(["建檔日", d.date]);
-  if (d.area) info.push(["區域", d.area]);
-  if (d.budget) info.push(["預算", d.budget]);
-  if (d.rooms) info.push(["房數", d.rooms]);
-  if (d.parking) info.push(["車位", d.parking]);
-  if (d.tel) info.push(["電話", d.tel]);
-  if (d.line) info.push(["LINE", d.line]);
-  if (d.ask) info.push(["詢問案名", d.ask]);
-  const infoHTML = info.length ? `<div class="dtl-info">${info.map(([k,v]) => `<span class="dtl-k">${esc(k)}</span><span class="dtl-v dtl-copy" data-copy="${esc(v)}">${esc(v)}</span>`).join("")}</div>` : "";
-  const segs = [[d.t1||"客戶需求", d.need], [d.t2||"想看", d.need2], [d.t3||"看過", d.need3]];
-  const segHTML = `<div class="dtl-segs">${segs.map(([t,c]) => `<div class="nseg"><div class="nseg-head"><span class="nseg-t">${esc(t)}</span></div><div class="needexp-ed needexp-view">${c ? needToViewHTML(c) : '<span class="tneed-ph">—</span>'}</div></div>`).join("")}</div>`;
-  document.getElementById("detailBody").innerHTML = infoHTML + segHTML;
+  // 小圖示(區段標題/格內)
+  const IC_USER  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5"/></svg>';
+  const IC_HOME  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7"/><path d="M6.5 10v9h11v-9"/></svg>';
+  const IC_DOC   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="4" width="13" height="16" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>';
+  const IC_EYE   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.4-6.4 9.5-6.4 9.5 6.4 9.5 6.4-3.4 6.4-9.5 6.4S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
+  const IC_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m8.3 12.2 2.5 2.5 4.9-5.2"/></svg>';
+  const IC_TEL   = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.53 15.53 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg>';
+  const IC_CHEV  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+  // 格:標籤 + 值(可點複製);空值顯示 —
+  const cell = (k, v, ic) => `<div class="dtl-cell">${ic||""}<span class="dtl-k">${esc(k)}</span>${v ? `<span class="dtl-v dtl-copy" data-copy="${esc(v)}">${esc(v)}</span>` : `<span class="dtl-v dtl-empty">—</span>`}</div>`;
+  // 客戶資訊(電話/LINE) + 可摺疊的建檔資訊(建檔日/詢問案名)
+  const contact = `<div class="dtl-sec">
+    <div class="dtl-h">${IC_USER}客戶資訊<button type="button" class="dtl-tg" aria-expanded="false" title="顯示建檔資訊">${IC_CHEV}</button></div>
+    <div class="dtl-card">${cell("電話", d.tel, IC_TEL)}${cell("LINE", d.line)}</div>
+    <div class="dtl-meta" id="dtlMeta">
+      <div class="dtl-h" style="color:var(--ink-soft);">建檔資訊</div>
+      <div class="dtl-card">${cell("建檔日", d.date)}${cell("詢問案名", d.ask)}</div>
+    </div>
+  </div>`;
+  // 購屋需求(類型/房數/區域/車位/預算)
+  // 車位/車數:車位只顯示車類(數量已獨立成「車數」);舊資料若只有合成字串則自動拆解
+  const _pk = parseParking(d.parking || "");
+  const _pT = d.pType || _pk.t;
+  const _pN = d.pNum ? String(d.pNum) : (_pk.n ? String(_pk.n) : "");
+  const buy = `<div class="dtl-sec">
+    <div class="dtl-h">${IC_HOME}購屋需求</div>
+    <div class="dtl-card">${cell("類型", d.cat)}${cell("房數", d.rooms)}${cell("區域", d.area)}${cell("車位", _pT)}${cell("預算", d.budget)}${cell("車數", _pN)}</div>
+  </div>`;
+  // 三段需求(沿用展開內容框)
+  const seg = (t, c, ic) => `<div class="dtl-sec"><div class="dtl-h">${ic}${esc(t)}</div><div class="needexp-ed needexp-view">${c ? needToViewHTML(c) : '<span class="tneed-ph">—</span>'}</div></div>`;
+  const segHTML = seg(needTitle(d,1), d.need, IC_DOC) + seg(needTitle(d,2), d.need2, IC_EYE) + seg(needTitle(d,3), d.need3, IC_CHECK);
+  document.getElementById("detailBody").innerHTML = contact + buy + segHTML;
   detailBg.classList.add("open");
 }
 function closeDetail(){ detailBg.classList.remove("open"); }
@@ -3271,7 +3369,11 @@ document.getElementById("detailClose").addEventListener("click", closeDetail);
 let _dtlDownOnBg = false;
 detailBg.addEventListener("pointerdown", e => { _dtlDownOnBg = (e.target === detailBg); });
 detailBg.addEventListener("click", e => { if (e.target === detailBg && _dtlDownOnBg) closeDetail(); _dtlDownOnBg = false; });
-document.getElementById("detailBody").addEventListener("click", e => { const cp = e.target.closest("[data-copy]"); if (cp){ e.stopPropagation(); copyFieldText(cp); } });   // 詳情:點欄位值複製
+document.getElementById("detailBody").addEventListener("click", e => {
+  const tg = e.target.closest(".dtl-tg");
+  if (tg){ e.stopPropagation(); const meta = document.getElementById("dtlMeta"); if (meta){ const open = meta.classList.toggle("open"); tg.classList.toggle("open", open); tg.setAttribute("aria-expanded", open ? "true" : "false"); } return; }   // 三角:展開/收合建檔資訊
+  const cp = e.target.closest("[data-copy]"); if (cp){ e.stopPropagation(); copyFieldText(cp); }   // 點欄位值複製
+});
 
 
 function saveForm(){
@@ -3293,7 +3395,7 @@ function saveForm(){
     need: editToNeed(F.need).trim(),
     need2: editToNeed(F.need2).trim(),
     need3: editToNeed(F.need3).trim(),
-    t1: F.t1.value.trim() || "客戶需求",
+    t1: F.t1.value.trim() || "需求",
     t2: F.t2.value.trim() || "想看",
     t3: F.t3.value.trim() || "看過",
   };
@@ -3380,7 +3482,11 @@ cardsEl.addEventListener("pointerdown", e => {
   pressId = card.dataset.id; pressX = e.clientX; pressY = e.clientY; longPressed = false; pressCard = card;
   clearTimeout(pressTimer);
   const holdMs = editMode ? 1200 : 480;   // 編輯模式長按較久(1.2秒)才進刪除多選,避免誤觸
-  if (editMode && !selectMode) card.classList.add("lp-run");   // 編輯模式:長按跑邊緣光點提示
+  if (editMode && !selectMode){                                  // 編輯模式:長按跑邊緣光點提示
+    card.classList.add("lp-run");
+    const cm = card.querySelector(".lp-comet");
+    if (cm){ cm.style.animation = "none"; void cm.offsetWidth; cm.style.animation = ""; }   // 強制動畫每次都從頭(左上)開始,修正偶發從右/下段出現
+  }
   pressTimer = setTimeout(() => {
     card.classList.remove("lp-run");
     if (selectMode) return;
