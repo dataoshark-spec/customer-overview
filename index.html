@@ -978,9 +978,17 @@
   .topt-trigger{display:block;width:100%;max-width:100%;box-sizing:border-box;min-height:40px;line-height:22px;background:transparent;border:0;border-radius:6px;padding:9px 10px;margin:0;font-family:inherit;font-size:.85rem;color:var(--ink);text-align:center;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   @media (hover:hover){ .topt-trigger:hover{background:var(--surface-2);} }
   @media (hover:hover){ .exp-open .topt-trigger:hover{background:transparent;} }
-  .topt-label:empty::before{content:"—";color:var(--text-faint);}
+  .topt-label:empty::before{content:"—";}
   /* 空白輸入欄一律顯示「—」佔位:正常/編輯兩種模式、全欄位一致(選單類已由 .topt-label 處理) */
-  .tcell:empty::before{content:"—";color:var(--text-faint);font-size:.85rem;transition:opacity .12s;}
+  .tcell:empty::before{content:"—";transition:opacity .12s;}
+  /* 類型欄是 pill 樣式,先前漏了空值佔位,沒選會變成一顆空殼:編輯模式的按鈕與正常模式的徽章都補上 */
+  .tcat-label:empty::before,.tcat-badge:empty::before{content:"—";}
+  /* 破折號的字級/字重一律鎖死,不跟著所在欄位跑。原本會被欄位樣式帶著走,畫出粗細不一的橫桿:
+     ·「客戶」欄 .tcell.tname 是 700 → 橫桿變粗
+     ·「客戶需求」欄展開時 .exp-open .tneed 是 600 → 橫桿又變另一種粗細
+     ·「電話 / LINE」欄字級是 .72rem → 橫桿會變短(原本已個別補 .85rem,現在統一由這裡管) */
+  .tcell:empty::before,.topt-label:empty::before,.tcat-label:empty::before,.tcat-badge:empty::before,.tneed-ph{
+    color:var(--text-faint);font-size:.85rem;font-weight:400;}
   .tcell:empty:focus::before{opacity:0;}   /* 游標進入空白格時「—」淡出(保留盒子不彈跳);透明後不會跟輸入游標疊成十字 */
   #toptmenu{position:fixed;z-index:212;display:none;min-width:180px;max-width:264px;max-height:80vh;overflow-y:auto;overflow-x:hidden;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(22,34,42,.2);padding:5px 5px 0;}
   #toptmenu.show{display:block;}
@@ -1338,7 +1346,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.15 S";
+const APP_VERSION = "2026.07.15 Y";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1603,7 +1611,21 @@ let currentSort = loadSort();
 if (!SORTS.find(s => s.key === currentSort)) currentSort = "default";   // 已移除的排序(如舊的客戶稱呼)回退預設
 function sortList(list){
   const dateNum = d => { const n = parseInt(String(d.date||"").replace(/\D/g,""),10); return isNaN(n) ? null : n; };
-  const byDate = dir => (a,b) => { const x=dateNum(a), y=dateNum(b); if(x===null&&y===null)return 0; if(x===null)return 1; if(y===null)return -1; return dir*(x-y); };
+  // 建檔日只到「天」,同一天新增好幾筆時日期分不出先後,先前只靠 sort 的穩定性 → 順序等於陣列順序,
+  // 而新資料是 push 到陣列尾端,結果同日群組裡「最新的反而排最後」。改用建立時間決勝:
+  //   · createdAt 只在新增當下寫入一次,之後編輯不會變 → 不會有「改個字就跳到最上面」的問題
+  //   · 舊資料/內建資料沒有 createdAt,一律視為 0 → 彼此相對順序仍由穩定排序保留,新資料則排在它們前面
+  const madeAt = d => Number(d.createdAt) || 0;
+  // 沒填建檔日一律視為「最新」(等同無限大):新→舊排最前、舊→新排最後,方向對稱。
+  // 新增列現在預設空日期,若照舊把無日期排最後,剛建好的列會直接沉到列表底部。
+  const byDate = dir => (a,b) => {
+    const x=dateNum(a), y=dateNum(b);
+    if(x===null&&y===null) return dir*(madeAt(a)-madeAt(b));   // 都沒日期:比建立時間
+    if(x===null) return dir;
+    if(y===null) return -dir;
+    if(x!==y) return dir*(x-y);
+    return dir*(madeAt(a)-madeAt(b));   // 同一天:新→舊時晚建的在前,舊→新時早建的在前
+  };
   const arr = list.slice();
   switch (currentSort){
     case "date_desc": arr.sort(byDate(-1)); break;
@@ -1699,8 +1721,9 @@ function trowHTML(d){
   const color = catColor(d.cat);
   const ce = editMode ? "true" : "false";
   const catCell = editMode
-    ? `<td class="tcat"><button type="button" class="tcat-trigger" data-field="cat" style="border-color:${color}"><span class="tcat-label">${esc(d.cat)}</span></button></td>`
-    : `<td class="tcat"><span class="tcat-badge" style="border-color:${color}">${esc(d.cat)}</span></td>`;
+    // 沒選類型就不畫 pill 邊框(改 transparent 而非 border:0,盒子尺寸不變,選好時邊框浮現不位移)
+    ? `<td class="tcat"><button type="button" class="tcat-trigger" data-field="cat" style="border-color:${d.cat ? color : "transparent"}"><span class="tcat-label">${esc(d.cat)}</span></button></td>`
+    : `<td class="tcat"><span class="tcat-badge" style="border-color:${d.cat ? color : "transparent"}">${esc(d.cat)}</span></td>`;
   const delCell = editMode
     ? `<td class="tdel"><button data-act="del" title="刪除此列">${ICON_TRASH}</button></td>`
     : `<td class="tdel"></td>`;
@@ -1795,17 +1818,25 @@ window.isTableBusy = function(){
 // ---- inline editing ----
 function tFindItem(el){ const tr = el.closest("tr"); return tr ? items.find(x => x.id === tr.dataset.id) : null; }
 function tFlash(el){ el.classList.add("saved"); setTimeout(()=>el.classList.remove("saved"), 700); }
+// 把格子的文字寫回畫面。清空時要清成「真的空」——:empty 只在完全沒有子節點時才成立。
+// contenteditable 全選刪除後,瀏覽器通常會留一個 <br>:此時 textContent 已經是 "",
+// 舊寫法的 `cell.textContent !== val` 守衛因此看不出差別、不會重寫 → 子節點還在 → :empty 不成立
+// → 佔位的「—」不會回來,要等下次整表重繪才出現。
+function setCellText(cell, v){
+  if (v === ""){ if (cell.firstChild) cell.textContent = ""; }   // 有殘留子節點就清掉(textContent="" 不會留下空文字節點)
+  else if (cell.textContent !== v) cell.textContent = v;
+}
 function tCommitCell(cell){                       // 回傳 true=值有變更(呼叫端據此決定要不要閃「已儲存」)
   const it = tFindItem(cell); if (!it) return false;
   const field = cell.dataset.field;
   let val = cell.textContent.trim();
   if (field === "ask") val = normAsk(val);
-  if (cell.textContent !== val) cell.textContent = val;
+  setCellText(cell, val);
   if (it[field] !== val){
     it[field] = val;
     if (field === "budget"){ const r = parseBudget(val); it.bMin = (r && isFinite(r[0]) && r[0] > 0) ? r[0] : null; it.bMax = (r && isFinite(r[1])) ? r[1] : null; }
     if (field === "pType"){ it.parking = fmtParking(val, it.pNum); }
-    else if (field === "pNum"){ const n = parseInt(String(val).replace(/[^\d]/g,""),10)||0; it.pNum = n; it.parking = fmtParking(it.pType, n); const disp = n ? String(n) : ""; if (cell.textContent !== disp) cell.textContent = disp; }
+    else if (field === "pNum"){ const n = parseInt(String(val).replace(/[^\d]/g,""),10)||0; it.pNum = n; it.parking = fmtParking(it.pType, n); setCellText(cell, n ? String(n) : ""); }
     it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
     return true;
   }
@@ -2531,8 +2562,12 @@ toptmenu.addEventListener("keydown", e => { if (e.target.matches(".opt-add input
 })();
 function addTableRow(){
   if (!editMode){ editMode = true; saveEditMode(); }
-  const cat = currentCat || (cats[0] && cats[0].key) || "";
-  const it = { id: uid(), date: todayROC(), area:"", cat, budget:"", rooms:"", parking:"", cust:"", tel:"", line:"", ask:"", need:"", updatedAt: Date.now() };
+  // 新增列一律留空白,跟表單新增的行為一致(openForm(null) 本來就是日期空、類型空)。
+  // 類型例外:目前正停在某個分類頁時仍沿用該分類 —— 分類頁是 items.filter(d => d.cat === currentCat),
+  // 給空字串的話新列會當場被自己的篩選條件濾掉、整列消失,連遊標都聚焦不到。
+  const cat = currentCat || "";
+  const now = Date.now();
+  const it = { id: uid(), date: "", area:"", cat, budget:"", rooms:"", parking:"", cust:"", tel:"", line:"", ask:"", need:"", createdAt: now, updatedAt: now };
   items.push(it); saveItems(); onLocalChange("data");
   applyFilter();
   const row = tableWrap.querySelector(`tr[data-id="${it.id}"]`);
@@ -3406,7 +3441,8 @@ function saveForm(){
     const i = items.findIndex(x => x.id === editingId);
     if (i > -1) items[i] = {...items[i], ...rec, updatedAt: Date.now()};
   } else {
-    items.push({...rec, id: uid(), updatedAt: Date.now()});
+    const now = Date.now();
+    items.push({...rec, id: uid(), createdAt: now, updatedAt: now});
   }
   saveItems();
   closeForm();
@@ -3983,7 +4019,9 @@ let syncConnected = false, syncEmail = null;
   window.touchSettings = function(){ window.__settingsTs = Date.now(); saveTs("settings", window.__settingsTs); };
   window.onLocalChange = function(kind){ if (kind === "cats") window.touchCats(); if (kind === "settings") window.touchSettings(); window.scheduleSync(); };
   let pushTimer = null;
-  window.scheduleSync = function(){ if (!syncConnected) return; clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 1500); };
+  let dirty = false;      // 本機有尚未成功推上雲端的變更(記憶體旗標即可:每次開啟 App 都會先做一次完整同步)
+  let retryMs = 5000;     // 失敗重試的退避間隔;成功後歸位,每次失敗加倍,上限 60 秒
+  window.scheduleSync = function(){ dirty = true; if (!syncConnected) return; clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 1500); };
 
   // ---- GIS token flow ----
   function gisReady(){ return !!(window.google && google.accounts && google.accounts.oauth2); }
@@ -4320,7 +4358,9 @@ let syncConnected = false, syncEmail = null;
 
   // ---- core two-way sync ----
   async function syncNow(){
-    if (!syncConnected || inFlight) return;
+    if (!syncConnected) return;
+    if (inFlight){ clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 2000); return; }   // 同步進行中:改排下一次,不默默丟棄
+    const wasDirty = dirty;   // 進場時的未推狀態;失敗時據此還原,避免把「純拉取失敗」也誤標成有東西沒推
     if (window.isTableBusy && window.isTableBusy()){ clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 2000); return; }
     inFlight = true; setStatus("同步中…", "busy");
     let __wd = setTimeout(function(){ if (inFlight){ inFlight = false; setStatus("同步逾時，稍後重試", "warn"); if (window.refreshLed) window.refreshLed(); } }, 40000);
@@ -4331,6 +4371,7 @@ let syncConnected = false, syncEmail = null;
       while (tries < 3){
         tries++;
         const remote = await download();
+        dirty = false;   // 本輪 buildLocal 已涵蓋目前為止的所有變更;若中途又有編輯,scheduleSync 會重新標回 true
         const local = buildLocal();
         const merged = mergeMain(local, remote);
         // 合併結果跟本機一致就不套用:applyMerged 會整表重繪,無故執行會偷走使用中的焦點/游標,
@@ -4346,14 +4387,22 @@ let syncConnected = false, syncEmail = null;
         // else someone wrote concurrently → loop and re-merge
       }
       if (pushed) maybeSnapshot(pushed);
+      retryMs = 5000;   // 成功:重試退避歸位
       setStatus("已同步", "ok");
       try { localStorage.setItem("customer_app_lastsync_v1", String(Date.now())); } catch(e){}
       window.renderLastSync();
     } catch (e){
+      dirty = dirty || wasDirty;   // 這輪沒完成:把進場時的未推狀態還原(中途的新編輯本來就會自己標 true)
       if (e && (e.error === "access_denied" || e.error === "interaction_required" || e.error === "login_required" || e.message === "gis")){
         needReauth = true; setStatus("需要重新連結", "warn"); window.renderSyncCard();
+        // 授權問題不自動重試:等使用者重新連結,connect() 成功後會做完整同步
       } else {
         setStatus("同步失敗，稍後重試", "warn");
+        // 先前這句「稍後重試」只是顯示文字,程式並沒有排任何重試 → 離線期間的編輯會一直留在本機。
+        // 現在真的排:指數退避(5s→10s→…→上限 60s),成功後歸位。
+        clearTimeout(pushTimer);
+        pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
+        retryMs = Math.min(retryMs * 2, 60000);
       }
     } finally { clearTimeout(__wd); inFlight = false; }
   }
@@ -4363,6 +4412,7 @@ let syncConnected = false, syncEmail = null;
     stopPolling();
     pollTimer = setInterval(async function(){
       if (!syncConnected || document.hidden || inFlight || needReauth) return;
+      if (dirty){ syncNow(); return; }   // 本機還有未推送的變更:直接補推,不必等遠端版本變化(重試計時器之外的保險網)
       try { await ensureFileId(); const v = await getVersion(); if (v && v !== lastVersion) syncNow(); } catch(e){}
     }, POLL_MS);
   }
