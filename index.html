@@ -1314,7 +1314,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.15 H";
+const APP_VERSION = "2026.07.15 I";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2382,13 +2382,19 @@ function setOptValue(v){
 toptmenu.addEventListener("click", e => {
   const del = e.target.closest(".opt-del");
   if (del){ e.stopPropagation(); const dv = del.dataset.del;
-    if (customOpts[toptKey].map(String).includes(dv)){ customOpts[toptKey] = customOpts[toptKey].filter(x => String(x) !== dv); }
-    else { customOpts.hidden[toptKey] = customOpts.hidden[toptKey] || []; if (!customOpts.hidden[toptKey].map(String).includes(dv)) customOpts.hidden[toptKey].push(dv); }
+    customOpts[toptKey] = customOpts[toptKey].filter(x => String(x) !== dv);        // 自訂清單移除
+    if (DEF_OPTS[toptKey].map(String).includes(dv)){                                 // 預設選項 → 加入隱藏名單
+      customOpts.hidden[toptKey] = customOpts.hidden[toptKey] || [];
+      if (!customOpts.hidden[toptKey].map(String).includes(dv)) customOpts.hidden[toptKey].push(dv);
+    }
     saveOpts(); renderToptMenu(); return; }
   const add = e.target.closest(".opt-add");
   if (add){ e.stopPropagation();
     if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = inp.value.trim();
-      if (v){ if (!optList(toptKey).includes(v)){ customOpts[toptKey].push(v); saveOpts(); } setOptValue(v); closeOptMenu(); } }
+      if (v){ let ch = unhideOpt(toptKey, v);                                        // 先解除隱藏,否則加了也不會顯示
+        if (!optList(toptKey).includes(v)){ customOpts[toptKey].push(v); ch = true; }
+        if (ch) saveOpts();
+        setOptValue(v); closeOptMenu(); } }
     return; }
   if (toptmenu.__lp){ toptmenu.__lp = false; return; }
   const o = e.target.closest(".cselect-opt"); if (o){ setOptValue(o.dataset.v); closeOptMenu(); }
@@ -3015,6 +3021,25 @@ const DEF_OPTS = {
   pnum:["1","2","3","4","5"]
 };
 let customOpts = loadOpts();
+// 加入自訂選項時:若此值先前被刪除(還在隱藏名單),要一併解除隱藏,否則加了也不會出現在清單
+function unhideOpt(key, v){
+  const h = customOpts.hidden[key] || [];
+  const nh = h.filter(x => String(x) !== String(v));
+  if (nh.length === h.length) return false;
+  customOpts.hidden[key] = nh; return true;
+}
+// 一次性修復:同一個值同時在「自訂」與「已刪除」名單 → 以自訂加入為準(解除隱藏)。
+// 初始化階段不呼叫 saveOpts(此時 onLocalChange 尚未定義),僅寫回本機。
+(function reconcileOpts(){
+  let ch = false;
+  ["area","rooms","ptype","pnum"].forEach(k => {
+    const c = (customOpts[k] || []).map(String);
+    const h = customOpts.hidden[k] || [];
+    const nh = h.filter(x => !c.includes(String(x)));
+    if (nh.length !== h.length){ customOpts.hidden[k] = nh; ch = true; }
+  });
+  if (ch){ try { localStorage.setItem("customer_app_opts_v1", JSON.stringify(customOpts)); } catch(e){} }
+})();
 function normOpts(o){ o = o || {}; const h = o.hidden || {}; return {area:o.area||[],rooms:o.rooms||[],ptype:o.ptype||[],pnum:o.pnum||[],hidden:{area:h.area||[],rooms:h.rooms||[],ptype:h.ptype||[],pnum:h.pnum||[]}}; }
 function loadOpts(){ try { return normOpts(JSON.parse(localStorage.getItem("customer_app_opts_v1")||"{}")); } catch(e){ return normOpts(null); } }
 function saveOpts(){ try { localStorage.setItem("customer_app_opts_v1", JSON.stringify(customOpts)); } catch(e){} if (typeof touchSettings === "function") touchSettings(); onLocalChange("settings"); }
@@ -3049,14 +3074,20 @@ function makeOptSel(key, emptyLabel){
   menu.addEventListener("click", e => {
     const del = e.target.closest(".opt-del");
     if (del){ e.stopPropagation(); const dv = del.dataset.del;
-      if (customOpts[key].map(String).includes(dv)){ customOpts[key] = customOpts[key].filter(x => String(x) !== dv); }
-      else { customOpts.hidden[key] = customOpts.hidden[key] || []; if (!customOpts.hidden[key].map(String).includes(dv)) customOpts.hidden[key].push(dv); }
+      customOpts[key] = customOpts[key].filter(x => String(x) !== dv);              // 自訂清單移除
+      if (DEF_OPTS[key].map(String).includes(dv)){                                   // 預設選項 → 加入隱藏名單
+        customOpts.hidden[key] = customOpts.hidden[key] || [];
+        if (!customOpts.hidden[key].map(String).includes(dv)) customOpts.hidden[key].push(dv);
+      }
       saveOpts();
       if (val === dv) set(""); renderMenu(); return; }
     const add = e.target.closest(".opt-add");
     if (add){ e.stopPropagation();
       if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = inp.value.trim();
-        if (v){ if (!optList(key).includes(v)){ customOpts[key].push(v); saveOpts(); } set(v); sel.classList.remove("open"); } }
+        if (v){ let ch = unhideOpt(key, v);                                          // 先解除隱藏,否則加了也不會顯示
+          if (!optList(key).includes(v)){ customOpts[key].push(v); ch = true; }
+          if (ch) saveOpts();
+          set(v); sel.classList.remove("open"); } }
       return; }
     const o = e.target.closest(".cselect-opt"); if (o){ if (menu.__lp){ menu.__lp = false; return; } set(o.dataset.v); sel.classList.remove("open"); }
   });
