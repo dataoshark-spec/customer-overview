@@ -1346,7 +1346,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.15 Y";
+const APP_VERSION = "2026.07.16 B";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1396,32 +1396,9 @@ const linkChip = (url, label) => url
   ? `<a class="chip on" href="${esc(url)}" target="_blank" rel="noopener">${label} <span class="ext">↗</span></a>`
   : `<span class="chip off">${label}</span>`;
 
-let dueSoonDays = 30;
-function dueStatus(due){
-  const s = String(due||"").replace(/\D/g,"");
-  if (s.length < 6) return "";
-  const mmdd = s.slice(-4);
-  const roc = parseInt(s.slice(0, s.length-4),10);
-  const mm = parseInt(mmdd.slice(0,2),10), dd = parseInt(mmdd.slice(2,4),10);
-  if (isNaN(roc)||isNaN(mm)||isNaN(dd)||mm<1||mm>12||dd<1||dd>31) return "";
-  const exp = new Date(roc+1911, mm-1, dd);
-  if (isNaN(exp.getTime())) return "";
-  const today = new Date(); today.setHours(0,0,0,0);
-  const diff = Math.round((exp - today)/86400000);
-  if (diff < 0) return "over";
-  if (diff <= dueSoonDays) return "warn";
-  return "";
-}
 function selMark(d){
   const on = selected.has(d.id) ? " on" : "";
   return `<span class="selbox${on}" aria-hidden="true"></span>`;
-}
-function textOn(hex){
-  const c = String(hex||"").replace(/[^0-9a-fA-F]/g,"");
-  if (c.length < 6) return "#fff";
-  const r = parseInt(c.slice(0,2),16), g = parseInt(c.slice(2,4),16), b = parseInt(c.slice(4,6),16);
-  const L = (0.299*r + 0.587*g + 0.114*b) / 255;   // 感知亮度
-  return L > 0.6 ? "#161A1E" : "#fff";              // 亮底→深字,暗底→白字
 }
 function segCopyHTML(value){
   const s = value == null ? "" : String(value);
@@ -1500,7 +1477,11 @@ const storageOK = (() => {
   catch (e) { return false; }
 })();
 let uidc = Date.now();
-const uid = () => "p" + (uidc++).toString(36);
+// id 加上裝置尾碼:舊寫法只用「開啟時刻毫秒數遞增」,兩台裝置的遞增範圍在毫秒級巧合下可能重疊,
+// 撞出相同 id 時雲端合併會把兩筆不同客戶當成同一筆(晚更新的無聲蓋掉另一筆)。
+// 尾碼取 deviceId 的隨機段(每台固定、彼此不同),碰撞從「機率極低」變成「結構上不可能」。
+// deviceId 在下方才宣告,但 uid 首次被呼叫是在更後面的 loadItems(),執行順序安全。
+const uid = () => "p" + (uidc++).toString(36) + "-" + deviceId.slice(4, 8);
 
 // 每台裝置固定 id（第一次啟動產生一次，之後雲端同步用來標記「這筆是哪台寫的」）
 function loadDeviceId(){
@@ -1530,9 +1511,19 @@ function loadItems(){
   }
   return SEED.map((d,i) => ({...d, id: "seed"+i, updatedAt: BASE_TS}));
 }
+let _saveFailAt = 0;
 function saveItems(){
   if (!storageOK) return;
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(items)); } catch (e) {}
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(items)); }
+  catch (e) {
+    // 儲存空間滿(QuotaExceeded 等)寫入失敗:以前默默吞掉,使用者以為存好了,重開全沒了。
+    // 現在明確警告(30 秒內不重複跳,連續編輯不洗版)。此刻資料仍在記憶體,雲端同步也照常運作。
+    const now = Date.now();
+    if (now - _saveFailAt > 30000){
+      _saveFailAt = now;
+      if (typeof toast === "function") toast("⚠ 本機儲存失敗（空間可能已滿）— 請先匯出備份或清理資料");
+    }
+  }
 }
 let items = loadItems();
 
@@ -1984,15 +1975,6 @@ function editLineInner(text){
     ? `<span class="need-link-chip" contenteditable="false" data-url="${esc(tk.v)}">連結</span>`
     : esc(tk.v)).join("");
 }
-// 建立一顆「連結」標籤 DOM(供貼上時插入)
-function makeNeedChip(url){
-  const s = document.createElement("span");
-  s.className = "need-link-chip";
-  s.setAttribute("contenteditable", "false");
-  s.setAttribute("data-url", url);
-  s.textContent = "連結";
-  return s;
-}
 // 唯讀顯示用:逐行渲染(保留 # 標題),並把網址轉成「連結」
 function needToViewHTML(t){
   const lines = (t||"").split("\n");
@@ -2006,12 +1988,6 @@ function needToViewHTML(t){
 function needToFormHTML(t){
   const lines = (t||"").split("\n");
   return (lines.length ? lines : [""]).map(ln => `<div>${editLineInner(ln) || "<br>"}</div>`).join("");
-}
-function needToHTML(t){
-  return esc(t||"").split("\n").map(ln => {
-    const m = /^#\s+([\s\S]*)$/.exec(ln);
-    return m ? `<span class="need-h">${m[1]}</span>` : ln;
-  }).join("<br>");
 }
 function needToEditHTML(t){
   const lines = (t||"").split("\n");
@@ -2226,7 +2202,9 @@ tableWrap.addEventListener("keydown", e=>{
   const c = e.target; if (!c.classList || !c.classList.contains("tcell")) return;
   if (e.key === "Enter"){
     e.preventDefault(); if (tCommitCell(c)) tFlash(c);
-    const tr = c.closest("tr"), nextTr = tr.nextElementSibling;
+    const tr = c.closest("tr");
+    let nextTr = tr.nextElementSibling;
+    while (nextTr && nextTr.classList.contains("needexp")) nextTr = nextTr.nextElementSibling;   // 跳過展開列(沒有對應欄位),Enter 逐列跳格才不會卡住
     if (nextTr){ const nc = nextTr.querySelector(`.tcell[data-field="${c.dataset.field}"]`); if (nc){ nc.focus(); caretEnd(nc); } }
   } else if (e.key === "Escape"){ c.blur(); }
 });
@@ -2816,11 +2794,22 @@ function endFltDrag(){
 document.addEventListener("pointerup", endFltDrag);
 document.addEventListener("pointercancel", endFltDrag);
 
+// 搜尋用的比對字串。舊寫法是把欄位直接相加,缺欄位的資料(舊備份、其他裝置用舊版寫入的紀錄)會出事:
+//   · undefined + undefined → 走「數值相加」得到 NaN → 比對字串變成 "NaN2000萬",搜「nan」誤中
+//   · undefined + "北屯區"   → 得到 "undefined北屯區",搜「und」誤中
+// 這裡一律先轉成字串;欄位之間夾一個使用者打不出來的分隔字元(US, U+001F),
+// 避免相鄰欄位頭尾相接湊出不存在的字串而假命中。
+const SEARCH_FIELDS = ["cust","area","budget","rooms","parking","ask","need","need2","need3","t1","t2","t3","tel","line","cat","date"];
+function searchHay(d){
+  let s = "";
+  for (const k of SEARCH_FIELDS){ const v = d[k]; s += (v == null ? "" : String(v)) + "\u001F"; }
+  return s.toLowerCase();
+}
 function applyFilter(){
   syncToggleUI();
   const q = searchEl.value.trim().toLowerCase();
   let list = currentCat ? items.filter(d => d.cat === currentCat) : items.slice();
-  if (q) list = list.filter(d => (d.cust+d.area+d.budget+d.rooms+d.parking+d.ask+d.need+(d.need2||"")+(d.need3||"")+(d.t1||"")+(d.t2||"")+(d.t3||"")+d.tel+d.line+d.cat+d.date).toLowerCase().includes(q));
+  if (q) list = list.filter(d => searchHay(d).includes(q));
   list = applyColFilters(list);
   list = sortList(list);
   countEl.textContent = `${list.length} 筆`;
@@ -2879,7 +2868,9 @@ document.getElementById("tabs").addEventListener("click", e => {
   const btn = e.target.closest(".tab");
   if (btn) { exitSelectMode(); currentCat = btn.dataset.cat; applyFilter(); }
 });
-searchEl.addEventListener("input", applyFilter);
+// 搜尋防抖:原本每敲一鍵就整表重繪,幾百筆無感,上千筆會卡;150ms 內連續輸入只重繪最後一次
+let _searchDeb = null;
+searchEl.addEventListener("input", () => { clearTimeout(_searchDeb); _searchDeb = setTimeout(applyFilter, 150); });
 document.getElementById("backBtn").addEventListener("click", showCover);
 (function(){
   const led = document.getElementById("listLed");
@@ -2986,16 +2977,6 @@ function askConfirm(title, detail, onYes){
   const ok = document.getElementById("confirmOk"), cancel = document.getElementById("confirmCancel");
   ok.textContent = "確定"; ok.className = "btn-danger"; cancel.textContent = "取消";
   confirmCb = onYes; confirmCancelCb = null;
-  confirmBg.classList.add("open");
-}
-function askChoice(title, detail, okLabel, onOk, cancelLabel, onCancel){
-  document.getElementById("confirmTitle").textContent = title;
-  const descEl = document.getElementById("confirmDesc");
-  descEl.textContent = detail || "";
-  descEl.style.display = detail ? "block" : "none";
-  const ok = document.getElementById("confirmOk"), cancel = document.getElementById("confirmCancel");
-  ok.textContent = okLabel; ok.className = "btn-primary"; cancel.textContent = cancelLabel;
-  confirmCb = onOk; confirmCancelCb = onCancel;
   confirmBg.classList.add("open");
 }
 function closeConfirm(){ confirmBg.classList.remove("open"); confirmCb = null; confirmCancelCb = null; }
@@ -3299,9 +3280,6 @@ function fmtBudgetPlain(lo, hi){ lo = numOrNull(lo); hi = numOrNull(hi);
   if (lo != null) return lo + "以上";
   if (hi != null) return hi + "以內";
   return ""; }
-function fmtBudget(lo, hi){ lo = numOrNull(lo); hi = numOrNull(hi);
-  if (lo != null && hi != null){ if (hi < lo){ const t = lo; lo = hi; hi = t; } return lo === hi ? lo + "萬" : lo + "-" + hi + "萬"; }
-  if (lo != null) return lo + "萬以上"; if (hi != null) return hi + "萬以內"; return ""; }
 function parseBudget(str){ str = String(str||""); if (!str) return null;
   const s = str.replace(/(\d+(?:\.\d+)?)\s*億/g, (m,n) => (parseFloat(n)*10000) + "萬");
   const nums = (s.match(/\d+(?:\.\d+)?/g)||[]).map(parseFloat); if (!nums.length) return null;
@@ -3848,7 +3826,10 @@ catListEl.addEventListener("change", e => {
     if (cats.some(c => c.key === newKey)){ toast("類別名稱重複"); e.target.value = oldKey; return; }
     cat.key = newKey;
     item.dataset.key = newKey;
-    items.forEach(it => { if (it.cat === oldKey) it.cat = newKey; });
+    // 改名要一併更新受影響資料的 updatedAt:先前只改 it.cat 不動時間戳,兩台裝置變成
+    // 「同 id、同時間戳、內容不同」,配合舊的偏本機平手裁決 → 互相推翻,改名永遠傳不到另一台。
+    const _renameTs = Date.now();
+    items.forEach(it => { if (it.cat === oldKey){ it.cat = newKey; it.updatedAt = _renameTs; } });
     if (currentCat === oldKey) currentCat = newKey;
     saveItems();
     refreshCategories();
@@ -4247,17 +4228,31 @@ let syncConnected = false, syncEmail = null;
     for (const k in ld) del[k] = ld[k];
     for (const k in rd) del[k] = Math.max(del[k] || 0, rd[k]);
     // properties: union by id, newer updatedAt wins, then drop if tombstoned after last update
+    // 平手(同 updatedAt 但內容不同)改用「確定性裁決」:兩端都選序列化字串較大的那筆,必然收斂。
+    // 舊寫法平手時偏向本機(先看到的贏),兩台各自堅持自己 → 每輪輪詢互相推翻的無限推送戰爭。
+    const recKey = function(r){ return JSON.stringify(sortKeys(r)); };
     const byId = {}; const lp = (local.data && local.data.properties) || [], rp = (remote.data && remote.data.properties) || [];
-    lp.concat(rp).forEach(function(r){ if (!r || r.id == null) return; if (!byId[r.id] || (r.updatedAt||0) > (byId[r.id].updatedAt||0)) byId[r.id] = r; });
+    lp.concat(rp).forEach(function(r){
+      if (!r || r.id == null) return;
+      const cur = byId[r.id];
+      if (!cur){ byId[r.id] = r; return; }
+      const a = (r.updatedAt||0), b = (cur.updatedAt||0);
+      if (a > b){ byId[r.id] = r; return; }
+      if (a === b && recKey(r) > recKey(cur)) byId[r.id] = r;
+    });
     const props = [];
     for (const id in byId){ const r = byId[id]; const dt = del[id]; if (dt && dt >= (r.updatedAt||0)) continue; props.push(r); }
     out.data.properties = props; out.deleted = del;
-    // categories: whole-list last-write-wins
+    // categories / settings: whole-object last-write-wins;平手同樣用確定性裁決,不偏本機
+    const pickLWW = function(l, r){
+      const lt = (l._updatedAt||0), rt = (r._updatedAt||0);
+      if (lt !== rt) return lt > rt ? l : r;
+      return JSON.stringify(sortKeys(l)) >= JSON.stringify(sortKeys(r)) ? l : r;
+    };
     const lc = local.cats || { list: [], _updatedAt: 0 }, rc = remote.cats || { list: [], _updatedAt: 0 };
-    out.cats = ((lc._updatedAt||0) >= (rc._updatedAt||0)) ? lc : rc;
-    // single-value settings: last-write-wins
+    out.cats = pickLWW(lc, rc);
     const ls = local.settings || { _updatedAt: 0 }, rs = remote.settings || { _updatedAt: 0 };
-    out.settings = ((ls._updatedAt||0) >= (rs._updatedAt||0)) ? ls : rs;
+    out.settings = pickLWW(ls, rs);
     return out;
   }
   function sortKeys(o){ const r = {}; Object.keys(o).sort().forEach(function(k){ r[k] = o[k]; }); return r; }
@@ -4342,7 +4337,6 @@ let syncConnected = false, syncEmail = null;
   }
   window.refreshLed = refreshLed;
   window.ledAction = function(){ if (!syncConnected || needReauth) connect(); else syncNow(); };
-  function hhmm(){ const d=new Date(); const p=n=>String(n).padStart(2,"0"); return p(d.getHours())+":"+p(d.getMinutes()); }
   function fmtSyncTime(ts){ const d=new Date(ts); const p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"/"+p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); }
   window.renderLastSync = function(){ const el=document.getElementById("gLastSync"); if(!el) return; let ts=0; try{ ts=parseInt(localStorage.getItem("customer_app_lastsync_v1")||"0",10);}catch(e){} el.textContent = ts ? fmtSyncTime(ts) : "尚未同步"; };
   window.renderSyncCard = function(){
