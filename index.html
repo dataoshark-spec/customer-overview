@@ -1417,7 +1417,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.17 F";
+const APP_VERSION = "2026.07.18 A";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1567,13 +1567,19 @@ const deviceId = loadDeviceId();
 function loadItems(){
   if (storageOK){
     try {
-      // 一次性:偵測到「新一批內建資料」尚未載入過 → 自動載入一次(並清掉刪除記錄),之後沿用你的存檔、不再覆蓋
+      // 一次性:偵測到「新一批內建資料」尚未載入過 → 只在「這台從未建立過存檔」時種入一次(並清掉刪除記錄)。
+      // 【守衛】STORE_KEY 只要存在(即使是空陣列,代表使用者自己刪光了)就一律不重灌。
+      // 舊寫法只看 seedver 字串:日後更換內建資料改了 SEED_VERSION,每台裝置一載入就會無條件覆蓋整份存檔並清空墓碑
+      // → 沒連雲端的裝置真實客戶資料永久遺失;有連雲端的雖可能被拉回,但墓碑被清會讓已刪的示範資料復活並反推上雲。
+      const hasStore = localStorage.getItem(STORE_KEY) !== null;
       if (localStorage.getItem("customer_app_seedver") !== SEED_VERSION){
-        localStorage.setItem("customer_app_seedver", SEED_VERSION);
-        const seeded = SEED.map((d,i) => ({...d, id: "seed"+i, updatedAt: BASE_TS}));
-        localStorage.setItem(STORE_KEY, JSON.stringify(seeded));
-        localStorage.setItem(DELETED_KEY, "{}");
-        return seeded;
+        localStorage.setItem("customer_app_seedver", SEED_VERSION);   // 標記照樣更新:記錄「這台已見過這批」,不必每次載入重判
+        if (!hasStore){
+          const seeded = SEED.map((d,i) => ({...d, id: "seed"+i, updatedAt: BASE_TS}));
+          localStorage.setItem(STORE_KEY, JSON.stringify(seeded));
+          localStorage.setItem(DELETED_KEY, "{}");
+          return seeded;
+        }
       }
       const raw = localStorage.getItem(STORE_KEY);
       if (raw){ const arr = JSON.parse(raw); if (Array.isArray(arr)) return arr.map(d => ({...d, id: d.id || uid(), updatedAt: d.updatedAt || BASE_TS})); }
