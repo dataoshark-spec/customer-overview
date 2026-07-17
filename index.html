@@ -591,7 +591,12 @@
   .dtl-cell > svg{width:13px;height:13px;color:var(--text-faint);flex:none;}
   .dtl-k{color:var(--text-faint);font-size:.78rem;letter-spacing:.05em;flex:none;font-weight:400;}
   .dtl-v{color:var(--ink);font-weight:600;font-size:.93rem;min-width:0;word-break:break-word;font-variant-numeric:tabular-nums;}
-  .dtl-empty{color:var(--text-faint);font-weight:500;}
+  .dtl-empty{color:var(--text-faint);font-weight:500;display:inline-flex;align-items:center;}
+  .dtl-empty::before{content:"";width:.8em;height:2px;background:currentColor;border-radius:1px;}   /* 空值橫桿:改用畫線,靠 flex 精算垂直置中(取代打字的「—」,永不歪) */
+  /* 詳細檢視標題:客戶狀態小標(非襯線 accent pill)放在名字左邊 */
+  #detailTitle{display:flex;align-items:center;gap:9px;min-width:0;}
+  .dtl-status{flex:none;font-family:"Noto Sans TC",-apple-system,sans-serif;font-size:.8rem;font-weight:800;line-height:1.25;color:var(--accent-deep);background:var(--accent-tint);border:1px solid var(--accent-tint-bd);border-radius:7px;padding:2px 8px;}
+  .dtl-name{min-width:0;}
   .dtl-meta{display:none;}
   .dtl-meta.open{display:flex;flex-direction:column;gap:8px;animation:metaIn .16s ease;}
   @keyframes metaIn{from{opacity:0;transform:translateY(-3px);}to{opacity:1;transform:translateY(0);}}
@@ -913,7 +918,7 @@
   .needexp-hbtn:active{background:var(--surface-1);}
   .need-h{font-weight:800;font-size:1.06em;color:var(--accent-deep);}
   /* 需求內容裡的網址 → 顯示為醒目的淺藍膠囊「連結」;正常/編輯/表單所有地方外觀一致 */
-  .need-link,.need-link-chip{color:var(--accent);font-weight:700;text-decoration:none;background:var(--accent-tint);border:1px solid var(--accent-tint-bd);border-radius:6px;padding:0 6px;white-space:nowrap;}
+  .need-link,.need-link-chip{color:var(--accent);font-weight:700;text-decoration:none;background:var(--accent-tint);border:1px solid var(--accent-tint-bd);border-radius:6px;padding:0 6px;white-space:nowrap;-webkit-user-drag:none;}   /* -webkit-user-drag:none:連結在行尾時,從它上面按下往前拖不會被瀏覽器當成「拖曳連結」而中斷選字(WebKit/iOS) */
   .need-link{cursor:pointer;}
   .need-link:hover{background:var(--accent-tint-bd);color:var(--accent-deep);}
   /* user-select:none 已移除:它會讓拖曳選取一碰到標籤就中斷 → 沒辦法把含連結的整行選起來(複製/加刪除線都做不到)。
@@ -1412,7 +1417,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.16 L";
+const APP_VERSION = "2026.07.17 C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2129,17 +2134,20 @@ function strikeParts(text){
   if (!out.length) out.push({ del:false, t:"" });
   return out;
 }
-// 顯示用(唯讀):~~..~~ → 細刪除線;網址 → 上色可點的「連結」<a>
+// 顯示用(唯讀):~~..~~ → 細刪除線;網址 → 上色可點的「連結」
+// 「連結」用 <span role="link"> 而非 <a>:Chromium 只要 mousedown 落在 <a> 上就「不啟動選字」(draggable=false 也救不了,
+// 不是被拖曳搶走,是選取根本沒開始) → 行尾連結正後方往前選整段選不起來。改 span 後原生選字正常;
+// 點擊開啟本來就由下方 click 監聽統一處理(window.open),互動不變。
 function linkifyNeed(text){
   const seg = t => needTokens(t).map(tk => tk.t === "url"
-    ? `<a class="need-link" href="${esc(tk.v)}" target="_blank" rel="noopener noreferrer">連結</a>`
+    ? `<span class="need-link" role="link" tabindex="0" data-url="${esc(tk.v)}">連結</span>`
     : esc(tk.v)).join("");
   return strikeParts(text).map(p => p.del ? `<s class="need-del">${seg(p.t)}</s>` : seg(p.t)).join("");
 }
 // 編輯用:~~..~~ → 細刪除線;網址 → 原子化「連結」標籤(contenteditable=false),原始 URL 存在 data-url
 function editLineInner(text){
   const seg = t => needTokens(t).map(tk => tk.t === "url"
-    ? `<span class="need-link-chip" contenteditable="false" data-url="${esc(tk.v)}">連結</span>`
+    ? `<span class="need-link-chip" contenteditable="false" data-url="${esc(tk.v)}" draggable="false">連結</span>`
     : esc(tk.v)).join("");
   return strikeParts(text).map(p => p.del ? `<s class="need-del">${seg(p.t)}</s>` : seg(p.t)).join("");
 }
@@ -2819,9 +2827,18 @@ document.addEventListener("click", e => {
   if (!a) return;
   e.preventDefault(); e.stopPropagation();
   if (a.classList.contains("need-link-chip")){ openLinkPopNeed(a); return; }   // 編輯模式標籤 → 連結編輯面板(貼上/清除/開啟/完成)
-  const u = a.getAttribute("href");
-  if (u) window.open(u, "_blank", "noopener");                                 // 正常模式 <a> → 直接開啟
+  const u = a.getAttribute("data-url") || a.getAttribute("href");              // 唯讀「連結」是 span(data-url);href 為舊 <a> 相容
+  if (u) window.open(u, "_blank", "noopener");                                 // 正常模式 → 直接開啟
 }, true);
+// span 版「連結」沒有 <a> 的原生鍵盤行為:Tab 聚焦後按 Enter 比照點擊開啟
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const a = e.target && e.target.closest ? e.target.closest(".need-link") : null;
+  if (!a) return;
+  e.preventDefault(); e.stopPropagation();
+  const u = a.getAttribute("data-url") || a.getAttribute("href");
+  if (u) window.open(u, "_blank", "noopener");
+});
 
 // ---- 需求欄的 複製/剪下:把選取內容序列化回「原始文字+網址」再寫進剪貼簿 ----
 // 沒這段時,系統預設只會複製「連結」兩個字面文字,貼到別段(例如 想看→看過)網址就掉了;
@@ -2833,7 +2850,7 @@ function fragToNeedText(box){
     if (n.nodeType === 3){ cur += n.textContent; return; }
     if (n.nodeType !== 1) return;
     if (n.classList && n.classList.contains("need-link-chip")){ cur += (n.getAttribute("data-url") || ""); return; }
-    if (n.classList && n.classList.contains("need-link")){ cur += (n.getAttribute("href") || ""); return; }   // 正常模式的 <a> 也還原成網址
+    if (n.classList && n.classList.contains("need-link")){ cur += (n.getAttribute("data-url") || n.getAttribute("href") || ""); return; }   // 正常模式的「連結」(span data-url;舊 <a> href 相容)也還原成網址
     if (isStrikeEl(n)){ cur += "~~"; n.childNodes.forEach(walk); cur += "~~"; return; }   // 刪除線 → ~~..~~
     if (n.tagName === "BR"){ flush(); return; }
     const isLine = (n.tagName === "DIV" || n.tagName === "P");
@@ -3608,7 +3625,8 @@ function closeForm(){ modalBg.classList.remove("open"); editingId = null; }
 const detailBg = document.getElementById("detailBg");
 function openDetail(id){
   const d = items.find(x => x.id === id); if (!d) return;
-  document.getElementById("detailTitle").textContent = d.cust || "（未填稱呼）";
+  const _stPill = d.status ? `<span class="dtl-status">${esc(d.status)}</span>` : "";   // 狀態小標放在名字前;無狀態則不顯示
+  document.getElementById("detailTitle").innerHTML = _stPill + `<span class="dtl-name">${esc(d.cust || "（未填稱呼）")}</span>`;
   // 小圖示(區段標題/格內)
   const IC_USER  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5"/></svg>';
   const IC_HOME  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7"/><path d="M6.5 10v9h11v-9"/></svg>';
@@ -3618,7 +3636,7 @@ function openDetail(id){
   const IC_TEL   = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.53 15.53 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg>';
   const IC_CHEV  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
   // 格:標籤 + 值(可點複製);空值顯示 —
-  const cell = (k, v, ic) => `<div class="dtl-cell">${ic||""}<span class="dtl-k">${esc(k)}</span>${v ? `<span class="dtl-v dtl-copy" data-copy="${esc(v)}">${esc(v)}</span>` : `<span class="dtl-v dtl-empty">—</span>`}</div>`;
+  const cell = (k, v, ic) => `<div class="dtl-cell">${ic||""}<span class="dtl-k">${esc(k)}</span>${v ? `<span class="dtl-v dtl-copy" data-copy="${esc(v)}">${esc(v)}</span>` : `<span class="dtl-v dtl-empty" aria-hidden="true"></span>`}</div>`;
   // 客戶資訊(電話/LINE) + 可摺疊的建檔資訊(建檔日/詢問案名)
   const contact = `<div class="dtl-sec">
     <div class="dtl-h">${IC_USER}客戶資訊<button type="button" class="dtl-tg" aria-expanded="false" title="顯示建檔資訊">${IC_CHEV}</button></div>
@@ -3628,14 +3646,14 @@ function openDetail(id){
       <div class="dtl-card">${cell("建檔日", d.date)}${cell("詢問案名", d.ask)}</div>
     </div>
   </div>`;
-  // 購屋需求(類型/房數/區域/車位/預算)
+  // 購屋需求:三排 → 區域/類型、預算/房數、車位/車數(狀態已移到標題,不再入格)
   // 車位/車數:車位只顯示車類(數量已獨立成「車數」);舊資料若只有合成字串則自動拆解
   const _pk = parseParking(d.parking || "");
   const _pT = d.pType || _pk.t;
   const _pN = d.pNum ? String(d.pNum) : (_pk.n ? String(_pk.n) : "");
   const buy = `<div class="dtl-sec">
     <div class="dtl-h">${IC_HOME}購屋需求</div>
-    <div class="dtl-card">${cell("類型", d.cat)}${cell("狀態", d.status)}${cell("房數", d.rooms)}${cell("區域", d.area)}${cell("車位", _pT)}${cell("預算", d.budget)}${cell("車數", _pN)}</div>
+    <div class="dtl-card">${cell("區域", d.area)}${cell("類型", d.cat)}${cell("預算", d.budget)}${cell("房數", d.rooms)}${cell("車位", _pT)}${cell("車數", _pN)}</div>
   </div>`;
   // 三段需求(沿用展開內容框)
   const seg = (t, c, ic) => `<div class="dtl-sec"><div class="dtl-h">${ic}${esc(t)}</div><div class="needexp-ed needexp-view">${c ? needToViewHTML(c) : '<span class="tneed-ph">—</span>'}</div></div>`;
