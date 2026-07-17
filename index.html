@@ -1417,7 +1417,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.17 C";
+const APP_VERSION = "2026.07.17 F";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1937,7 +1937,8 @@ function commitNeedTitle(id, sg, val){
   it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
 }
 function commitAllSegs(ex){
-  ex.querySelectorAll(".nseg-ed").forEach(ed => commitNeedSeg(ex.dataset.for, +ed.dataset.seg, editToNeed(ed)));
+  // 只提交可編輯段落;唯讀顯示段落(.needexp-view)不該被序列化寫回 —— 它含顯示用「連結」,序列化會把網址洗成字面「連結」
+  ex.querySelectorAll(".nseg-ed:not(.needexp-view)").forEach(ed => commitNeedSeg(ex.dataset.for, +ed.dataset.seg, editToNeed(ed)));
   ex.querySelectorAll(".nseg-t[data-titleedit]").forEach(t => commitNeedTitle(ex.dataset.for, +t.dataset.seg, t.textContent));
 }
 let openNeedId = null;
@@ -2188,6 +2189,7 @@ function needNodeText(el){
     if (n.nodeType === 3){ s += n.textContent; return; }
     if (n.nodeType === 1){
       if (n.classList && n.classList.contains("need-link-chip")){ s += (n.getAttribute("data-url") || ""); return; }
+      if (n.classList && n.classList.contains("need-link")){ s += (n.getAttribute("data-url") || n.getAttribute("href") || ""); return; }   // 顯示用「連結」也還原成網址(否則序列化會吐字面「連結」,把存檔網址洗掉)
       if (isStrikeEl(n)){ s += "~~" + needNodeText(n) + "~~"; return; }   // 刪除線 → 還原成 ~~..~~ 語法
       if (n.tagName === "BR"){ return; }
       s += needNodeText(n);
@@ -2202,6 +2204,7 @@ function editToNeed(ed){
     if (node.nodeType === 1){
       if (node.tagName === "BR"){ out.push(""); return; }
       if (node.classList && node.classList.contains("need-link-chip")){ out.push(node.getAttribute("data-url") || ""); return; }
+      if (node.classList && node.classList.contains("need-link")){ out.push(node.getAttribute("data-url") || node.getAttribute("href") || ""); return; }   // 顯示用「連結」也還原成網址(否則會把存檔網址洗成字面「連結」)
       if (isStrikeEl(node)){ out.push("~~" + needNodeText(node) + "~~"); return; }   // 整行都是刪除線的極端情況
       const t = needNodeText(node).replace(/\n/g,"");
       const isH = node.classList && node.classList.contains("nh");
@@ -2825,6 +2828,7 @@ document.addEventListener("click", e => {
   if (tselMode) return;   // 批次選取中:讓點擊交給列切換
   const a = e.target.closest && e.target.closest(".need-link, .need-link-chip");
   if (!a) return;
+  if (window.__chipSelDrag){ window.__chipSelDrag = false; e.preventDefault(); e.stopPropagation(); return; }   // 剛以標籤為起點拖完選字:吞掉尾隨 click,避免誤開面板/連結
   e.preventDefault(); e.stopPropagation();
   if (a.classList.contains("need-link-chip")){ openLinkPopNeed(a); return; }   // 編輯模式標籤 → 連結編輯面板(貼上/清除/開啟/完成)
   const u = a.getAttribute("data-url") || a.getAttribute("href");              // 唯讀「連結」是 span(data-url);href 為舊 <a> 相容
@@ -2839,6 +2843,90 @@ document.addEventListener("keydown", e => {
   const u = a.getAttribute("data-url") || a.getAttribute("href");
   if (u) window.open(u, "_blank", "noopener");
 });
+// ---- 編輯模式:從「連結」標籤上按下也能拖曳選字 ----
+// contenteditable=false 的原子標籤是「島嶼」:Chromium 從島上按下拖曳只會把整顆標籤做成節點選取,
+// 不會往旁邊的文字延伸(檢視模式的同型問題已用 span 解決;編輯模式標籤必須維持原子性,只能手動接手)。
+// 按在標籤上 → 錨點設在標籤前/後(依按點左右半邊),拖曳以座標算插入點手動建立選取;
+// 沒拖曳(<4px)就放開 = 一般點擊,交給既有 click 流程開連結編輯面板。僅滑鼠;觸控維持原生。
+(function(){
+  let on = false, anchor = null, edEl = null, moved = false, sx = 0, sy = 0, gapMode = false;
+  function caretAt(x, y){
+    if (document.caretRangeFromPoint) return document.caretRangeFromPoint(x, y);
+    if (document.caretPositionFromPoint){ const p = document.caretPositionFromPoint(x, y); if (p){ const r = document.createRange(); r.setStart(p.offsetNode, p.offset); r.collapse(true); return r; } }
+    return null;
+  }
+  const isChip = n => n && n.nodeType === 1 && n.classList && n.classList.contains("need-link-chip");
+  // 插入點是否「緊鄰標籤」:標籤內文、標籤正前/正後、或行尾空白區(往回跳過 <br>/空字串後遇到標籤)。
+  // 原生選字從這些位置往回拖,會被 Chromium 變成整顆標籤的節點選取卡死 → 一樣要接手。
+  function chipAdjacent(r){
+    let c = r.startContainer, o = r.startOffset;
+    if (c.nodeType === 3){
+      const p = c.parentNode;
+      if (p && p.closest && p.closest(".need-link-chip")) return true;
+      if (o === c.textContent.length && isChip(c.nextSibling)) return true;
+      if (o === 0 && isChip(c.previousSibling)) return true;
+      return false;
+    }
+    if (c.nodeType === 1){
+      if (c.closest && c.closest(".need-link-chip")) return true;
+      if (isChip(c.childNodes[o])) return true;
+      let i = o - 1;
+      while (i >= 0){
+        const n = c.childNodes[i];
+        if (n && n.nodeType === 1 && n.tagName === "BR"){ i--; continue; }
+        if (n && n.nodeType === 3 && !n.textContent){ i--; continue; }
+        return isChip(n);
+      }
+      return false;
+    }
+    return false;
+  }
+  document.addEventListener("pointerdown", e => {
+    if ((e.pointerType && e.pointerType !== "mouse") || e.button !== 0) return;
+    const chip = e.target.closest && e.target.closest(".need-link-chip");
+    let ed = null, a = null, viaGap = false;
+    if (chip){
+      ed = chip.closest('[contenteditable="true"]');
+      if (!ed) return;
+      const rect = chip.getBoundingClientRect();
+      const r = document.createRange();
+      if (e.clientX >= rect.left + rect.width / 2) r.setStartAfter(chip); else r.setStartBefore(chip);
+      r.collapse(true); a = r;
+    } else {
+      // 按點不在標籤上:若在含標籤的編輯區內、且插入點緊鄰標籤(標籤正後方縫隙/行尾空白區),原生一樣會卡死 → 也接手
+      const host = e.target.closest && e.target.closest('[contenteditable="true"]');
+      if (!host || !host.querySelector || !host.querySelector(".need-link-chip")) return;
+      const r0 = caretAt(e.clientX, e.clientY);
+      if (!r0 || !host.contains(r0.startContainer)) return;
+      if (!chipAdjacent(r0)) return;   // 一般文字區:交給原生(放游標/選字都正常)
+      ed = host; a = r0; viaGap = true;
+    }
+    e.preventDefault();   // 擋掉原生(島嶼節點選取/拖曳),自己接手
+    on = true; edEl = ed; moved = false; sx = e.clientX; sy = e.clientY; anchor = a; gapMode = viaGap;
+  }, true);
+  document.addEventListener("pointermove", e => {
+    if (!on) return;
+    if (!moved){
+      if (Math.abs(e.clientX - sx) < 4 && Math.abs(e.clientY - sy) < 4) return;
+      moved = true;
+      try { edEl.focus({preventScroll:true}); } catch(_){}
+    }
+    const r = caretAt(e.clientX, e.clientY); if (!r) return;
+    if (!edEl.contains(r.startContainer)) return;
+    try { window.getSelection().setBaseAndExtent(anchor.startContainer, anchor.startOffset, r.startContainer, r.startOffset); } catch(_){}
+  }, true);
+  const chipDragEnd = () => {
+    if (!on) return;
+    on = false;
+    if (moved){ window.__chipSelDrag = true; setTimeout(() => { window.__chipSelDrag = false; }, 150); }   // 吞掉尾隨 click;若 click 沒發生(在視窗外放開)150ms 後自動失效
+    else if (gapMode){
+      // 縫隙按壓、沒拖曳 = 一般點擊放游標:preventDefault 擋掉了原生放置,這裡手動補上(打字體驗不變)
+      try { edEl.focus({preventScroll:true}); const s = window.getSelection(); s.removeAllRanges(); s.addRange(anchor); } catch(_){}
+    }
+  };
+  document.addEventListener("pointerup", chipDragEnd, true);
+  document.addEventListener("pointercancel", chipDragEnd, true);
+})();
 
 // ---- 需求欄的 複製/剪下:把選取內容序列化回「原始文字+網址」再寫進剪貼簿 ----
 // 沒這段時,系統預設只會複製「連結」兩個字面文字,貼到別段(例如 想看→看過)網址就掉了;
