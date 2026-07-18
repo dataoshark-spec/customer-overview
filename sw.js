@@ -5,7 +5,7 @@
       所以你之後每次部署新版都會馬上生效,不會卡在舊版)。
    注意:Google 雲端同步等跨網域請求一律交給網路,不經過快取。 */
 
-const CACHE = "customer-app-shell-v1";
+const CACHE = "customer-app-shell-v2";
 const SHELL = ["./", "./index.html"];
 
 self.addEventListener("install", function (e) {
@@ -24,9 +24,9 @@ self.addEventListener("activate", function (e) {
         keys.map(function (k) {
           if (k !== CACHE) return caches.delete(k);
         })
-      );
-    }).then(function () {
-      return self.clients.claim();
+      ).then(function () {
+        return self.clients.claim();
+      });
     })
   );
 });
@@ -44,8 +44,11 @@ self.addEventListener("fetch", function (e) {
   e.respondWith(
     fetch(req)
       .then(function (res) {
-        var copy = res.clone();
-        caches.open(CACHE).then(function (c) { c.put(req, copy); }).catch(function () {});
+        // 只快取成功回應,避免離線時吐出先前快取的 404/5xx
+        if (res && res.ok) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copy); }).catch(function () {});
+        }
         return res;
       })
       .catch(function () {

@@ -1463,9 +1463,22 @@ function todayROC(){
 }
 const money = n => Number(n||0).toLocaleString("en-US");
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
-const linkChip = (url, label) => url
-  ? `<a class="chip on" href="${esc(url)}" target="_blank" rel="noopener">${label} <span class="ext">↗</span></a>`
-  : `<span class="chip off">${label}</span>`;
+// 只允許 http(s) 網址,擋 javascript: / data: 等可執行協定
+function safeUrl(u){
+  if (u == null || u === "") return "";
+  try {
+    const x = new URL(String(u).trim(), location.href);
+    if (x.protocol === "http:" || x.protocol === "https:") return x.href;
+  } catch (e) {}
+  return "";
+}
+const safeColor = c => (/^#[0-9A-Fa-f]{3,8}$/.test(String(c || "")) ? String(c) : "#8494A0");
+const linkChip = (url, label) => {
+  const u = safeUrl(url);
+  return u
+    ? `<a class="chip on" href="${esc(u)}" target="_blank" rel="noopener">${label} <span class="ext">↗</span></a>`
+    : `<span class="chip off">${label}</span>`;
+};
 
 function selMark(d){
   const on = selected.has(d.id) ? " on" : "";
@@ -1492,7 +1505,7 @@ function cardHTML(d){
     if (d.rooms) cbits.push(d.rooms);
     if (d.parking) cbits.push(/車/.test(d.parking) ? d.parking : d.parking + "車位");
     const csub = cbits.length ? cbits.map(p => { const v = normAsk(p); return `<span class="cv" data-copy="${esc(v)}">${esc(v)}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
-    return `<article class="card compact-card${sel}" data-id="${d.id}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
+    return `<article class="card compact-card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
       <div class="card-head">
@@ -1511,7 +1524,7 @@ function cardHTML(d){
   if (d.date) topBits.push(`<span class="ct-item">建檔 <span class="cv" data-copy="${esc(d.date)}">${esc(d.date)}</span></span>`);
   if (d.area) topBits.push(`<span data-copy="${esc(d.area)}">${esc(d.area)}</span>`);
   const topHTML = topBits.length ? `<div class="card-top">${topBits.join('<span class="dot">／</span>')}</div>` : "";
-  return `<article class="card${sel}" data-id="${d.id}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
+  return `<article class="card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
       ${topHTML}
@@ -1637,13 +1650,13 @@ function saveCats(){ if (storageOK){ try { localStorage.setItem(CATS_KEY, JSON.s
 let cats = loadCats();
 
 const catCount = key => items.filter(d => d.cat === key).length;
-const catColor = key => { const c = cats.find(x => x.key === key); return c ? c.color : "#8494A0"; };
+const catColor = key => { const c = cats.find(x => x.key === key); return c ? safeColor(c.color) : "#8494A0"; };
 const nextColor = () => CAT_PALETTE.find(col => !cats.some(c => c.color === col)) || CAT_PALETTE[cats.length % CAT_PALETTE.length];
 
 function renderCover(){
   document.getElementById("cats").innerHTML = cats.map(c => `
     <button class="cat-btn" data-cat="${esc(c.key)}">
-      <span class="cat-dot" style="background:${c.color}"></span>
+      <span class="cat-dot" style="background:${safeColor(c.color)}"></span>
       <span class="cat-main"><b>${esc(c.key)}</b></span>
       <span class="cat-ct">${catCount(c.key)}</span>
       <span class="arrow">→</span>
@@ -1829,7 +1842,17 @@ function trowHTML(d){
     delCell+
   `</tr>`;
 }
+// 整表重繪前先把進行中的格子/展開編輯寫回 items,避免搜尋/篩選/同步重繪吞掉未提交內容
+function commitPendingTableEdits(){
+  const a = document.activeElement;
+  if (a && a.classList && a.classList.contains("tcell") && a.dataset.field){
+    try { tCommitCell(a); } catch (e) {}
+  }
+  const ex = tableWrap.querySelector("tr.needexp");
+  if (ex){ try { commitAllSegs(ex); } catch (e) {} }
+}
 function renderTable(list){
+  commitPendingTableEdits();
   const oldScroll = tableWrap.querySelector(".tbody-wrap");
   const sTop = oldScroll ? oldScroll.scrollTop : 0, sLeft = oldScroll ? oldScroll.scrollLeft : 0;
   const T = T_COLS.concat("");
@@ -1876,9 +1899,11 @@ function syncTableChrome(){
   const sbw = Math.max(0, bw.offsetWidth - bw.clientWidth);
   tableWrap.style.setProperty("--sbw", sbw + "px");
 }
-// 編輯中(格子聚焦、連結框或類別選單開啟)時,暫停同步重繪,避免游標被打斷、畫面跳動
+// 編輯中(格子聚焦、連結框、類別選單、客戶表單開啟)時,暫停同步重繪,避免游標被打斷、畫面跳動
 window.isTableBusy = function(){
   if (tselMode) return true;             // 批次刪除選取中:暫停同步重繪,選取狀態不被洗掉
+  const mb = document.getElementById("modalBg");
+  if (mb && mb.classList.contains("open")) return true;   // 卡片編輯表單開啟:避免同步合併把正在編的那筆洗掉
   const a = document.activeElement;
   if (a && a.classList && a.classList.contains("tcell")) return true;
   if (a && a.classList && a.classList.contains("needexp-ed")) return true;
@@ -2426,7 +2451,7 @@ tableWrap.addEventListener("click", e=>{
   if (chip){
     if (editMode){ e.stopPropagation(); openLinkPop(chip); }
     else {
-      const u = (chip.dataset.url || "").trim();
+      const u = safeUrl(chip.dataset.url || "");
       if (u) window.open(u, "_blank", "noopener");
       else toast(chip.dataset.label + " 尚未設定連結");
     }
@@ -2784,7 +2809,9 @@ function lpOutside(e){ if (e.target.closest("#linkpop") || e.target.closest(".tc
 function commitLink(){
   if (lpNeed){                                    // 需求欄「連結」標籤:寫回 data-url;清空後完成 = 整顆移除
     const nd = lpNeed; lpNeed = null;
-    const url = lpInput.value.trim();
+    const raw = lpInput.value.trim();
+    const url = raw ? safeUrl(raw) : "";
+    if (raw && !url){ toast("請輸入有效的 http(s) 網址"); lpNeed = nd; return; }
     if (nd.chip && nd.chip.isConnected){
       if (url){ nd.chip.setAttribute("data-url", url); }
       else { nd.chip.remove(); }
@@ -2796,7 +2823,9 @@ function commitLink(){
     closeLinkPop(); return;
   }
   if (!lpChip){ closeLinkPop(); return; }
-  const url = lpInput.value.trim();
+  const raw = lpInput.value.trim();
+  const url = raw ? safeUrl(raw) : "";
+  if (raw && !url){ toast("請輸入有效的 http(s) 網址"); return; }
   lpChip.dataset.url = url; lpChip.classList.toggle("on", !!url);
   const it = tFindItem(lpChip);
   if (it){ const field = CHIP_FIELD[lpChip.dataset.label]; if (field){ const v = url || null; if (it[field] !== v){ it[field] = v; it.updatedAt = Date.now(); saveItems(); onLocalChange("data"); } } }
@@ -2830,7 +2859,7 @@ document.getElementById("lpPaste").addEventListener("click", ()=>{
   if (navigator.clipboard && navigator.clipboard.readText){ navigator.clipboard.readText().then(t=>{ lpInput.value=(t||"").trim(); lpRefresh(); lpInput.focus(); }).catch(()=>lpInput.focus()); }
   else lpInput.focus();
 });
-lpOpenBtn.addEventListener("click", ()=>{ const u=lpInput.value.trim(); if (u) window.open(u,"_blank","noopener"); });
+lpOpenBtn.addEventListener("click", ()=>{ const u=safeUrl(lpInput.value.trim()); if (u) window.open(u,"_blank","noopener"); else if (lpInput.value.trim()) toast("請輸入有效的 http(s) 網址"); });
 
 // 需求內容裡的「連結」:點擊一律開新分頁,並阻止冒泡(避免同時觸發展開/選取等)。
 // 編輯模式的原子標籤(.need-link-chip)也一併支援 —— 先前只有正常模式的 <a> 能點。
@@ -2841,7 +2870,7 @@ document.addEventListener("click", e => {
   if (window.__chipSelDrag){ window.__chipSelDrag = false; e.preventDefault(); e.stopPropagation(); return; }   // 剛以標籤為起點拖完選字:吞掉尾隨 click,避免誤開面板/連結
   e.preventDefault(); e.stopPropagation();
   if (a.classList.contains("need-link-chip")){ openLinkPopNeed(a); return; }   // 編輯模式標籤 → 連結編輯面板(貼上/清除/開啟/完成)
-  const u = a.getAttribute("data-url") || a.getAttribute("href");              // 唯讀「連結」是 span(data-url);href 為舊 <a> 相容
+  const u = safeUrl(a.getAttribute("data-url") || a.getAttribute("href"));    // 唯讀「連結」是 span(data-url);href 為舊 <a> 相容
   if (u) window.open(u, "_blank", "noopener");                                 // 正常模式 → 直接開啟
 }, true);
 // span 版「連結」沒有 <a> 的原生鍵盤行為:Tab 聚焦後按 Enter 比照點擊開啟
@@ -2850,7 +2879,7 @@ document.addEventListener("keydown", e => {
   const a = e.target && e.target.closest ? e.target.closest(".need-link") : null;
   if (!a) return;
   e.preventDefault(); e.stopPropagation();
-  const u = a.getAttribute("data-url") || a.getAttribute("href");
+  const u = safeUrl(a.getAttribute("data-url") || a.getAttribute("href"));
   if (u) window.open(u, "_blank", "noopener");
 });
 // ---- 編輯模式:從「連結」標籤上按下也能拖曳選字 ----
@@ -3799,7 +3828,20 @@ function saveForm(){
   };
   if (editingId){
     const i = items.findIndex(x => x.id === editingId);
-    if (i > -1) items[i] = {...items[i], ...rec, updatedAt: Date.now()};
+    if (i > -1){
+      items[i] = {...items[i], ...rec, updatedAt: Date.now()};
+    } else {
+      // 編輯期間若被雲端合併刪掉,改以同一 id 重新建立(並清掉墓碑),不要假裝「已更新」卻沒寫入
+      const now = Date.now();
+      items.push({...rec, id: editingId, createdAt: now, updatedAt: now});
+      if (deleted[editingId]){ delete deleted[editingId]; saveDeleted(); }
+      saveItems();
+      closeForm();
+      applyFilter();
+      onLocalChange("data");
+      toast("遠端已刪除此筆，已依你的內容重新建立");
+      return;
+    }
   } else {
     const now = Date.now();
     items.push({...rec, id: uid(), createdAt: now, updatedAt: now});
@@ -4143,9 +4185,12 @@ function applyBackup(parsed){
     if (parsed.deleted && typeof parsed.deleted === "object") newDeleted = parsed.deleted;
   }
   else throw new Error("bad format");
-  items = newItems.map(d => ({...d, id: d.id || uid(), updatedAt: Date.now()}));
+  // 保留備份內的 updatedAt:舊寫法一律蓋成 Date.now(),連雲端時會用 LWW 無聲蓋掉遠端較新的編輯
+  items = newItems.map(d => ({...d, id: d.id || uid(), updatedAt: d.updatedAt || Date.now()}));
   if (newCats) { cats = newCats; saveCats(); touchCats(); renderTabs(); renderCatOptions(); }
-  if (newDeleted) { deleted = newDeleted; saveDeleted(); }
+  // 完整取代墓碑:陣列-only 舊備份沒有 deleted 時清成 {},避免殘留舊墓碑在合併時再把匯入列刪掉
+  deleted = newDeleted || {};
+  saveDeleted();
   if (parsed && parsed.settings && typeof parsed.settings === "object"){
     applySettings(parsed.settings);                 // v5:設定統一套用
     onLocalChange("settings");                      // 更新設定時間戳並排程同步,匯入的設定才會推上雲端
@@ -4173,8 +4218,15 @@ importFile.addEventListener("change", e => {
 document.getElementById("importBtn").addEventListener("click", () => importFile.click());
 document.getElementById("resetBtn").addEventListener("click", () => {
   askConfirm("還原預設資料？", "目前所有的新增與修改都會被覆蓋。", () => {
-    items = SEED.map((d,i) => ({...d, id: "seed"+i, updatedAt: Date.now()}));
-    deleted = {}; saveDeleted();
+    const now = Date.now();
+    const next = SEED.map((d,i) => ({...d, id: "seed"+i, updatedAt: now}));
+    const keep = new Set(next.map(x => x.id));
+    // 把非示範資料寫成墓碑,否則連雲端時遠端舊列會在下一輪合併又回來
+    items.forEach(it => { if (it && it.id != null && !keep.has(it.id)) deleted[it.id] = now; });
+    // 示範列要復活:清掉它們的墓碑
+    keep.forEach(id => { delete deleted[id]; });
+    items = next;
+    saveDeleted();
     saveItems(); renderCover();
     onLocalChange("data");
     toast("已還原預設資料");
@@ -4400,10 +4452,17 @@ catListEl.addEventListener("click", e => {
     `刪除類別「${key}」？`,
     n > 0 ? `該類別的 ${n} 筆需求會變成未分類，仍可在「全部」中找到。` : "",
     () => {
+      const now = Date.now();
+      let cleared = 0;
+      items.forEach(it => {
+        if (it.cat === key){ it.cat = ""; it.updatedAt = now; cleared++; }
+      });
+      if (cleared) saveItems();
       cats = cats.filter(c => c.key !== key);
       if (currentCat === key) currentCat = "";
       refreshCategories();
       renderCatList();
+      if (cleared) onLocalChange("data");
       toast("已刪除類別");
     }
   );
@@ -4528,7 +4587,8 @@ document.addEventListener("pointercancel", endCatDrag);
         e.preventDefault();
         suppressClick = true;
         setTimeout(function(){ suppressClick = false; }, 500);
-        closeForm();
+        // 滑動關閉可能誤觸:先確認,避免未儲存內容直接丟掉
+        askConfirm("關閉表單？", "未儲存的變更將會遺失。", function(){ closeForm(); });
         return;
       }
       if (swipeClosePopups()){            // 浮層開著:這一滑只負責關閉浮層
@@ -4561,6 +4621,20 @@ let syncConnected = false, syncEmail = null;
   let tokenClient = null, accessToken = null, tokenExpiry = 0;
   let fileId = null, lastVersion = null;
   let inFlight = false, needReauth = false, pollTimer = null;
+  let syncGen = 0;   // 同步世代:逾時後作廢舊任務,避免晚到的成功路徑把 dirty 清掉或雙重上傳
+  const FILE_ID_KEY = "customer_app_syncfile_v1";
+  function loadSavedFileId(){
+    if (!storageOK) return null;
+    try { return localStorage.getItem(FILE_ID_KEY) || null; } catch (e){ return null; }
+  }
+  function saveFileId(id){
+    fileId = id || null;
+    if (!storageOK) return;
+    try {
+      if (id) localStorage.setItem(FILE_ID_KEY, id);
+      else localStorage.removeItem(FILE_ID_KEY);
+    } catch (e){}
+  }
 
   // ---- persistence for auth flag + change timestamps ----
   function saveTs(kind, v){ if (storageOK){ try { localStorage.setItem("customer_app_"+kind+"_ts_v1", String(v)); } catch(e){} } }
@@ -4627,42 +4701,99 @@ let syncConnected = false, syncEmail = null;
     if (res.status === 401){ accessToken = null; const t2 = await requestToken(false); opts.headers.Authorization = "Bearer " + t2; res = await tfetch(url, opts); }
     return res;
   }
-  async function findFile(name){
+  async function listFiles(name){
     const q = encodeURIComponent("name='" + name + "' and trashed=false");
-    const res = await dfetch("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=appDataFolder&fields=files(id,version)");
+    const res = await dfetch("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=appDataFolder&fields=files(id,version,createdTime)&orderBy=createdTime");
     const data = await res.json();
-    return (data.files && data.files.length) ? data.files[0] : null;
+    return (data && data.files) ? data.files : [];
+  }
+  async function findFile(name){
+    const files = await listFiles(name);
+    return files.length ? files[0] : null;
   }
   async function createFile(name){
     const res = await dfetch("https://www.googleapis.com/drive/v3/files", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: name, parents: ["appDataFolder"] })
     });
+    if (!res.ok) throw new Error("create " + res.status);
     const data = await res.json();
     return data.id;
   }
-  async function ensureFileId(){
-    if (fileId) return fileId;
-    const f = await findFile(MAIN_NAME);
-    fileId = f ? f.id : await createFile(MAIN_NAME);
-    return fileId;
-  }
-  async function getVersion(){
-    const res = await dfetch("https://www.googleapis.com/drive/v3/files/" + fileId + "?fields=version");
-    const data = await res.json();
-    return data.version || null;
-  }
-  async function download(){
-    const res = await dfetch("https://www.googleapis.com/drive/v3/files/" + fileId + "?alt=media");
+  async function downloadById(id){
+    const res = await dfetch("https://www.googleapis.com/drive/v3/files/" + id + "?alt=media");
     if (!res.ok) return null;
     const text = await res.text();
     if (!text) return null;
     try { return JSON.parse(text); } catch(e){ return null; }
   }
+  // 多台同時首次連線可能各自 create 出同名主檔 → 選最舊的當正式檔,合併其餘後刪重複
+  async function consolidateMainFiles(files){
+    const sorted = files.slice().sort(function(a, b){
+      const ta = String(a.createdTime || ""), tb = String(b.createdTime || "");
+      if (ta !== tb) return ta < tb ? -1 : 1;
+      return String(a.id).localeCompare(String(b.id));
+    });
+    const primary = sorted[0];
+    let merged = null;
+    for (let i = 0; i < sorted.length; i++){
+      const remote = await downloadById(sorted[i].id);
+      if (!remote) continue;
+      merged = merged ? mergeMain(merged, remote) : remote;
+    }
+    saveFileId(primary.id);
+    if (merged){
+      merged.rev = ((merged.rev) || 0) + 1;
+      merged.lastWriteBy = deviceId;
+      merged.updatedAt = Date.now();
+      await upload(primary.id, merged);
+    }
+    for (let i = 1; i < sorted.length; i++){
+      try { await dfetch("https://www.googleapis.com/drive/v3/files/" + sorted[i].id, { method: "DELETE" }); } catch (e){}
+    }
+    return primary.id;
+  }
+  async function ensureFileId(){
+    if (fileId) return fileId;
+    const saved = loadSavedFileId();
+    if (saved){
+      try {
+        const res = await dfetch("https://www.googleapis.com/drive/v3/files/" + saved + "?fields=id,trashed");
+        if (res.ok){
+          const meta = await res.json();
+          if (meta && meta.id && !meta.trashed){ saveFileId(meta.id); return fileId; }
+        }
+      } catch (e){}
+      saveFileId(null);
+    }
+    let files = await listFiles(MAIN_NAME);
+    if (!files.length){
+      await createFile(MAIN_NAME);
+      files = await listFiles(MAIN_NAME);   // 建立後再查一次,擋雙開 race
+    }
+    if (files.length > 1){
+      await consolidateMainFiles(files);
+    } else if (files.length === 1){
+      saveFileId(files[0].id);
+    } else {
+      throw new Error("no sync file");
+    }
+    return fileId;
+  }
+  async function getVersion(){
+    const res = await dfetch("https://www.googleapis.com/drive/v3/files/" + fileId + "?fields=version");
+    if (!res.ok) throw new Error("version " + res.status);
+    const data = await res.json();
+    return data.version || null;
+  }
+  async function download(){
+    return downloadById(fileId);
+  }
   async function upload(id, obj){
     const res = await dfetch("https://www.googleapis.com/upload/drive/v3/files/" + id + "?uploadType=media&fields=version", {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj)
     });
+    if (!res.ok) throw new Error("upload " + res.status);
     const data = await res.json();
     return data.version || null;
   }
@@ -4848,7 +4979,7 @@ let syncConnected = false, syncEmail = null;
       window.__catsTs = merged.cats._updatedAt || window.__catsTs; saveTs("cats", window.__catsTs);
       saveCats();
     }
-    if (merged.settings && merged.settings._updatedAt){
+    if (merged.settings && merged.settings._updatedAt != null){
       const s = merged.settings;
       if (s.density){ density = s.density; if (storageOK){ try { localStorage.setItem("customer_app_density_v1", density); } catch(e){} } }
       if (s.sort){ currentSort = s.sort; saveSort(); }
@@ -4926,20 +5057,38 @@ let syncConnected = false, syncEmail = null;
   };
 
   // ---- core two-way sync ----
+  function scheduleRetry(){
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
+    retryMs = Math.min(retryMs * 2, 60000);
+  }
   async function syncNow(){
     if (!syncConnected) return;
     if (inFlight){ clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 2000); return; }   // 同步進行中:改排下一次,不默默丟棄
     const wasDirty = dirty;   // 進場時的未推狀態;失敗時據此還原,避免把「純拉取失敗」也誤標成有東西沒推
     if (window.isTableBusy && window.isTableBusy()){ clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 2000); return; }
+    const myGen = ++syncGen;
     inFlight = true; setStatus("同步中…", "busy");
-    let __wd = setTimeout(function(){ if (inFlight){ inFlight = false; setStatus("同步逾時，稍後重試", "warn"); if (window.refreshLed) window.refreshLed(); } }, 40000);
+    let __wd = setTimeout(function(){
+      if (syncGen !== myGen) return;
+      syncGen++;                         // 作廢仍在跑的舊任務
+      inFlight = false;
+      dirty = true;
+      setStatus("同步逾時，稍後重試", "warn");
+      if (window.refreshLed) window.refreshLed();
+      scheduleRetry();
+    }, 40000);
     try {
       await ensureToken();
+      if (syncGen !== myGen) return;
       await ensureFileId();
-      let tries = 0, pushed = null;
+      if (syncGen !== myGen) return;
+      let tries = 0, pushed = null, success = false;
       while (tries < 3){
+        if (syncGen !== myGen) return;
         tries++;
         const remote = await download();
+        if (syncGen !== myGen) return;
         dirty = false;   // 本輪 buildLocal 已涵蓋目前為止的所有變更;若中途又有編輯,scheduleSync 會重新標回 true
         const local = buildLocal();
         const merged = mergeMain(local, remote);
@@ -4947,13 +5096,22 @@ let syncConnected = false, syncEmail = null;
         // 也會讓展開聚焦的淡化轉場重播。只有真的有差異(遠端帶來新東西)才需要重繪。
         if (canonical(merged) !== canonical(local)) applyMerged(merged);
         const needPush = !remote || canonical(merged) !== canonical(remote);
-        if (!needPush){ lastVersion = await getVersion(); break; }
+        if (!needPush){ lastVersion = await getVersion(); success = true; break; }
         merged.rev = ((remote && remote.rev) || 0) + 1; merged.lastWriteBy = deviceId; merged.updatedAt = Date.now();
         const newVer = await upload(fileId, merged);
+        if (syncGen !== myGen) return;
         const afterVer = await getVersion();
         pushed = merged;
-        if (afterVer && newVer && afterVer === newVer){ lastVersion = afterVer; break; }
+        if (afterVer && newVer && afterVer === newVer){ lastVersion = afterVer; success = true; break; }
         // else someone wrote concurrently → loop and re-merge
+      }
+      if (syncGen !== myGen) return;
+      if (!success){
+        // 舊寫法:3 次衝突後仍顯示「已同步」並留下 dirty=false → 本機變更可能永遠不再推
+        dirty = dirty || wasDirty;
+        setStatus("同步衝突，稍後重試", "warn");
+        scheduleRetry();
+        return;
       }
       if (pushed) maybeSnapshot(pushed);
       retryMs = 5000;   // 成功:重試退避歸位
@@ -4961,19 +5119,20 @@ let syncConnected = false, syncEmail = null;
       try { localStorage.setItem("customer_app_lastsync_v1", String(Date.now())); } catch(e){}
       window.renderLastSync();
     } catch (e){
+      if (syncGen !== myGen) return;
       dirty = dirty || wasDirty;   // 這輪沒完成:把進場時的未推狀態還原(中途的新編輯本來就會自己標 true)
       if (e && (e.error === "access_denied" || e.error === "interaction_required" || e.error === "login_required" || e.message === "gis")){
         needReauth = true; setStatus("需要重新連結", "warn"); window.renderSyncCard();
         // 授權問題不自動重試:等使用者重新連結,connect() 成功後會做完整同步
       } else {
         setStatus("同步失敗，稍後重試", "warn");
-        // 先前這句「稍後重試」只是顯示文字,程式並沒有排任何重試 → 離線期間的編輯會一直留在本機。
-        // 現在真的排:指數退避(5s→10s→…→上限 60s),成功後歸位。
-        clearTimeout(pushTimer);
-        pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
-        retryMs = Math.min(retryMs * 2, 60000);
+        // 指數退避(5s→10s→…→上限 60s),成功後歸位。
+        scheduleRetry();
       }
-    } finally { clearTimeout(__wd); inFlight = false; }
+    } finally {
+      clearTimeout(__wd);
+      if (syncGen === myGen) inFlight = false;
+    }
   }
   window.__syncNow = syncNow;
 
