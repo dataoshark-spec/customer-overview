@@ -1417,7 +1417,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.18 A";
+const APP_VERSION = "2026.07.18 B";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1585,7 +1585,11 @@ function loadItems(){
       if (raw){ const arr = JSON.parse(raw); if (Array.isArray(arr)) return arr.map(d => ({...d, id: d.id || uid(), updatedAt: d.updatedAt || BASE_TS})); }
     } catch (e) {}
   }
-  return SEED.map((d,i) => ({...d, id: "seed"+i, updatedAt: BASE_TS}));
+  // 【守衛】走到這裡 = 本機儲存不可用(無痕/被封鎖)或存檔壞掉,「不是」全新安裝——全新安裝在上面種子分支就處理完了。
+  // 舊寫法回 30 筆示範資料冒充存檔:畫面看似正常,其實讀不到真資料;此時編輯一下就把示範資料寫回本機,
+  // 連著雲端的話示範客戶還會被推上去。改回空陣列:誠實呈現「這台目前讀不到資料」,
+  // 存檔壞掉時也完全不碰原始內容,留住人工救援的機會;雲端連線後由遠端資料補回畫面。
+  return [];
 }
 let _saveFailAt = 0;
 function saveItems(){
