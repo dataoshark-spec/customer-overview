@@ -792,7 +792,7 @@
 
   /* ===== editable table ===== */
   @media (min-width:820px){
-    #app.table-mode{max-width:none;}   /* 桌機表格模式撐滿視窗:表格總寬約 1448px,原 1280px 上限會切掉最右側欄位、逼出橫向捲軸;左右白邊維持 table-wrap 原本的 18px */
+    #app.table-mode{max-width:96vw;}   /* 純視窗比例(不設固定 px 上限):縮小/放大時內容與左右白邊同比例縮放,白邊固定 2vw、不會越縮越多;寬螢幕也能看到更多欄位 */
     #app.table-mode .search-box{max-width:460px;}   /* 上限放在包裝層:input 縮短時外層一起縮,清除鈕才不會飄到框外 */
   }
   /* 手機版表格更舒服:連結按鈕縮小、欄距收緊、總寬略降(只在 <820px 生效,桌機不受影響) */
@@ -1458,7 +1458,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.18 R";
+const APP_VERSION = "2026.07.18 S";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
