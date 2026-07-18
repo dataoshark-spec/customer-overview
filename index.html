@@ -1231,7 +1231,7 @@
       <div class="set-card" id="syncCard">
         <div class="set-card-title">Google 雲端同步</div>
         <p class="set-card-desc">連結 Google 帳號後，多台裝置的需求資料會自動同步、互不覆蓋。資料只存放在你 Google 雲端硬碟的私密應用程式資料夾（appDataFolder），不會外流，也不占用你雲端硬碟的一般空間。</p>
-        <div id="syncBoxOff">
+        <div id="syncBoxOff" style="display:none">
           <div class="set-actions"><button class="s-btn s-btn-primary" id="gConnect">連結 Google 帳號</button></div>
         </div>
         <div id="syncBoxOn" style="display:none">
@@ -1458,7 +1458,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.18 O";
+const APP_VERSION = "2026.07.18 P";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -5282,6 +5282,13 @@ let syncConnected = false, syncEmail = null;
   window.addEventListener("pagehide", function(){
     if (syncConnected && !needReauth){ clearTimeout(pushTimer); pushTimer = null; syncNow(); }
   });
+
+  // 開檔先依「上次的連結狀態」渲染同步卡片(純讀本機 localStorage,不等 GIS client 從網路載入完成),
+  // 避免視窗長時間背景後恢復/開啟時,「連結 Google 帳號」登入介面因枯等 GIS 載入而先露出、隨後才被隱藏(閃一下)。
+  (function(){
+    try { const a = loadAuth(); if (a && a.connected){ syncConnected = true; syncEmail = a.email || null; } } catch(e){}
+    window.renderSyncCard();
+  })();
 
   whenGis(function(){
     initClient();
