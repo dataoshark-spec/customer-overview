@@ -421,7 +421,7 @@
   .table-wrap.tsel-on tbody tr:not(.needexp){cursor:pointer;}
   .table-wrap.tsel-on tbody{user-select:none;-webkit-user-select:none;}
   /* 選取中一律只做「點列切換」:所有互動元素關閉命中,點擊落到列上由統一處理器接手 */
-  .table-wrap.tsel-on .tcell,.table-wrap.tsel-on .topt-trigger,.table-wrap.tsel-on .tcat-trigger,.table-wrap.tsel-on .tdel button{pointer-events:none;}
+  .table-wrap.tsel-on .tcell,.table-wrap.tsel-on .topt-trigger,.table-wrap.tsel-on .tcat-trigger,.table-wrap.tsel-on .tdel button,.table-wrap.tsel-on .gen-btn,.table-wrap.tsel-on .gen-edge{pointer-events:none;}
   .table-wrap.tsel-on tbody tr.tsel-row td{background:color-mix(in srgb, var(--accent) 10%, var(--card))!important;}
   /* 垃圾桶按鈕在選取模式化身為圓形勾選框:未選=空圈,已選=accent 實心打勾 */
   .table-wrap.tsel-on .tdel button svg{display:none;}
@@ -541,8 +541,6 @@
   .compact-card .body{padding:13px 15px;}
   .compact-card .card-head{align-items:center;gap:10px;}
   .compact-card .name{font-size:1.04rem;}
-  .compact-card .price-tag{flex:none;white-space:nowrap;font-variant-numeric:tabular-nums;
-    font-size:1.2rem;font-weight:900;color:var(--accent-deep);}
   .compact-card .price-tag small{font-size:.72rem;font-weight:700;color:var(--ink-soft);margin-left:2px;}
   .compact-card .sub-row{display:flex;align-items:baseline;gap:10px;margin-top:8px;}
   .compact-card .sub-row .addr{flex:1;min-width:0;font-size:.84rem;color:var(--ink-soft);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -982,6 +980,25 @@
   @media (hover:hover){ .exp-open .tcell:hover{background:transparent;} }
   .tcell:focus{background:var(--card);box-shadow:inset 0 0 0 2px var(--accent);border-radius:5px;overflow:visible;white-space:normal;position:relative;z-index:2;}
   .tcell.saved{animation:tSaved .7s ease;}
+  /* 建檔日欄「生成買方名稱」面板:滑到該格最左窄感應帶,面板從左滑入覆蓋整格,點任一處生成並複製 */
+  td.datewrap{position:relative;}
+  .gen-edge{position:absolute;left:0;top:0;bottom:0;width:14px;z-index:3;}
+  .gen-btn{position:absolute;left:0;top:-1px;bottom:-1px;width:calc(100% + 1px);display:inline-flex;align-items:center;justify-content:center;
+    border:none;border-right:1px solid var(--accent-tint-bd);background:var(--accent-tint);color:var(--accent-deep);cursor:pointer;
+    opacity:0;pointer-events:none;transform:translateX(-100%);transition:transform .16s ease, background .12s;z-index:5;box-shadow:2px 0 7px rgba(0,0,0,.16);}
+  .gen-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;flex:none;}
+  .gen-label{font-size:.82rem;font-weight:700;margin-left:5px;letter-spacing:.02em;}
+  .gen-edge:hover ~ .gen-btn, .gen-btn:hover{opacity:1;pointer-events:auto;transform:translateX(0);}
+  .gen-btn:active{filter:brightness(1.05);}
+  .gen-btn.gen-flash{animation:genFlash .5s ease;}
+  @keyframes genFlash{0%{background:var(--accent-deep);}100%{background:var(--accent-tint);}}
+  .gen-open .gen-btn{opacity:1;pointer-events:auto;transform:translateX(0);}
+  .gen-caret{display:none;margin-left:5px;font-size:.72em;opacity:.75;transition:transform .18s ease;}
+  .gen-open th[data-field="date"] .gen-caret{transform:rotate(180deg);}
+  @media (hover:none){
+    .gen-caret{display:inline-block;}
+    th[data-field="date"]{cursor:pointer;}
+  }
   @keyframes tSaved{0%{background:#D6EFE6;}100%{background:transparent;}}
   .tcell.tnum{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;}
   .tcell.tdue{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-weight:600;}
@@ -1461,7 +1478,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.19 G";
+const APP_VERSION = "2026.07.19 I";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1849,6 +1866,21 @@ function tchip(url, label, cls){
   const tip = on ? (u.length > 46 ? u.slice(0,46) + "…" : u) : `尚未加入${label}連結`;
   return `<span class="tchip ${cls} ${on?'on':''}" title="${esc(tip)}" data-label="${esc(label)}" data-url="${esc(url||'')}">${label}</span>`;
 }
+const GEN_ICON = '<svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+// 生成買方名稱:買方-詢問-客戶( 結尾。大樓→房數(每個數字各加「房」)、非大樓→類型;各段空白則略過
+function buildBuyerName(d){
+  const ask = String(d.ask == null ? "" : d.ask).trim();
+  const cust = String(d.cust == null ? "" : d.cust).trim();
+  let tail;
+  if (String(d.cat == null ? "" : d.cat).trim() === "大樓"){
+    const nums = String(d.rooms == null ? "" : d.rooms).match(/\d+/g);
+    tail = nums ? nums.map(n => n + "房").join("") : "";
+  } else {
+    tail = String(d.cat == null ? "" : d.cat).trim();
+  }
+  const head = ["買方", ask, cust].filter(x => x !== "").join("-");
+  return tail ? head + "(" + tail : head;
+}
 function trowHTML(d){
   const color = catColor(d.cat);
   const ce = editMode ? "true" : "false";
@@ -1869,9 +1901,10 @@ function trowHTML(d){
       ? `<td><button type="button" class="topt-trigger" data-field="${f}" data-optkey="${optKey}"><span class="topt-label">${esc(dv)}</span></button></td>`
       : `<td><div class="tcell" data-field="${f}" title="${esc(dv)}">${esc(dv)}</div></td>`;
   };
-  const dateCell = editMode                                   // 編輯模式:建檔日改為日曆選擇(與卡片檢視同一個日曆)
-    ? `<td><button type="button" class="topt-trigger" data-field="date" data-cal="1"><span class="topt-label">${esc(d.date)}</span></button></td>`
-    : `<td><div class="tcell tdate" data-field="date" title="${esc(d.date)}">${esc(d.date)}</div></td>`;
+  const dateInner = editMode                                   // 編輯模式:建檔日改為日曆選擇(與卡片檢視同一個日曆)
+    ? `<button type="button" class="topt-trigger" data-field="date" data-cal="1"><span class="topt-label">${esc(d.date)}</span></button>`
+    : `<div class="tcell tdate" data-field="date" title="${esc(d.date)}">${esc(d.date)}</div>`;
+  const dateCell = `<td class="datewrap"><span class="gen-edge"></span><button type="button" class="gen-btn" data-gen="1" title="生成買方名稱並複製" aria-label="生成買方名稱並複製">${GEN_ICON}<span class="gen-label">生成</span></button>${dateInner}</td>`;
   // 重繪時直接帶上列狀態:展開列(首次排版即為淡化樣式,聚焦轉場不會重播)+ 批次選取列(同步重繪不掉選取)
   const _trCls = ((openNeedId === d.id) ? "exp-open " : "") + ((tselMode && selected.has(d.id)) ? "tsel-row" : "");
   return `<tr data-id="${esc(d.id)}"${_trCls.trim() ? ` class="${_trCls.trim()}"` : ""}>`+
@@ -1901,7 +1934,8 @@ function renderTable(list){
     const lab = (f && FILTERABLE[f])
       ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}"><span class="th-label">${h}</span><span class="fmk">▾</span></button>`
       : `<span class="th-label">${h}</span>`;
-    return `<th data-field="${f}">${lab}${rz}</th>`;
+    const gc = (f === "date") ? '<span class="gen-caret" aria-hidden="true">▾</span>' : "";
+    return `<th data-field="${f}">${lab}${gc}${rz}</th>`;
   }).join("") + `<th></th>`;
   const cols = T_FIELDS.map(f => f === "need"
     ? `<col data-field="need">`
@@ -2651,6 +2685,26 @@ tableWrap.addEventListener("click", e=>{
   // 點「已展開的那一列」任一處 = 先收合(正常/編輯皆同);收合後才恢復編輯、下拉、複製、連結
   const openTr = e.target.closest("tr.exp-open");
   if (openTr){ e.stopPropagation(); hideNeedHover(); closeNeedExp(); return; }
+  // 手機:點「建檔日」表頭 → 切換所有列的生成面板(桌機維持滑到左緣才出現)
+  const dateHead = e.target.closest('th[data-field="date"]');
+  if (dateHead && !e.target.closest(".col-resize") && window.matchMedia && window.matchMedia("(hover: none)").matches){
+    closeCatMenu(); closeLinkPop(); tableWrap.classList.toggle("gen-open"); return;
+  }
+  // 「生成買方名稱」面板 → 生成並複製到剪貼簿
+  const genBtn = e.target.closest(".gen-btn");
+  if (genBtn){
+    e.stopPropagation();
+    const it = tFindItem(genBtn);
+    if (it){
+      const nm = buildBuyerName(it);
+      if (nm){
+        const done = () => { genBtn.classList.remove("gen-flash"); void genBtn.offsetWidth; genBtn.classList.add("gen-flash"); setTimeout(() => genBtn.classList.remove("gen-flash"), 500); toast("已複製:" + nm); };
+        if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(nm).then(done).catch(() => { if (legacyCopy(nm)) done(); }); }
+        else if (legacyCopy(nm)){ done(); }
+      } else { toast("此列資料不足,無法生成"); }
+    }
+    return;
+  }
   // 類別下拉(僅編輯模式有觸發鈕)
   const trig = e.target.closest(".tcat-trigger");
   if (trig){ e.stopPropagation(); openCatMenu(trig); return; }
@@ -2793,7 +2847,7 @@ function copyFieldText(el){
 function setEditMode(on){
   editMode = !!on; saveEditMode();
   if (!editMode) exitSelectMode();       // 離開編輯模式時取消卡片多選
-  closeCatMenu(); closeLinkPop();        // 收合表格的類別/連結浮層
+  closeCatMenu(); closeLinkPop(); tableWrap.classList.remove("gen-open");        // 收合表格的類別/連結浮層
   applyFilter();                          // 重繪當前檢視並更新切換鈕狀態
 }
 
@@ -3239,7 +3293,7 @@ document.getElementById("viewBtn").addEventListener("click", () => {
   const vm = (viewMode === "table") ? "card" : "table";   // 一顆按鈕:在卡片/表格之間切換
   editMode = false; saveEditMode();     // 切換檢視一律恢復正常模式
   exitSelectMode();                      // 並退出卡片多選(避免刪除列殘留浮在表格上)
-  closeCatMenu(); closeLinkPop();        // 關閉表格的類別/連結浮層,避免懸浮殘留
+  closeCatMenu(); closeLinkPop(); tableWrap.classList.remove("gen-open");        // 關閉表格的類別/連結浮層,避免懸浮殘留
   setViewMode(vm);
 });
 
