@@ -1461,7 +1461,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.19 F";
+const APP_VERSION = "2026.07.19 G";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2460,6 +2460,31 @@ function placeNeedCaretEnd(el){
     const r = document.createRange(); r.selectNodeContents(target); r.collapse(false);
     const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch(_){}
 }
+// 單行貼上:用 Range API 直接把內容插到游標處(網址→標籤),不重繪整段、不依賴已廢棄的 execCommand
+// → 避免 innerHTML 重建 DOM 擾動焦點造成「連續貼上第二次沒反應」
+function pasteNeedInline(ed, tx){
+  const sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
+  const rg = sel.getRangeAt(0);
+  if (!sel.isCollapsed) rg.deleteContents();
+  const frag = document.createDocumentFragment();
+  let lastNode = null;
+  needTokens(tx).forEach(tk => {
+    if (tk.t === "url"){
+      const chip = document.createElement("span");
+      chip.className = "need-link-chip"; chip.setAttribute("contenteditable", "false");
+      chip.setAttribute("data-url", tk.v); chip.setAttribute("draggable", "false");
+      chip.textContent = "連結";
+      frag.appendChild(chip);
+      lastNode = document.createTextNode("\u200B"); frag.appendChild(lastNode);   // chip 後的游標錨點
+    } else {
+      lastNode = document.createTextNode(tk.v); frag.appendChild(lastNode);
+    }
+  });
+  if (!lastNode) return;
+  rg.insertNode(frag);
+  try { const nr = document.createRange(); nr.setStartAfter(lastNode); nr.collapse(true);
+    sel.removeAllRanges(); sel.addRange(nr); } catch(_){}
+}
 tableWrap.addEventListener("paste", e => {
   const nedBody = e.target.closest && e.target.closest('.needexp-ed[contenteditable="true"]');
   const nedTitle = e.target.closest && e.target.closest(".nseg-t[data-titleedit]");
@@ -2471,12 +2496,17 @@ tableWrap.addEventListener("paste", e => {
       try { document.execCommand("insertText", false, tx.replace(/[\r\n\t]+/g," ")); } catch(err){}
       return;
     }
-    // 內容:先照原樣插入(保留多行),再整段重繪,把網址換成「連結」標籤
-    if (tx && caretAfterChip(nedBody)) tx = " " + tx;   // 游標緊鄰「連結」標籤之後:貼上內容前補空格,否則會和標籤網址黏成一個 token、貼的網址不會變成新標籤
-    try { document.execCommand("insertText", false, tx); } catch(err){}
+    // 內容:游標緊鄰「連結」標籤之後補一個空格,否則貼的網址會和標籤網址黏成同一 token
+    if (tx && caretAfterChip(nedBody)) tx = " " + tx;
     const w = nedBody.closest(".needexp"), sg = +nedBody.dataset.seg;
-    nedBody.innerHTML = needToEditHTML(editToNeed(nedBody)) || "<div><br></div>";
-    placeNeedCaretEnd(nedBody);
+    if (tx.indexOf("\n") < 0){
+      pasteNeedInline(nedBody, tx);   // 單行:Range 直接插入(不重繪/不用 execCommand)→ 連續貼上穩定
+    } else {
+      // 多行:照原樣插入再整段重繪(多行需要拆成多個 div)
+      try { document.execCommand("insertText", false, tx); } catch(err){}
+      nedBody.innerHTML = needToEditHTML(editToNeed(nedBody)) || "<div><br></div>";
+      placeNeedCaretEnd(nedBody);
+    }
     if (w) commitNeedSeg(w.dataset.for, sg, editToNeed(nedBody));
     return;
   }
