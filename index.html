@@ -110,8 +110,8 @@
   [data-theme="light"] .all-btn:hover{color:var(--ink);}
   [data-theme="light"] .cover-gear{background:var(--card);border-color:var(--line);color:var(--ink-soft);}
   [data-theme="light"] .cover-gear:hover{background:var(--surface-2);color:var(--ink);}
-  [data-theme="light"] .cover-led{background:var(--card);border-color:var(--line);}
-  [data-theme="light"] .cover-led:hover{background:var(--surface-2);}
+  [data-theme="light"] .cover-top .cover-led{background:var(--card);border-color:var(--line);}
+  [data-theme="light"] .cover-top .cover-led:hover{background:var(--surface-2);}
   [data-theme="light"] .cover-vt button{background:var(--card);border-color:var(--line);color:var(--ink);box-shadow:0 2px 8px rgba(22,34,42,.07);}
   [data-theme="light"] .cover-vt button:active{background:var(--surface-2);}
 
@@ -175,7 +175,9 @@
   .cats-more svg{width:24px;height:24px;color:var(--cover-text);opacity:.55;animation:catsMoreBob 1.7s ease-in-out infinite;}
   @keyframes catsMoreBob{0%,100%{transform:translateY(0);}50%{transform:translateY(4px);}}
   @media (prefers-reduced-motion:reduce){ .cats-more svg{animation:none;} }
-  .cover-top{display:flex;flex-direction:row-reverse;align-items:center;justify-content:space-between;gap:14px;}
+  .cover-top{display:flex;flex-direction:row-reverse;align-items:center;}
+  .cover-top h1{margin-right:auto;}   /* 標題佔左,把齒輪+燈那組推到最右 */
+  .cover-actions{display:flex;flex-direction:row-reverse;align-items:center;gap:8px;}   /* 齒輪+同步燈成一組,兩圈間距 8px */
   .cover h1{
     font-family:"Noto Serif TC",serif;
     font-weight:900;
@@ -220,8 +222,9 @@
   .cover-gear:hover{background:rgba(255,255,255,.16);color:#fff;}
   .cover-gear svg{width:20px;height:20px;}
   .cover-gear:active{transform:scale(.93) rotate(30deg);}
-  .cover-led{flex:none;width:42px;height:42px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  .cover-top .cover-led{flex:none;width:42px;height:42px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
     background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);cursor:pointer;padding:0;transition:background .15s ease;}
+  .cover-top .cover-led .led{width:14px;height:14px;}   /* 封面圓點比列表(12px)略大,跟齒輪圖示較平衡 */
   .cover-led:hover{background:rgba(255,255,255,.16);}
 
   /* ---------- SETTINGS (View 3) ---------- */
@@ -1176,8 +1179,10 @@
   <!-- ===== View 1: Cover ===== -->
   <section class="cover" id="cover">
     <header class="cover-top">
+    <div class="cover-actions">
     <button class="sync-led cover-led" id="coverLed" type="button" aria-label="同步狀態" title="點一下立即同步・長按進入設定"><span class="led"></span></button>
     <button class="cover-gear" id="coverGear" aria-label="設定" title="設定"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg></button>
+    </div>
     <h1>客戶總覽</h1>
     </header>
     <button class="cover-search" id="coverSearch" type="button">
@@ -1485,7 +1490,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.19 M";
+const APP_VERSION = "2026.07.19 N";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
