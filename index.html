@@ -110,6 +110,8 @@
   [data-theme="light"] .all-btn:hover{color:var(--ink);}
   [data-theme="light"] .cover-gear{background:var(--card);border-color:var(--line);color:var(--ink-soft);}
   [data-theme="light"] .cover-gear:hover{background:var(--surface-2);color:var(--ink);}
+  [data-theme="light"] .cover-led{background:var(--card);border-color:var(--line);}
+  [data-theme="light"] .cover-led:hover{background:var(--surface-2);}
   [data-theme="light"] .cover-vt button{background:var(--card);border-color:var(--line);color:var(--ink);box-shadow:0 2px 8px rgba(22,34,42,.07);}
   [data-theme="light"] .cover-vt button:active{background:var(--surface-2);}
 
@@ -218,6 +220,9 @@
   .cover-gear:hover{background:rgba(255,255,255,.16);color:#fff;}
   .cover-gear svg{width:20px;height:20px;}
   .cover-gear:active{transform:scale(.93) rotate(30deg);}
+  .cover-led{flex:none;width:42px;height:42px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);cursor:pointer;padding:0;transition:background .15s ease;}
+  .cover-led:hover{background:rgba(255,255,255,.16);}
 
   /* ---------- SETTINGS (View 3) ---------- */
   .settings-view{display:none;min-height:100dvh;flex-direction:column;background:var(--paper);}
@@ -286,6 +291,7 @@
   .sync-led.ok .led{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 24%,transparent);}
   .sync-led.busy .led{background:#D8961F;box-shadow:0 0 0 3px color-mix(in srgb,#D8961F 26%,transparent);animation:duePulse 1.2s ease-in-out infinite;}
   .sync-led.warn .led{background:var(--danger);box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 26%,transparent);}
+  .sync-led.offline .led{background:var(--text-faint);box-shadow:0 0 0 3px color-mix(in srgb,var(--text-faint) 24%,transparent);}
   .sync-led.pending .led{animation:ledYGled 1.1s steps(1,end) infinite;}
   @keyframes ledYGled{0%,49%{background:#D8961F;box-shadow:0 0 0 3px color-mix(in srgb,#D8961F 26%,transparent);}50%,100%{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 26%,transparent);}}
   .ver-line{text-align:center;font-size:.76rem;color:var(--ink-soft);opacity:.72;letter-spacing:.02em;margin-top:26px;padding-bottom:6px;}
@@ -1170,6 +1176,7 @@
   <!-- ===== View 1: Cover ===== -->
   <section class="cover" id="cover">
     <header class="cover-top">
+    <button class="sync-led cover-led" id="coverLed" type="button" aria-label="同步狀態" title="點一下立即同步・長按進入設定"><span class="led"></span></button>
     <button class="cover-gear" id="coverGear" aria-label="設定" title="設定"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg></button>
     <h1>客戶總覽</h1>
     </header>
@@ -1478,7 +1485,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.19 L";
+const APP_VERSION = "2026.07.19 M";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3559,8 +3566,8 @@ const syncSearchHint = () => tableWrap.classList.toggle("search-hint", !!searchE
 searchEl.addEventListener("focus", syncSearchHint);
 searchEl.addEventListener("blur", syncSearchHint);
 document.getElementById("backBtn").addEventListener("click", showCover);
-(function(){
-  const led = document.getElementById("listLed");
+["listLed","coverLed"].forEach(function(ledId){
+  const led = document.getElementById(ledId);
   if (!led) return;
   let lpTimer = null, longFired = false;
   function startLP(){
@@ -3580,7 +3587,7 @@ document.getElementById("backBtn").addEventListener("click", showCover);
     if (longFired){ e.preventDefault(); longFired = false; return; }   // 長按已進設定,吞掉這次點擊
     if (window.ledAction) window.ledAction();
   });
-})();
+});
 tableWrap.addEventListener("focusin", function(){ if (window.refreshLed) window.refreshLed(); });
 tableWrap.addEventListener("focusout", function(){ setTimeout(function(){ if (window.refreshLed) window.refreshLed(); }, 0); });
 
@@ -5381,20 +5388,26 @@ let syncConnected = false, syncEmail = null;
   }
 
   // ---- status UI ----
+  function setLed(cls){   // 同時更新列表 + 封面兩顆同步燈(封面那顆保留 cover-led 容器樣式)
+    ["listLed","coverLed"].forEach(function(id){
+      const el = document.getElementById(id); if (!el) return;
+      el.className = (id === "coverLed" ? "sync-led cover-led" : "sync-led") + (cls ? " " + cls : "");
+    });
+  }
   function setStatus(text, kind){
     const st = document.getElementById("gStatus"), dot = document.getElementById("gDot");
     if (st) st.textContent = text;
     if (dot) dot.className = "sync-dot" + (kind ? " " + kind : "");
-    const led = document.getElementById("listLed"); if (led) led.className = "sync-led" + (kind ? " " + kind : "");
+    setLed(kind || "");
   }
   function refreshLed(){
-    const led = document.getElementById("listLed"); if (!led) return;
     let cls;
     if (inFlight) cls = "busy";
     else if (window.isTableBusy && window.isTableBusy()) cls = "pending";   // 編輯中、變更尚未落地
+    else if (syncConnected && !navigator.onLine) cls = "offline";           // 已連結但目前沒網路:離線(灰),畫面是上次同步的資料
     else if (syncConnected && !needReauth) cls = "ok";
     else cls = "warn";
-    led.className = "sync-led " + cls;
+    setLed(cls);
   }
   window.refreshLed = refreshLed;
   window.ledAction = function(){ if (!syncConnected || needReauth) connect(); else syncNow(); };
@@ -5537,16 +5550,19 @@ let syncConnected = false, syncEmail = null;
   // 網路恢復:退避歸位並立即嘗試同步。離線開啟時 GIS 載入不了會走「稍後重試」,回到有網路這裡馬上再試;
   // 若之前殘留 needReauth,syncNow 會 silent 取得 token,成功即自動清除,使用者不必手動點「重新連結」。
   window.addEventListener("online", function(){
+    if (window.refreshLed) window.refreshLed();   // 先把燈從離線灰更新過來
     if (!syncConnected) return;
     retryMs = 5000; clearTimeout(pushTimer); pushTimer = null;
     syncNow();
   });
+  window.addEventListener("offline", function(){ if (window.refreshLed) window.refreshLed(); });   // 斷網:燈轉離線灰
 
   // 開檔先依「上次的連結狀態」渲染同步卡片(純讀本機 localStorage,不等 GIS client 從網路載入完成),
   // 避免視窗長時間背景後恢復/開啟時,「連結 Google 帳號」登入介面因枯等 GIS 載入而先露出、隨後才被隱藏(閃一下)。
   (function(){
     try { const a = loadAuth(); if (a && a.connected){ syncConnected = true; syncEmail = a.email || null; } } catch(e){}
     window.renderSyncCard();
+    refreshLed();   // 開檔即顯示兩顆燈的初始狀態(含離線判斷)
   })();
 
   whenGis(function(){
