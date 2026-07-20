@@ -1478,7 +1478,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.19 J";
+const APP_VERSION = "2026.07.19 L";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -4064,6 +4064,20 @@ function openDetail(id){
 }
 function closeDetail(){ detailBg.classList.remove("open"); }
 document.getElementById("detailClose").addEventListener("click", closeDetail);
+// 詳情頁:水平滑動(左滑或右滑)返回。只在「水平位移明顯大於垂直」時觸發,避免和內容的垂直捲動衝突
+(function(){
+  let sx = 0, sy = 0, st = 0, tracking = false;
+  detailBg.addEventListener("touchstart", e => {
+    if (e.touches && e.touches.length === 1){ sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); tracking = true; }
+    else tracking = false;
+  }, { passive: true });
+  detailBg.addEventListener("touchend", e => {
+    if (!tracking) return; tracking = false;
+    const t = e.changedTouches && e.changedTouches[0]; if (!t) return;
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.8 && (Date.now() - st) < 600 && detailBg.classList.contains("open")){ closeDetail(); }
+  }, { passive: true });
+})();
 let _dtlDownOnBg = false;
 detailBg.addEventListener("pointerdown", e => { _dtlDownOnBg = (e.target === detailBg); });
 detailBg.addEventListener("click", e => { if (e.target === detailBg && _dtlDownOnBg) closeDetail(); _dtlDownOnBg = false; });
@@ -5429,14 +5443,16 @@ let syncConnected = false, syncEmail = null;
       }
       if (pushed) maybeSnapshot(pushed);
       retryMs = 5000;   // 成功:重試退避歸位
+      needReauth = false;   // 同步成功=授權有效:清掉可能殘留的「需要重新連結」(離線誤設,或 token 未過期沒走 requestToken 的情況)
       setStatus("已同步", "ok");
       try { localStorage.setItem("customer_app_lastsync_v1", String(Date.now())); } catch(e){}
       window.renderLastSync();
     } catch (e){
       dirty = dirty || wasDirty;   // 這輪沒完成:把進場時的未推狀態還原(中途的新編輯本來就會自己標 true)
-      if (e && (e.error === "access_denied" || e.error === "interaction_required" || e.error === "login_required" || e.message === "gis")){
+      if (e && (e.error === "access_denied" || e.error === "interaction_required" || e.error === "login_required")){
         needReauth = true; setStatus("需要重新連結", "warn"); window.renderSyncCard();
-        // 授權問題不自動重試:等使用者重新連結,connect() 成功後會做完整同步
+        // 真正的授權問題(token 失效且無法 silent 刷新)才不自動重試:等使用者重新連結。
+        // 注意:GIS 元件沒載入(離線常見)的 Error("gis") 已排除在外,改走下面的「稍後重試」,回到有網路會自動再試。
       } else {
         setStatus("同步失敗，稍後重試", "warn");
         // 先前這句「稍後重試」只是顯示文字,程式並沒有排任何重試 → 離線期間的編輯會一直留在本機。
@@ -5511,12 +5527,19 @@ let syncConnected = false, syncEmail = null;
   });
   document.getElementById("cloudImportBtn").addEventListener("click", driveImportBackup);
   document.addEventListener("visibilitychange", function(){
-    if (!syncConnected || needReauth) return;
-    if (!document.hidden){ syncNow(); }                            // 回前景:拉取最新
-    else { clearTimeout(pushTimer); pushTimer = null; syncNow(); } // 切背景/關閉前:把還沒推的變更立刻送出
+    if (!syncConnected) return;
+    if (!document.hidden){ syncNow(); }                                             // 回前景:拉取最新(needReauth 時 syncNow 會走 ensureToken 嘗試 silent 重連,成功即自動恢復、不必手動點)
+    else if (!needReauth){ clearTimeout(pushTimer); pushTimer = null; syncNow(); }  // 切背景/關閉前:把還沒推的變更送出(needReauth 時推不出去,略過)
   });
   window.addEventListener("pagehide", function(){
     if (syncConnected && !needReauth){ clearTimeout(pushTimer); pushTimer = null; syncNow(); }
+  });
+  // 網路恢復:退避歸位並立即嘗試同步。離線開啟時 GIS 載入不了會走「稍後重試」,回到有網路這裡馬上再試;
+  // 若之前殘留 needReauth,syncNow 會 silent 取得 token,成功即自動清除,使用者不必手動點「重新連結」。
+  window.addEventListener("online", function(){
+    if (!syncConnected) return;
+    retryMs = 5000; clearTimeout(pushTimer); pushTimer = null;
+    syncNow();
   });
 
   // 開檔先依「上次的連結狀態」渲染同步卡片(純讀本機 localStorage,不等 GIS client 從網路載入完成),
