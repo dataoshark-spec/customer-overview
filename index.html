@@ -1499,7 +1499,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.21 R-fix3";
+const APP_VERSION = "2026.07.21 R-fix4";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2026,14 +2026,23 @@ function bindTableScrollSync(headWrap, bodyWrap){
   headWrap.addEventListener("scroll", onHead);
   tableWrap._scrollUnbind = () => { bodyWrap.removeEventListener("scroll", onBody); headWrap.removeEventListener("scroll", onHead); };
 }
+// 客戶需求展開列:僅「編輯模式且焦點在可編輯段/標題」才算忙碌;唯讀展開不擋同步、不讓燈一直閃
+function isNeedExpEditing(){
+  const exp = tableWrap.querySelector(".needexp.editing");
+  if (!exp) return false;
+  const a = document.activeElement;
+  if (!a || !exp.contains(a)) return false;
+  if (a.classList && a.classList.contains("nseg-ed") && !a.classList.contains("needexp-view")) return true;
+  if (a.dataset && a.dataset.titleedit) return true;
+  return false;
+}
 // 編輯中(格子聚焦、連結框或類別選單開啟)時,暫停同步重繪,避免游標被打斷、畫面跳動
 window.isTableBusy = function(){
   if (modalBg.classList.contains("open") || detailBg.classList.contains("open")) return true;
   if (tselMode) return true;             // 批次刪除選取中:暫停同步重繪,選取狀態不被洗掉
   const a = document.activeElement;
   if (a && a.classList && a.classList.contains("tcell")) return true;
-  if (a && a.classList && a.classList.contains("needexp-ed")) return true;
-  if (tableWrap.querySelector(".needexp")) return true;
+  if (isNeedExpEditing()) return true;   // 需求展開且正在編輯:延後同步
   const lp = document.getElementById("linkpop"); if (lp && lp.classList.contains("show")) return true;
   const cm = document.getElementById("catmenu"); if (cm && cm.classList.contains("show")) return true;
   const tm = document.getElementById("toptmenu"); if (tm && tm.classList.contains("show")) return true;
@@ -2187,6 +2196,7 @@ function openNeedExp(tr, doFocus){
     });
     if (doFocus){ const f = exp.querySelector('.nseg-ed[data-seg="1"]'); if (f) f.focus(); }
   }
+  if (window.refreshLed) window.refreshLed();
 }
 // 把目前選取的文字加上/取消刪除線。
 // 不用 document.execCommand("strikeThrough"):它的「取消」在部分情境會沉默失效(已廢棄 API,行為不保證),
@@ -2375,6 +2385,7 @@ function closeNeedExp(){
   ex.remove();
   if (tr) tr.classList.remove("exp-open", "exp-editing");
   openNeedId = null;
+  if (window.refreshLed) window.refreshLed();
 }
 function toggleNeedExp(tr){
   if (!tr) return;
@@ -2382,7 +2393,9 @@ function toggleNeedExp(tr){
   const nx = tr.nextElementSibling;
   if (nx && nx.classList.contains("needexp") && nx.dataset.for === id){
     commitAllSegs(nx);
-    nx.remove(); tr.classList.remove("exp-open", "exp-editing"); openNeedId = null; return;
+    nx.remove(); tr.classList.remove("exp-open", "exp-editing"); openNeedId = null;
+    if (window.refreshLed) window.refreshLed();
+    return;
   }
   openNeedExp(tr, true);
 }
@@ -5882,7 +5895,7 @@ let syncConnected = false, syncEmail = null;
         pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
         retryMs = Math.min(retryMs * 2, 60000);
       }
-    } finally { if (thisRun === syncGen){ clearTimeout(__wd); inFlight = false; } }
+    } finally { if (thisRun === syncGen){ clearTimeout(__wd); inFlight = false; if (window.refreshLed) window.refreshLed(); } }
   }
   window.__syncNow = syncNow;
 
