@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>客戶總覽</title>
 <link rel="icon" type="image/png" href="icon-192.png?v=6">
 <link rel="apple-touch-icon" href="icon-180.png?v=6">
@@ -29,6 +29,10 @@
 <script src="https://apis.google.com/js/api.js" async defer></script>
 <style>
   :root{
+    --safe-top:env(safe-area-inset-top, 0px);
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+    --safe-left:env(safe-area-inset-left, 0px);
+    --safe-right:env(safe-area-inset-right, 0px);
     --paper:#EBEFF1;
     --card:#FFFFFF;
     --ink:#16222A;
@@ -578,7 +582,7 @@
     box-shadow:0 0 0 2px rgba(43,92,168,.4),0 8px 20px rgba(43,92,168,.16);}
   .cards.selecting .card:not(.selected){opacity:.72;}
 
-  .selbar{position:fixed;z-index:41;left:50%;bottom:18px;width:min(444px,calc(100% - 28px));
+  .selbar{position:fixed;z-index:41;left:50%;bottom:calc(18px + var(--safe-bottom));width:min(444px,calc(100% - 28px));
     --vvx:0px;--vvy:0px;--vvs:1;   /* 雙指放大時由 JS 校正:把工具列拉回實際看得到的範圍(見 visualViewport 段) */
     transform:translate(calc(-50% + var(--vvx)), calc(160% + var(--vvy))) scale(var(--vvs));
     transform-origin:50% 100%;
@@ -770,7 +774,7 @@
   .cal-fbtn.cal-cancel:active{background:var(--surface-1);}
   .cal-fbtn.cal-clear{background:transparent;border:1px solid var(--line);color:var(--ink-soft);}
   .cal-fbtn.cal-clear:active{background:var(--surface-1);}
-  .toast{position:fixed;z-index:70;left:50%;bottom:30px;transform:translate(-50%,16px);
+  .toast{position:fixed;z-index:70;left:50%;bottom:calc(30px + var(--safe-bottom));transform:translate(-50%,16px);
     background:var(--ink);color:#fff;font-size:.9rem;font-weight:600;padding:11px 18px;border-radius:14px;
     box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;pointer-events:none;
     transition:opacity .2s ease,transform .2s ease;max-width:min(94%,480px);text-align:left;line-height:1.5;overflow-wrap:anywhere;}
@@ -815,7 +819,7 @@
     /* 手機:編輯/新增表單改整頁滿版(桌機維持底部面板);確認框用 .modal-bg.center 較具體,仍維持置中小視窗 */
     .modal-bg{align-items:stretch;}
     #detailBg.modal-bg.center{align-items:stretch;padding:0;}   /* 客戶資料檢視:手機全畫面顯示 */
-    .modal{max-width:none;max-height:none;height:100dvh;border-radius:0;animation:modalUp .22s ease;}
+    .modal{max-width:none;max-height:none;height:calc(100dvh - var(--safe-top));padding-bottom:var(--safe-bottom);border-radius:0;animation:modalUp .22s ease;}
     .modal-body{flex:1;min-height:0;}
     .modal-body .row3{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
     .f-cust,.f-ask{grid-column:1 / -1;}
@@ -869,9 +873,13 @@
   tr.exp-open .tcell[contenteditable],tr.exp-open .topt-trigger,tr.exp-open .tcat-trigger,tr.exp-open .tchip{pointer-events:none;}
   .ptable tbody tr.exp-open td:first-child{box-shadow:inset 3px 0 0 var(--accent);}
   tr.needexp > td{padding:0;height:auto;background:var(--accent-tint) !important;border-bottom:1px solid var(--accent-tint-bd);border-right:none;border-radius:0 0 13px 13px;box-shadow:inset 3px 0 0 var(--accent), 0 18px 26px -12px rgba(22,34,42,.24);}
-  /* 編輯模式:展開區(父列+展開列)背景由淺藍改為灰,一眼看出正在編輯;正常(唯讀)模式維持淺藍 */
-  .ptable tbody tr.exp-editing td{background:var(--surface-2) !important;}
-  tr.needexp.editing > td{background:var(--surface-2) !important;}
+  /* 編輯模式:展開區(父列+展開列)背景改灰、左側邊線改中性色,與正常(唯讀)淺藍一眼可辨 */
+  .table-wrap.edit-mode .ptable tbody tr.exp-open td,
+  .ptable tbody tr.exp-open.exp-editing td{background:var(--surface-3) !important;border-bottom:none;}
+  .table-wrap.edit-mode .ptable tbody tr.exp-open td:first-child,
+  .ptable tbody tr.exp-open.exp-editing td:first-child{box-shadow:inset 3px 0 0 var(--border-2);}
+  .table-wrap.edit-mode tr.needexp > td,
+  tr.needexp.editing > td{background:var(--surface-3) !important;border-bottom-color:var(--line) !important;box-shadow:inset 3px 0 0 var(--border-2), 0 18px 26px -12px rgba(22,34,42,.1) !important;}
   .needexp-wrap{position:sticky;left:0;box-sizing:border-box;padding:13px 16px 15px;}
   /* 展開聚焦模式:有展開列時,其他列淡化,視線集中在展開區塊 */
   .exp-focus-on .tbody-wrap table:has(tr.exp-open) tbody tr:not(.exp-open):not(.needexp){opacity:.32;transition:opacity .2s;}
@@ -1148,7 +1156,7 @@
   .ptable.ro .tchip:not(.on){opacity:.45;cursor:default;}
   .ptable.ro .tchip:not(.on):hover::after{content:none;}
   /* ===== install banner ===== */
-  .install-bar{position:fixed;z-index:60;left:50%;bottom:16px;transform:translateX(-50%) translateY(220%);
+  .install-bar{position:fixed;z-index:60;left:50%;bottom:calc(16px + var(--safe-bottom));transform:translateX(-50%) translateY(220%);
     width:min(470px,calc(100% - 24px));display:flex;align-items:center;gap:11px;
     background:var(--card);border:1px solid var(--line);border-radius:16px;padding:11px 13px;
     box-shadow:0 14px 36px rgba(0,0,0,.30);transition:transform .32s cubic-bezier(.2,.75,.3,1);}
@@ -1490,7 +1498,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.19 Q";
+const APP_VERSION = "2026.07.21 R-fix2";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1536,9 +1544,19 @@ function todayROC(){
 }
 const money = n => Number(n||0).toLocaleString("en-US");
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
-const linkChip = (url, label) => url
-  ? `<a class="chip on" href="${esc(url)}" target="_blank" rel="noopener">${label} <span class="ext">↗</span></a>`
-  : `<span class="chip off">${label}</span>`;
+const safeColor = v => { const s = String(v == null ? "" : v).trim(); return /^#[0-9A-Fa-f]{3,8}$/.test(s) ? s : "#8494A0"; };
+const safeUrl = u => {
+  const s = String(u == null ? "" : u).trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s) || /^tel:/i.test(s)) return s;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(s)) return "";
+  return "https://" + s.replace(/^\/+/, "");
+};
+const openExtUrl = u => { const href = safeUrl(u); if (href) window.open(href, "_blank", "noopener"); };
+const linkChip = (url, label) => { const href = safeUrl(url);
+  return href
+  ? `<a class="chip on" href="${esc(href)}" target="_blank" rel="noopener">${label} <span class="ext">↗</span></a>`
+  : `<span class="chip off">${label}</span>`; };
 
 function selMark(d){
   const on = selected.has(d.id) ? " on" : "";
@@ -1565,7 +1583,7 @@ function cardHTML(d){
     if (d.rooms) cbits.push(d.rooms);
     if (d.parking) cbits.push(/車/.test(d.parking) ? d.parking : d.parking + "車位");
     const csub = cbits.length ? cbits.map(p => { const v = normAsk(p); return `<span class="cv" data-copy="${esc(v)}">${esc(v)}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
-    return `<article class="card compact-card${sel}" data-id="${d.id}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
+    return `<article class="card compact-card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
       <div class="card-head">
@@ -1584,7 +1602,7 @@ function cardHTML(d){
   if (d.date) topBits.push(`<span class="ct-item">建檔 <span class="cv" data-copy="${esc(d.date)}">${esc(d.date)}</span></span>`);
   if (d.area) topBits.push(`<span data-copy="${esc(d.area)}">${esc(d.area)}</span>`);
   const topHTML = topBits.length ? `<div class="card-top">${topBits.join('<span class="dot">／</span>')}</div>` : "";
-  return `<article class="card${sel}" data-id="${d.id}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
+  return `<article class="card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
       ${topHTML}
@@ -1655,7 +1673,15 @@ function loadItems(){
         }
       }
       const raw = localStorage.getItem(STORE_KEY);
-      if (raw){ const arr = JSON.parse(raw); if (Array.isArray(arr)) return arr.map(d => ({...d, id: d.id || uid(), updatedAt: d.updatedAt || BASE_TS})); }
+      if (raw){
+        try {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) return arr.map(d => ({...d, id: d.id || uid(), updatedAt: d.updatedAt || BASE_TS}));
+        } catch (parseErr) {
+          window._storageCorrupt = true;
+          setTimeout(() => { if (typeof toast === "function") toast("⚠ 本機資料已損壞，未自動覆寫。請先匯出備份或聯絡支援還原。"); }, 0);
+        }
+      }
     } catch (e) {}
   }
   // 【守衛】走到這裡 = 本機儲存不可用(無痕/被封鎖)或存檔壞掉,「不是」全新安裝——全新安裝在上面種子分支就處理完了。
@@ -1688,7 +1714,17 @@ function loadDeleted(){
   for (const k in obj){ if (!(obj[k] > cutoff)) delete obj[k]; }
   return obj;
 }
-function saveDeleted(){ if (storageOK){ try { localStorage.setItem(DELETED_KEY, JSON.stringify(deleted)); } catch (e) {} } }
+function saveDeleted(){
+  if (!storageOK) return;
+  try { localStorage.setItem(DELETED_KEY, JSON.stringify(deleted)); }
+  catch (e) {
+    const now = Date.now();
+    if (now - _saveFailAt > 30000){
+      _saveFailAt = now;
+      if (typeof toast === "function") toast("⚠ 刪除記錄儲存失敗（空間可能已滿）— 請先匯出備份或清理資料");
+    }
+  }
+}
 let deleted = loadDeleted();
 
 // ---- Categories (editable + persisted) ----
@@ -1703,14 +1739,14 @@ const DEFAULT_CATS = [
 const CAT_PALETTE = ["#2B5CA8","#2C68A6","#C2790B","#7A4F9E","#B4472E","#0E8A8A","#4A6B2A","#B03060"];
 const CATS_KEY = "customer_app_cats_v4";
 function loadCats(){
-  if (storageOK){ try { const raw = localStorage.getItem(CATS_KEY); if (raw){ const a = JSON.parse(raw); if (Array.isArray(a) && a.length) return a; } } catch (e) {} }
+  if (storageOK){ try { const raw = localStorage.getItem(CATS_KEY); if (raw){ const a = JSON.parse(raw); if (Array.isArray(a)) return a; } } catch (e) {} }
   return DEFAULT_CATS.map(c => ({...c}));
 }
 function saveCats(){ if (storageOK){ try { localStorage.setItem(CATS_KEY, JSON.stringify(cats)); } catch (e) {} } }
 let cats = loadCats();
 
 const catCount = key => items.filter(d => d.cat === key).length;
-const catColor = key => { const c = cats.find(x => x.key === key); return c ? c.color : "#8494A0"; };
+const catColor = key => { const c = cats.find(x => x.key === key); return c ? safeColor(c.color) : "#8494A0"; };
 const nextColor = () => CAT_PALETTE.find(col => !cats.some(c => c.color === col)) || CAT_PALETTE[cats.length % CAT_PALETTE.length];
 
 // 首頁類別清單:內容超出可捲時,底部顯示淡出+往下箭頭提示;捲到底自動隱藏
@@ -1727,7 +1763,7 @@ function updateCatsMore(){
 function renderCover(){
   document.getElementById("cats").innerHTML = cats.map(c => `
     <button class="cat-btn" data-cat="${esc(c.key)}">
-      <span class="cat-dot" style="background:${c.color}"></span>
+      <span class="cat-dot" style="background:${safeColor(c.color)}"></span>
       <span class="cat-main"><b>${esc(c.key)}</b></span>
       <span class="cat-ct">${catCount(c.key)}</span>
       <span class="arrow">→</span>
@@ -1743,12 +1779,12 @@ function renderTabs(){
 }
 function refreshCategories(){
   saveCats();
-  touchCats();
+  if (typeof touchCats === "function") touchCats();
   renderCover();
   renderTabs();
   renderCatOptions();
   applyFilter();
-  scheduleSync();
+  if (typeof scheduleSync === "function") scheduleSync();
 }
 renderCover();
 
@@ -1850,6 +1886,7 @@ function syncToggleUI(){
   if (fc) fc.classList.toggle("on", typeof anyColFilter === "function" && anyColFilter());   // 有欄位篩選時才出現
   const ce = document.getElementById("cards");
   if (ce) ce.classList.toggle("cmode-view", !editMode);
+  if (tableWrap) tableWrap.classList.toggle("edit-mode", editMode);   // 表格展開區底色:編輯=灰、正常=淺藍
 }
 function syncTableMode(){
   document.getElementById("app").classList.toggle("table-mode", viewMode==="table" && listView.classList.contains("active"));
@@ -1918,7 +1955,7 @@ function trowHTML(d){
     : `<div class="tcell tdate" data-field="date" title="${esc(d.date)}">${esc(d.date)}</div>`;
   const dateCell = `<td class="datewrap"><span class="gen-edge"></span><button type="button" class="gen-btn" data-gen="1" title="生成買方名稱並複製" aria-label="生成買方名稱並複製">${GEN_ICON}<span class="gen-label">生成</span></button>${dateInner}</td>`;
   // 重繪時直接帶上列狀態:展開列(首次排版即為淡化樣式,聚焦轉場不會重播)+ 批次選取列(同步重繪不掉選取)
-  const _trCls = ((openNeedId === d.id) ? "exp-open " : "") + ((tselMode && selected.has(d.id)) ? "tsel-row" : "");
+  const _trCls = ((openNeedId === d.id) ? ("exp-open" + (editMode ? " exp-editing" : "") + " ") : "") + ((tselMode && selected.has(d.id)) ? "tsel-row" : "");
   return `<tr data-id="${esc(d.id)}"${_trCls.trim() ? ` class="${_trCls.trim()}"` : ""}>`+
     dateCell+
     optCell("status","status")+
@@ -1965,11 +2002,7 @@ function renderTable(list){
   const bodyWrap = tableWrap.querySelector(".tbody-wrap");
   if (bodyWrap){ bodyWrap.scrollTop = sTop; bodyWrap.scrollLeft = sLeft; }
   if (headWrap) headWrap.scrollLeft = sLeft;
-  if (headWrap && bodyWrap){
-    let syncing = false;
-    const link = (from, to) => from.addEventListener("scroll", () => { if (syncing) return; syncing = true; to.scrollLeft = from.scrollLeft; syncing = false; });
-    link(bodyWrap, headWrap); link(headWrap, bodyWrap);
-  }
+  if (headWrap && bodyWrap) bindTableScrollSync(headWrap, bodyWrap);
   // 切模式/重繪後還原原本展開的那一列(不搶焦點)
   if (openNeedId && bodyWrap){
     const otr = bodyWrap.querySelector(`tr[data-id="${openNeedId}"]`);
@@ -1983,8 +2016,18 @@ function syncTableChrome(){
   const sbw = Math.max(0, bw.offsetWidth - bw.clientWidth);
   tableWrap.style.setProperty("--sbw", sbw + "px");
 }
+function bindTableScrollSync(headWrap, bodyWrap){
+  if (tableWrap._scrollUnbind){ tableWrap._scrollUnbind(); tableWrap._scrollUnbind = null; }
+  let syncing = false;
+  const onBody = () => { if (syncing) return; syncing = true; headWrap.scrollLeft = bodyWrap.scrollLeft; syncing = false; };
+  const onHead = () => { if (syncing) return; syncing = true; bodyWrap.scrollLeft = headWrap.scrollLeft; syncing = false; };
+  bodyWrap.addEventListener("scroll", onBody);
+  headWrap.addEventListener("scroll", onHead);
+  tableWrap._scrollUnbind = () => { bodyWrap.removeEventListener("scroll", onBody); headWrap.removeEventListener("scroll", onHead); };
+}
 // 編輯中(格子聚焦、連結框或類別選單開啟)時,暫停同步重繪,避免游標被打斷、畫面跳動
 window.isTableBusy = function(){
+  if (modalBg.classList.contains("open") || detailBg.classList.contains("open")) return true;
   if (tselMode) return true;             // 批次刪除選取中:暫停同步重繪,選取狀態不被洗掉
   const a = document.activeElement;
   if (a && a.classList && a.classList.contains("tcell")) return true;
@@ -1993,6 +2036,10 @@ window.isTableBusy = function(){
   const lp = document.getElementById("linkpop"); if (lp && lp.classList.contains("show")) return true;
   const cm = document.getElementById("catmenu"); if (cm && cm.classList.contains("show")) return true;
   const tm = document.getElementById("toptmenu"); if (tm && tm.classList.contains("show")) return true;
+  const cb = document.getElementById("calBg"); if (cb && cb.classList.contains("open")) return true;
+  const fb = document.getElementById("fltBg"); if (fb && fb.classList.contains("open")) return true;
+  const cbg = document.getElementById("catBg"); if (cbg && cbg.classList.contains("open")) return true;
+  const cf = document.getElementById("confirmBg"); if (cf && cf.classList.contains("open")) return true;
   return false;
 };
 
@@ -2028,6 +2075,7 @@ function caretEnd(el){ try{ const r=document.createRange(); r.selectNodeContents
 // 若游標還停在某格就直接切背景/關 App,那格內容還在 DOM、沒寫進 items,會導致同步出去的是舊資料。切背景/關閉前先呼叫這個。
 function flushEditing(){
   try {
+    if (modalBg.classList.contains("open")){ commitFormIfOpen(); return; }
     const el = document.activeElement;
     if (!el || !el.classList) return;
     if (el.classList.contains("tcell") && el.getAttribute("contenteditable") === "true"){
@@ -2092,7 +2140,7 @@ function openNeedExp(tr, doFocus){
   const id = tr.dataset.id;
   tableWrap.querySelectorAll(".needexp").forEach(ex => {
     commitAllSegs(ex);
-    const orow = tableWrap.querySelector(`tr[data-id="${ex.dataset.for}"]`); if (orow) orow.classList.remove("exp-open");
+    const orow = tableWrap.querySelector(`tr[data-id="${ex.dataset.for}"]`); if (orow) orow.classList.remove("exp-open", "exp-editing");
     ex.remove();
   });
   const it = items.find(x => x.id === id); if (!it) return;
@@ -2324,7 +2372,7 @@ function closeNeedExp(){
   const tr = tableWrap.querySelector(`tr[data-id="${ex.dataset.for}"]`);
   commitAllSegs(ex);
   ex.remove();
-  if (tr) tr.classList.remove("exp-open");
+  if (tr) tr.classList.remove("exp-open", "exp-editing");
   openNeedId = null;
 }
 function toggleNeedExp(tr){
@@ -2333,7 +2381,7 @@ function toggleNeedExp(tr){
   const nx = tr.nextElementSibling;
   if (nx && nx.classList.contains("needexp") && nx.dataset.for === id){
     commitAllSegs(nx);
-    nx.remove(); tr.classList.remove("exp-open"); openNeedId = null; return;
+    nx.remove(); tr.classList.remove("exp-open", "exp-editing"); openNeedId = null; return;
   }
   openNeedExp(tr, true);
 }
@@ -2688,13 +2736,17 @@ tableWrap.addEventListener("pointerdown", e => {
   const h = e.target.closest(".col-resize"); if (!h) return;
   e.preventDefault(); e.stopPropagation();
   const field = h.dataset.field, now = Date.now();
-  if (field === _lastRzField && (now - _lastRzTime) < 350){
+  if (field === _lastRzField && (now - _lastRzTime) < 500){
     _lastRzTime = 0; _lastRzField = null; autoFitColumn(field); return;
   }
   _lastRzField = field; _lastRzTime = now;
   const th = h.closest("th"), idx = T_FIELDS.indexOf(field);
   _rz = { field, startX: e.clientX, startW: th.offsetWidth, h, hMin: colHeaderMin(idx), moved: false };
   h.classList.add("dragging"); document.body.classList.add("col-resizing");
+});
+tableWrap.addEventListener("dblclick", e => {
+  const h = e.target.closest(".col-resize");
+  if (h && h.dataset.field){ e.preventDefault(); e.stopPropagation(); autoFitColumn(h.dataset.field); }
 });
 window.addEventListener("pointermove", e => {
   if (!_rz) return;
@@ -2759,7 +2811,7 @@ tableWrap.addEventListener("click", e=>{
     if (editMode){ e.stopPropagation(); openLinkPop(chip); }
     else {
       const u = (chip.dataset.url || "").trim();
-      if (u) window.open(u, "_blank", "noopener");
+      if (u) openExtUrl(u);
       else toast(chip.dataset.label + " 尚未設定連結");
     }
     return;
@@ -2896,6 +2948,10 @@ let catTrigger = null;
 function closeOtherOverlays(keep){
   if (keep !== "cat" && typeof closeCatMenu === "function") closeCatMenu();
   if (keep !== "opt" && typeof closeOptMenu === "function") closeOptMenu();
+  if (keep !== "link"){
+    if (lpop && lpop.classList.contains("show") && typeof commitLink === "function") commitLink();
+    else if (typeof closeLinkPop === "function") closeLinkPop();
+  }
   if (keep !== "flt" && typeof closeColFlt === "function") closeColFlt();
   if (keep !== "exp" && typeof closeNeedExp === "function") closeNeedExp();
   if (typeof hideNeedHover === "function") hideNeedHover();
@@ -2905,7 +2961,7 @@ function openCatMenu(trigger){
   const it = tFindItem(trigger); if (!it) return;
   catTrigger = trigger;
   catmenu.innerHTML = cats.map(c =>
-    `<button type="button" class="catmenu-opt${c.key===it.cat?' sel':''}" data-key="${esc(c.key)}"><span class="dot" style="background:${c.color}"></span>${esc(c.key)}</button>`
+    `<button type="button" class="catmenu-opt${c.key===it.cat?' sel':''}" data-key="${esc(c.key)}"><span class="dot" style="background:${safeColor(c.color)}"></span>${esc(c.key)}</button>`
   ).join("");
   const r = trigger.getBoundingClientRect();
   catmenu.classList.add("show");
@@ -3162,7 +3218,7 @@ document.getElementById("lpPaste").addEventListener("click", ()=>{
   if (navigator.clipboard && navigator.clipboard.readText){ navigator.clipboard.readText().then(t=>{ lpInput.value=(t||"").trim(); lpRefresh(); lpInput.focus(); }).catch(()=>lpInput.focus()); }
   else lpInput.focus();
 });
-lpOpenBtn.addEventListener("click", ()=>{ const u=lpInput.value.trim(); if (u) window.open(u,"_blank","noopener"); });
+lpOpenBtn.addEventListener("click", ()=>{ const u=lpInput.value.trim(); if (u) openExtUrl(u); });
 
 // 需求內容裡的「連結」:點擊一律開新分頁,並阻止冒泡(避免同時觸發展開/選取等)。
 // 編輯模式的原子標籤(.need-link-chip)也一併支援 —— 先前只有正常模式的 <a> 能點。
@@ -3174,7 +3230,7 @@ document.addEventListener("click", e => {
   e.preventDefault(); e.stopPropagation();
   if (a.classList.contains("need-link-chip")){ openLinkPopNeed(a); return; }   // 編輯模式標籤 → 連結編輯面板(貼上/清除/開啟/完成)
   const u = a.getAttribute("data-url") || a.getAttribute("href");              // 唯讀「連結」是 span(data-url);href 為舊 <a> 相容
-  if (u) window.open(u, "_blank", "noopener");                                 // 正常模式 → 直接開啟
+  if (u) openExtUrl(u);                                 // 正常模式 → 直接開啟
 }, true);
 // span 版「連結」沒有 <a> 的原生鍵盤行為:Tab 聚焦後按 Enter 比照點擊開啟
 document.addEventListener("keydown", e => {
@@ -3183,7 +3239,7 @@ document.addEventListener("keydown", e => {
   if (!a) return;
   e.preventDefault(); e.stopPropagation();
   const u = a.getAttribute("data-url") || a.getAttribute("href");
-  if (u) window.open(u, "_blank", "noopener");
+  if (u) openExtUrl(u);
 });
 // ---- 編輯模式:從「連結」標籤上按下也能拖曳選字 ----
 // contenteditable=false 的原子標籤是「島嶼」:Chromium 從島上按下拖曳只會把整顆標籤做成節點選取,
@@ -3331,7 +3387,10 @@ document.getElementById("viewBtn").addEventListener("click", () => {
   const vm = (viewMode === "table") ? "card" : "table";   // 一顆按鈕:在卡片/表格之間切換
   editMode = false; saveEditMode();     // 切換檢視一律恢復正常模式
   exitSelectMode();                      // 並退出卡片多選(避免刪除列殘留浮在表格上)
-  closeCatMenu(); closeLinkPop(); tableWrap.classList.remove("gen-open");        // 關閉表格的類別/連結浮層,避免懸浮殘留
+  closeCatMenu();
+  if (lpop.classList.contains("show")) commitLink(); else closeLinkPop();
+  if (typeof closeDetail === "function") closeDetail();
+  tableWrap.classList.remove("gen-open");        // 關閉表格的類別/連結浮層,避免懸浮殘留
   setViewMode(vm);
 });
 
@@ -3364,6 +3423,47 @@ function anyColFilter(){
 function clearAllColFilters(){
   Object.keys(colFilter).forEach(k => colFilter[k] = null);
   if (typeof fltB !== "undefined"){ fltB.lo = null; fltB.hi = null; }
+  saveColFilterState();
+}
+function resetListFilters(){
+  if (searchEl) searchEl.value = "";
+  clearAllColFilters();
+}
+const FILTER_STATE_KEY = "customer_app_filters_v1";
+function serializeColFilterState(){
+  const o = {};
+  Object.keys(colFilter).forEach(k => { const s = colFilter[k]; o[k] = s && s.size ? [...s] : null; });
+  return { colFilter: o, fltB: { lo: fltB.lo, hi: fltB.hi } };
+}
+function applyColFilterState(s){
+  if (!s || typeof s !== "object") return;
+  if (s.colFilter && typeof s.colFilter === "object"){
+    Object.keys(colFilter).forEach(k => {
+      const a = s.colFilter[k];
+      colFilter[k] = (Array.isArray(a) && a.length) ? new Set(a) : null;
+    });
+  }
+  if (s.fltB){
+    fltB.lo = (s.fltB.lo != null && isFinite(s.fltB.lo)) ? s.fltB.lo : null;
+    fltB.hi = (s.fltB.hi != null && isFinite(s.fltB.hi)) ? s.fltB.hi : null;
+  }
+}
+function saveColFilterState(){
+  if (!storageOK) return;
+  try { localStorage.setItem(FILTER_STATE_KEY, JSON.stringify(serializeColFilterState())); } catch(e){}
+}
+function loadColFilterState(){
+  if (!storageOK) return;
+  try {
+    const s = JSON.parse(localStorage.getItem(FILTER_STATE_KEY) || "null");
+    if (s) applyColFilterState(s);
+  } catch(e){}
+}
+function remapColFilterCat(oldKey, newKey){
+  const st = colFilter.cat;
+  if (!st || !st.has(oldKey)) return;
+  st.delete(oldKey); st.add(newKey);
+  if (!st.size) colFilter.cat = null;
 }
 // 篩選選項的自訂順序(每欄一份);拖曳調整後記住並同步。新出現的值自動補在後面(照筆劃)。
 function loadFltOrder(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_fltorder_v1") || "null"); if (s && typeof s === "object") return s; } catch(e){} } return {}; }
@@ -3376,6 +3476,7 @@ function orderedFilterVals(f){
   return saved.concat(rest);
 }
 const fltB = { lo:null, hi:null };
+loadColFilterState();
 let fltField = null;
 const FLT_NAME = { area:"區域", cat:"類型", budget:"預算（萬）", rooms:"房數", pType:"車類", pNum:"車數", status:"狀態" };
 function colFilterOn(f){ return f === "budget" ? (fltB.lo != null || fltB.hi != null) : !!(colFilter[f] && colFilter[f].size); }
@@ -3395,15 +3496,16 @@ function openColFlt(f){
   document.getElementById("fltBody").classList.remove("editing"); document.getElementById("fltClear").textContent = "清除此欄篩選";   // 每次開啟回乾淨(長按才進排序)
   renderFltBody();
   fltBg.classList.add("open");
+  lockOverlay();
 }
-function closeColFlt(){ fltBg.classList.remove("open"); fltField = null; }
+function closeColFlt(){ fltBg.classList.remove("open"); fltField = null; unlockOverlay(); applyPendingMergeIfAny(); }
 function renderFltBody(){
   const body = document.getElementById("fltBody");
   if (fltField === "budget"){
     body.innerHTML = `<div class="fbud-hint">顯示預算區間與此範圍有重疊的客戶</div>
       <div class="fbud"><input id="fltLo" inputmode="numeric" placeholder="下限" value="${fltB.lo != null ? fltB.lo : ""}"><span class="bsep">–</span><input id="fltHi" inputmode="numeric" placeholder="上限" value="${fltB.hi != null ? fltB.hi : ""}"></div>`;
     const lo = document.getElementById("fltLo"), hi = document.getElementById("fltHi");
-    const upd = () => { fltB.lo = numOrNull(lo.value); fltB.hi = numOrNull(hi.value); applyFilter(); };
+    const upd = () => { fltB.lo = numOrNull(lo.value); fltB.hi = numOrNull(hi.value); saveColFilterState(); applyFilter(); };
     lo.addEventListener("input", upd); hi.addEventListener("input", upd);
     return;
   }
@@ -3418,6 +3520,7 @@ function renderFltBody(){
     let stt = colFilter[f] || new Set();
     if (cb.checked) stt.add(cb.value); else stt.delete(cb.value);
     colFilter[f] = stt.size ? stt : null;
+    saveColFilterState();
     applyFilter();
   }));
 }
@@ -3426,6 +3529,7 @@ document.getElementById("fltDone").addEventListener("click", closeColFlt);
 document.getElementById("fltClear").addEventListener("click", () => {
   if (document.getElementById("fltBody").classList.contains("editing")){ exitFltEditing(); return; }   // 排序模式:此鈕為「返回」→ 退出排序模式
   if (fltField === "budget"){ fltB.lo = null; fltB.hi = null; } else if (fltField){ colFilter[fltField] = null; }
+  saveColFilterState();
   renderFltBody(); applyFilter();
 });
 fltBg.addEventListener("click", e => { if (e.target === fltBg) closeColFlt(); });
@@ -3512,7 +3616,7 @@ document.addEventListener("pointercancel", endFltDrag);
 //   · undefined + "北屯區"   → 得到 "undefined北屯區",搜「und」誤中
 // 這裡一律先轉成字串;欄位之間夾一個使用者打不出來的分隔字元(US, U+001F),
 // 避免相鄰欄位頭尾相接湊出不存在的字串而假命中。
-const SEARCH_FIELDS = ["cust","area","budget","rooms","parking","pType","pNum","ask","need","need2","need3","t1","t2","t3","cat","status"];   // 刻意排除 date(建檔日)/tel(電話)/line(LINE):這三欄不參與關鍵字搜尋
+const SEARCH_FIELDS = ["cust","area","budget","rooms","parking","pType","pNum","ask","need","need2","need3","t1","t2","t3","cat","status","tel","line"];
 // ("parking" 是車位欄拆分前的舊鍵,舊資料仍帶著 → 保留相容;拆分後的新資料寫在 pType/pNum,補進來才搜得到「平面/機械」等字)
 function searchHay(d){
   let s = "";
@@ -3572,6 +3676,9 @@ function openList(cat){
 function showCover(){
   saveNav("cover");
   exitSelectMode();
+  if (typeof closeColFlt === "function") closeColFlt();
+  if (typeof closeNeedExp === "function") closeNeedExp();   // 離開列表:收合備註展開並提交,避免隱藏 DOM 內未落地編輯遺失
+  if (typeof hideNeedHover === "function") hideNeedHover();
   listView.classList.remove("active");
   syncTableMode();
   cover.style.display = "flex";
@@ -3671,7 +3778,7 @@ function setSort(key){
   applyFilter();
   onLocalChange("settings");
 }
-function openSortSel(){ sortSel.classList.add("open"); sortBtn.setAttribute("aria-expanded","true"); }
+function openSortSel(){ if (typeof closeOtherOverlays === "function") closeOtherOverlays("sort"); sortSel.classList.add("open"); sortBtn.setAttribute("aria-expanded","true"); }
 function closeSortSel(){ sortSel.classList.remove("open"); sortBtn.setAttribute("aria-expanded","false"); }
 sortBtn.addEventListener("click", e => { e.stopPropagation(); sortSel.classList.contains("open") ? closeSortSel() : openSortSel(); });
 sortMenu.addEventListener("click", e => { const o = e.target.closest(".cselect-opt"); if (o){ setSort(o.dataset.key); closeSortSel(); } });
@@ -3692,8 +3799,50 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
 }
+// ---- 全螢幕遮罩:背景捲動鎖定 + 焦點輔助 ----
+let _overlayLock = 0, _focusReturn = null, _inertRoot = null;
+function lockOverlay(returnEl){
+  _overlayLock++;
+  if (_overlayLock === 1){
+    document.documentElement.classList.add("picker-open");
+    document.body.classList.add("picker-open");
+    _inertRoot = document.getElementById("app");
+    if (_inertRoot){
+      _inertRoot.setAttribute("aria-hidden", "true");
+      try { _inertRoot.inert = true; } catch(e){}
+    }
+  }
+  _focusReturn = returnEl || document.activeElement;
+}
+function unlockOverlay(){
+  _overlayLock = Math.max(0, _overlayLock - 1);
+  if (_overlayLock === 0){
+    document.documentElement.classList.remove("picker-open");
+    document.body.classList.remove("picker-open");
+    if (_inertRoot){
+      _inertRoot.removeAttribute("aria-hidden");
+      try { _inertRoot.inert = false; } catch(e){}
+      _inertRoot = null;
+    }
+    try { if (_focusReturn && _focusReturn.focus) _focusReturn.focus(); } catch(e){}
+    _focusReturn = null;
+  }
+}
+function focusTrapEl(el){
+  if (!el) return;
+  const t = el.querySelector('button, [href], input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])');
+  setTimeout(() => { try { (t || el).focus(); } catch(e){} }, 50);
+}
+function trapFocusKey(e, container){
+  if (e.key !== "Tab" || !container) return;
+  const nodes = container.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (!nodes.length) return;
+  const first = nodes[0], last = nodes[nodes.length - 1];
+  if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
 const confirmBg = document.getElementById("confirmBg");
-let confirmCb = null, confirmCancelCb = null;
+let confirmCb = null, confirmCancelCb = null, _confirmDownOnBg = false;
 function askConfirm(title, detail, onYes){
   document.getElementById("confirmTitle").textContent = title;
   const descEl = document.getElementById("confirmDesc");
@@ -3702,12 +3851,15 @@ function askConfirm(title, detail, onYes){
   const ok = document.getElementById("confirmOk"), cancel = document.getElementById("confirmCancel");
   ok.textContent = "確定"; ok.className = "btn-danger"; cancel.textContent = "取消";
   confirmCb = onYes; confirmCancelCb = null;
+  lockOverlay();
   confirmBg.classList.add("open");
+  focusTrapEl(cancel);
 }
-function closeConfirm(){ confirmBg.classList.remove("open"); confirmCb = null; confirmCancelCb = null; }
+function closeConfirm(){ confirmBg.classList.remove("open"); unlockOverlay(); confirmCb = null; confirmCancelCb = null; applyPendingMergeIfAny(); }
 document.getElementById("confirmOk").addEventListener("click", () => { const cb = confirmCb; closeConfirm(); if (cb) cb(); });
 document.getElementById("confirmCancel").addEventListener("click", () => { const cb = confirmCancelCb; closeConfirm(); if (cb) cb(); });
-confirmBg.addEventListener("click", e => { if (e.target === confirmBg) closeConfirm(); });
+confirmBg.addEventListener("pointerdown", e => { _confirmDownOnBg = e.target === confirmBg; });
+confirmBg.addEventListener("click", e => { if (e.target === confirmBg && _confirmDownOnBg) closeConfirm(); _confirmDownOnBg = false; });
 
 // ---- Add / Edit / Delete ----
 const modalBg = document.getElementById("modalBg");
@@ -3764,7 +3916,7 @@ let formCat = "";
 function renderCatOptions(){
   catSelMenu.innerHTML = cats.map(c => `
     <button type="button" class="cselect-opt" data-key="${esc(c.key)}" role="option">
-      <span class="dot" style="background:${c.color}"></span>
+      <span class="dot" style="background:${safeColor(c.color)}"></span>
       <span class="nm">${esc(c.key)}</span>
       <span class="chk">✓</span>
     </button>`).join("");
@@ -3829,7 +3981,7 @@ catSelMenu.addEventListener("click", e => { const o = e.target.closest(".cselect
     render(); calBg.classList.add("open");
   }
   function closeCal(){ calBg.classList.remove("open"); calTarget = FORM_TARGET; }
-  document.getElementById("calPrev").addEventListener("click", () => { calM--; if (calM<0){calM=11;calY--;} render(); });
+  document.getElementById("calPrev").addEventListener("click", () => { calM--; if (calM<0){calM=11;calY--;} if (calY < 1912){ calY = 1912; calM = 0; } render(); });
   document.getElementById("calNext").addEventListener("click", () => { calM++; if (calM>11){calM=0;calY++;} render(); });
   calGrid.addEventListener("click", e => { const b = e.target.closest(".cal-day[data-roc]"); if (b){ calTarget.set(b.dataset.roc); closeCal(); } });
   document.getElementById("calToday").addEventListener("click", () => { calTarget.set(todayROC()); closeCal(); });
@@ -3839,6 +3991,7 @@ catSelMenu.addEventListener("click", e => { const o = e.target.closest(".cselect
   calBg.addEventListener("click", e => { if (e.target === calBg) closeCal(); });
   if (F.date){ F.date.setAttribute("readonly",""); F.date.addEventListener("click", () => openCal(FORM_TARGET)); }
   window.openCalFor = openCal;   // 供表格編輯模式的建檔日共用同一個日曆
+  window.closeCal = closeCal;    // 供 Esc 鍵全域關閉
 })();
 
 document.addEventListener("click", e => { if (!catSel.contains(e.target)) closeCatSel(); });
@@ -4056,9 +4209,23 @@ function openForm(id){
   F.t2.value = d ? (d.t2||"想看") : "想看";
   F.t3.value = d ? (d.t3||"看過") : "看過";
   modalBg.classList.add("open");
-  if (!id) setTimeout(() => F.cust.focus(), 50);
+  lockOverlay();
+  if (!id){
+    const draft = loadFormDraft();
+    if (draft){ applyFormDraft(draft); toast("已還原上次未儲存的新增內容"); }
+    setTimeout(() => F.cust.focus(), 50);
+  }
 }
-function closeForm(){ modalBg.classList.remove("open"); editingId = null; }
+function applyPendingMergeIfAny(){
+  if (window._pendingMerge && typeof window.__applyMerged === "function"){
+    const m = window._pendingMerge; window._pendingMerge = null; window.__applyMerged(m);
+  }
+}
+function closeForm(){
+  modalBg.classList.remove("open"); editingId = null;
+  unlockOverlay();
+  applyPendingMergeIfAny();
+}
 
 // ---- 唯讀詳情:正常模式點卡片本體開啟,沿用展開三段框樣式 ----
 const detailBg = document.getElementById("detailBg");
@@ -4099,8 +4266,13 @@ function openDetail(id){
   const segHTML = seg(needTitle(d,1), d.need, IC_DOC) + seg(needTitle(d,2), d.need2, IC_EYE) + seg(needTitle(d,3), d.need3, IC_CHECK);
   document.getElementById("detailBody").innerHTML = contact + buy + segHTML;
   detailBg.classList.add("open");
+  lockOverlay();
 }
-function closeDetail(){ detailBg.classList.remove("open"); }
+function closeDetail(){
+  detailBg.classList.remove("open");
+  unlockOverlay();
+  applyPendingMergeIfAny();
+}
 document.getElementById("detailClose").addEventListener("click", closeDetail);
 // 詳情頁:水平滑動(左滑或右滑)返回。只在「水平位移明顯大於垂直」時觸發,避免和內容的垂直捲動衝突
 (function(){
@@ -4126,22 +4298,18 @@ document.getElementById("detailBody").addEventListener("click", e => {
 });
 
 
-function saveForm(){
-  const cust = F.cust.value.trim();
-  if (!cust){ toast("請輸入客戶稱呼"); F.cust.focus(); return; }
-  const isEdit = !!editingId;
-  const rec = {
-    cust, cat: formCat,
+function buildFormRec(){
+  return {
+    cust: F.cust.value.trim(), cat: formCat,
     date: F.date.value.trim(),
     area: areaPick.get(),
     status: statusPick.get(),
     budget: F.budget.value.trim(),
-    // 範圍篩選用的 bMin/bMax 從字串解析出來(2000-2500 → 2000/2500;1500以內 → null/1500;2600以上 → 2600/null)
     bMin: (function(){ const r = parseBudget(F.budget.value); return (r && isFinite(r[0]) && r[0] > 0) ? r[0] : null; })(),
     bMax: (function(){ const r = parseBudget(F.budget.value); return (r && isFinite(r[1])) ? r[1] : null; })(),
     rooms: roomsPick.get(),
     parking: fmtParking(ptypePick.get(), pnumPick.get()),
-    pType: ptypePick.get(), pNum: pnumPick.get() || "",   // 車數自由文字:存原文
+    pType: ptypePick.get(), pNum: pnumPick.get() || "",
     tel: F.tel.value.trim(),
     line: F.line.value.trim(),
     ask: normAsk(F.ask.value.trim()),
@@ -4152,14 +4320,77 @@ function saveForm(){
     t2: F.t2.value.trim() || "想看",
     t3: F.t3.value.trim() || "看過",
   };
+}
+const FORM_DRAFT_KEY = "customer_app_form_draft_v1";
+function formDraftHasContent(rec){
+  return !!(rec.cust || rec.area || rec.budget || rec.need || rec.need2 || rec.need3 || rec.tel || rec.ask);
+}
+function saveFormDraft(){
+  if (editingId || !modalBg.classList.contains("open")) return;
+  const rec = buildFormRec();
+  if (!formDraftHasContent(rec)){ clearFormDraft(); return; }
+  try { sessionStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(rec)); } catch(e){}
+}
+function loadFormDraft(){
+  try { const s = sessionStorage.getItem(FORM_DRAFT_KEY); return s ? JSON.parse(s) : null; } catch(e){ return null; }
+}
+function clearFormDraft(){ try { sessionStorage.removeItem(FORM_DRAFT_KEY); } catch(e){} }
+function applyFormDraft(d){
+  if (!d) return;
+  F.cust.value = d.cust || "";
+  setFormCat(d.cat || "");
+  F.date.value = d.date || "";
+  areaPick.set(d.area || "");
+  statusPick.set(d.status || "");
+  F.budget.value = d.budget || "";
+  roomsPick.set(d.rooms || "");
+  ptypePick.set(d.pType || "");
+  pnumPick.set(d.pNum || "");
+  F.tel.value = d.tel || "";
+  F.line.value = d.line || "";
+  F.ask.value = d.ask || "";
+  F.need.innerHTML = d.need ? needToFormHTML(d.need) : "<div><br></div>";
+  F.need2.innerHTML = d.need2 ? needToFormHTML(d.need2) : "<div><br></div>";
+  F.need3.innerHTML = d.need3 ? needToFormHTML(d.need3) : "<div><br></div>";
+  F.t1.value = d.t1 || "需求";
+  F.t2.value = d.t2 || "想看";
+  F.t3.value = d.t3 || "看過";
+}
+(function(){
+  let draftT = null;
+  modalBg.addEventListener("input", () => {
+    if (editingId) return;
+    clearTimeout(draftT);
+    draftT = setTimeout(saveFormDraft, 400);
+  });
+})();
+function commitFormIfOpen(){
+  if (!modalBg.classList.contains("open")) return;
+  if (editingId){
+    const cust = F.cust.value.trim(); if (!cust) return;
+    const i = items.findIndex(x => x.id === editingId); if (i < 0) return;
+    items[i] = {...items[i], ...buildFormRec(), updatedAt: Date.now()};
+    saveItems(); onLocalChange("data");
+  } else {
+    saveFormDraft();
+  }
+}
+function saveForm(){
+  const cust = F.cust.value.trim();
+  if (!cust){ toast("請輸入客戶稱呼"); F.cust.focus(); return; }
+  const isEdit = !!editingId;
+  const rec = buildFormRec();
+  clearFormDraft();
   if (editingId){
     const i = items.findIndex(x => x.id === editingId);
-    if (i > -1) items[i] = {...items[i], ...rec, updatedAt: Date.now()};
+    if (i < 0){ toast("此客戶已不存在，無法儲存"); closeForm(); applyFilter(); return; }
+    items[i] = {...items[i], ...rec, updatedAt: Date.now()};
   } else {
     const now = Date.now();
     items.push({...rec, id: uid(), createdAt: now, updatedAt: now});
   }
   saveItems();
+  window._pendingMerge = null;   // 剛儲存為準,丟掉同步期間的過期合併快照(避免 closeForm 蓋回舊資料)
   closeForm();
   applyFilter();
   onLocalChange("data");
@@ -4570,6 +4801,7 @@ selDelete.addEventListener("click", () => {
   if (!selected.size) return;
   const n = selected.size;
   askConfirm(`刪除所選 ${n} 筆需求？`, "刪除後無法復原，建議先做雲端備份。", () => {
+    if (openNeedId && selected.has(openNeedId) && typeof closeNeedExp === "function") closeNeedExp();
     selected.forEach(id => { deleted[id] = Date.now(); });
     saveDeleted();
     items = items.filter(d => !selected.has(d.id));
@@ -4591,7 +4823,17 @@ let _mbDownOnBg = false;
 modalBg.addEventListener("pointerdown", e => { _mbDownOnBg = (e.target === modalBg); });
 modalBg.addEventListener("click", e => { if (e.target === modalBg && _mbDownOnBg) closeForm(); _mbDownOnBg = false; });
 document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && confirmBg.classList.contains("open")){ e.preventDefault(); document.getElementById("confirmOk").click(); return; }
+  if (e.key === "Tab"){
+    if (confirmBg.classList.contains("open")){ trapFocusKey(e, confirmBg.querySelector(".confirm")); return; }
+    const mbg = document.getElementById("modalBg");
+    const modal = mbg && mbg.classList.contains("open") ? mbg.querySelector(".modal") : null;
+    if (modal){ trapFocusKey(e, modal); return; }
+  }
   if (e.key !== "Escape") return;
+  const ib = document.getElementById("installBar");
+  if (ib && ib.classList.contains("show")){ ib.classList.remove("show"); try { localStorage.setItem("customer_app_install_dismiss_v1", "1"); } catch(err){} return; }
+  if (document.getElementById("calBg").classList.contains("open")){ if (window.closeCal) window.closeCal(); return; }
   if (confirmBg.classList.contains("open")) closeConfirm();
   else if (detailBg.classList.contains("open")) closeDetail();   // 客戶資料檢視
   else if (catBg.classList.contains("open")) closeCatManager();
@@ -4600,6 +4842,8 @@ document.addEventListener("keydown", e => {
   else if (fltBg.classList.contains("open")){ if (document.getElementById("fltBody").classList.contains("editing")) exitFltEditing(); else closeColFlt(); }   // 篩選:排序模式先退出,否則關彈窗
   else if (catmenu.classList.contains("show")) closeCatMenu();                                   // 桌面 ESC:表格類型選單
   else if (toptmenu.classList.contains("show")) closeOptMenu();                                  // 桌面 ESC:先關表格格子下拉
+  else if (lpop.classList.contains("show")) closeLinkPop();                                      // 連結編輯(取消,不儲存)
+  else if (cpick.classList.contains("show")) cpClose(false);                                     // 調色盤
   else if (document.querySelector(".opt-sel.open")){ document.querySelectorAll(".opt-sel.open").forEach(x => x.classList.remove("open")); }   // 再關表單下拉
   else if (modalBg.classList.contains("open")) closeForm();
   else if (tselMode){ exitTselMode(); }                                                         // 桌面 ESC:退出表格批次選取
@@ -4611,7 +4855,8 @@ document.addEventListener("keydown", e => {
 // 設定統一打包/套用(參考物件總覽 schema v5):collectSettings 收集全部偏好;applySettings 型別檢查後逐項套用。
 // 注意:applySettings 只做「純本機儲存+畫面套用」,不呼叫 onLocalChange——由呼叫端決定要不要觸發同步,避免回授迴圈。
 function collectSettings(){
-  return { density: density, sort: currentSort, colw: colW, theme: theme, opts: customOpts, fltorder: filterOrder, expfocus: expFocus, optorder: optOrder };
+  const fs = serializeColFilterState();
+  return { density: density, sort: currentSort, colw: colW, theme: theme, opts: customOpts, fltorder: filterOrder, expfocus: expFocus, optorder: optOrder, colFilter: fs.colFilter, fltB: fs.fltB };
 }
 function applySettings(s){
   if (!s || typeof s !== "object") return;
@@ -4626,10 +4871,12 @@ function applySettings(s){
   if (s.fltorder && typeof s.fltorder === "object"){ filterOrder = s.fltorder; saveFltOrder(); }
   if (typeof s.expfocus === "boolean"){ expFocus = s.expfocus; saveExpFocus(); applyExpFocus(); }
   if (s.optorder && typeof s.optorder === "object"){ optOrder = s.optorder; saveOptOrder(); }
+  if (s.colFilter || s.fltB){ applyColFilterState(s); saveColFilterState(); }
+  applyFilter();
 }
 function backupData(){
   // v5:設定統一放進 settings;頂層 colw/theme/opts 保留一份,讓「舊版 App」也能匯入這個新備份檔(向下相容)
-  return { version: 5, exportedAt: new Date().toISOString(), deviceId, cats, items, deleted, settings: collectSettings(), colw: colW, theme: theme, opts: customOpts };
+  return { version: 5, app: "customer", exportedAt: new Date().toISOString(), deviceId, cats, items, deleted, settings: collectSettings(), colw: colW, theme: theme, opts: customOpts };
 }
 function backupFileName(){
   const d = new Date(), p = n => String(n).padStart(2,"0");
@@ -4645,30 +4892,85 @@ function downloadBackup(){
 }
 document.getElementById("exportBtn").addEventListener("click", () => { downloadBackup(); toast("已下載備份檔"); });
 // 「備份到 Google 雲端」的實作在下方 Google 雲端同步 IIFE 內(用獨立的 drive.file 授權,不影響同步)
+const BACKUP_APP = "customer";
+const BACKUP_MAX_ITEMS = 5000;
+function inferAppFromItems(arr){
+  if (!Array.isArray(arr) || !arr.length) return null;
+  for (let i = 0; i < Math.min(arr.length, 8); i++){
+    const s = arr[i];
+    if (!s || typeof s !== "object" || Array.isArray(s)) continue;
+    const custScore = (s.cust != null ? 1 : 0) + (s.need != null ? 1 : 0) + (s.budget != null ? 1 : 0);
+    const propScore = (s.addr != null ? 1 : 0) + (s.price != null ? 1 : 0) + (s.layout != null ? 1 : 0) + (s.name != null ? 1 : 0) - (s.cust != null ? 2 : 0);
+    if (custScore >= 2) return "customer";
+    if (propScore >= 2) return "property";
+  }
+  return null;
+}
+function detectBackupApp(parsed){
+  const arr = Array.isArray(parsed) ? parsed : (parsed && parsed.items);
+  const inferred = inferAppFromItems(arr);
+  if (!parsed || Array.isArray(parsed)) return inferred;
+  const declared = (parsed.app === "customer" || parsed.app === "property") ? parsed.app : null;
+  if (declared && inferred && declared !== inferred) return inferred;
+  return declared || inferred;
+}
+function validateBackup(parsed){
+  let arr = null;
+  if (Array.isArray(parsed)) arr = parsed;
+  else if (parsed && Array.isArray(parsed.items)) arr = parsed.items;
+  else throw new Error("bad format");
+  if (arr.length){
+    const app = detectBackupApp(parsed);
+    if (!app || app !== BACKUP_APP) throw new Error("wrong_app");
+    if (arr.length > BACKUP_MAX_ITEMS) throw new Error("too_many");
+    for (let i = 0; i < arr.length; i++){
+      const d = arr[i];
+      if (!d || typeof d !== "object" || Array.isArray(d)) throw new Error("bad format");
+    }
+  }
+}
 const importFile = document.getElementById("importFile");
 function applyBackup(parsed){
-  let newItems, newCats = null, newDeleted = null;
+  validateBackup(parsed);
+  let newItems, newCats = null, newDeleted = null, hasDeletedField = false;
   if (Array.isArray(parsed)) { newItems = parsed; }
   else if (parsed && Array.isArray(parsed.items)) {
     newItems = parsed.items;
     if (Array.isArray(parsed.cats) && parsed.cats.length) newCats = parsed.cats;
-    if (parsed.deleted && typeof parsed.deleted === "object") newDeleted = parsed.deleted;
+    if (parsed.deleted && typeof parsed.deleted === "object"){ newDeleted = parsed.deleted; hasDeletedField = true; }
   }
   else throw new Error("bad format");
-  items = newItems.map(d => ({...d, id: d.id || uid(), updatedAt: Date.now()}));
+  if (typeof closeNeedExp === "function") closeNeedExp();   // 匯入覆蓋前列表備註展開先收合提交,避免殘留幽靈展開列
+  if (typeof hideNeedHover === "function") hideNeedHover();
+  const importTs = Date.now();
+  items = newItems.map(d => ({...d, id: d.id || uid(), updatedAt: (d.updatedAt && d.updatedAt > 0) ? d.updatedAt : importTs}));
   if (newCats) { cats = newCats; saveCats(); touchCats(); renderTabs(); renderCatOptions(); }
-  if (newDeleted) { deleted = newDeleted; saveDeleted(); }
+  if (hasDeletedField) { deleted = newDeleted; saveDeleted(); }
+  else { deleted = {}; saveDeleted(); }
   if (parsed && parsed.settings && typeof parsed.settings === "object"){
-    applySettings(parsed.settings);                 // v5:設定統一套用
-    onLocalChange("settings");                      // 更新設定時間戳並排程同步,匯入的設定才會推上雲端
+    applySettings(parsed.settings);
+    onLocalChange("settings");
   } else if (parsed && (parsed.colw || parsed.theme || parsed.opts)){
-    applySettings({ colw: parsed.colw, theme: parsed.theme, opts: parsed.opts });   // v4 舊備份:頂層欄位相容
+    applySettings({ colw: parsed.colw, theme: parsed.theme, opts: parsed.opts });
     onLocalChange("settings");
   }
   saveItems(); renderCover();
+  resetListFilters();
   if (typeof applyFilter === "function") applyFilter();
   onLocalChange("data");
   toast(`已匯入 ${items.length} 筆需求`);
+}
+function confirmApplyBackup(parsed){
+  try { validateBackup(parsed); }
+  catch (e){
+    if (e && e.message === "wrong_app") toast("這是「物件總覽」的備份檔，無法匯入客戶總覽");
+    else if (e && e.message === "too_many") toast("匯入失敗：筆數超過 " + BACKUP_MAX_ITEMS + " 筆上限");
+    else toast("匯入失敗：格式不正確");
+    return;
+  }
+  const n = Array.isArray(parsed) ? parsed.length : (parsed.items || []).length;
+  const cloudNote = syncConnected ? "若已連結 Google 雲端，同步後也會影響雲端資料。" : "";
+  askConfirm("匯入備份檔？", `將以備份檔的 ${n} 筆資料覆蓋本機。${cloudNote}`, () => applyBackup(parsed));
 }
 // 「匯入備份檔」的來源選擇(手機 / Google 雲端)綁定在下方 Google 雲端 IIFE 內
 importFile.addEventListener("change", e => {
@@ -4676,7 +4978,7 @@ importFile.addEventListener("change", e => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    try { applyBackup(JSON.parse(reader.result)); }
+    try { confirmApplyBackup(JSON.parse(reader.result)); }
     catch (err) { toast("匯入失敗：格式不正確"); }
     importFile.value = "";
   };
@@ -4688,6 +4990,8 @@ document.getElementById("resetBtn").addEventListener("click", () => {
     items = SEED.map((d,i) => ({...d, id: "seed"+i, updatedAt: Date.now()}));
     deleted = {}; saveDeleted();
     saveItems(); renderCover();
+    resetListFilters();
+    if (typeof applyFilter === "function") applyFilter();
     onLocalChange("data");
     toast("已還原預設資料");
   });
@@ -4699,10 +5003,14 @@ const settingsView = document.getElementById("settings");
 
 function openSettings(){
   exitSelectMode();
+  if (typeof closeColFlt === "function") closeColFlt();
+  if (typeof closeNeedExp === "function") closeNeedExp();
+  if (typeof flushEditing === "function") flushEditing();
   document.getElementById("app").classList.remove("table-mode");
   settingsView.classList.add("active");
   cover.style.display = "none";
   listView.classList.remove("active");
+  saveNav("settings", currentCat);
   window.scrollTo(0,0);
 }
 function closeSettings(){
@@ -4714,7 +5022,7 @@ function closeSettings(){
 }
 document.getElementById("coverGear").addEventListener("click", e => { e.stopPropagation(); openSettings(); });
 document.getElementById("setBack").addEventListener("click", closeSettings);
-(function(){ const v = document.getElementById("verLine"); if (v) v.textContent = "客戶總覽 · 更新日 " + APP_VERSION; })();
+(function(){ const v = document.getElementById("verLine"); if (v) v.textContent = "客戶總覽 · Cursor 更新日 " + APP_VERSION; })();
 
 // 開機還原上次畫面:上次在列表 → 直接回到該分類的列表(分類已被刪除則回「全部」);上次在封面 → 維持預設
 (function(){
@@ -4751,17 +5059,34 @@ applyTheme();
   if (!bar) return;
   let deferred = null;
   const DKEY = "customer_app_install_dismiss_v1";
+  const ibTxt = bar.querySelector(".ib-txt");
+  const ibInstall = document.getElementById("ibInstall");
+  const ibClose = document.getElementById("ibClose");
   const dismissed = () => { try { return localStorage.getItem(DKEY) === "1"; } catch(e){ return false; } };
   const standalone = () => (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+  const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  function showInstallBar(iosMode){
+    if (dismissed() || standalone()) return;
+    if (iosMode){
+      if (ibTxt) ibTxt.textContent = "在 Safari 點「分享」→「加入主畫面」，離線也能用";
+      if (ibInstall) ibInstall.style.display = "none";
+    } else {
+      if (ibTxt) ibTxt.textContent = "將「客戶總覽」安裝至桌面，離線也能用";
+      if (ibInstall) ibInstall.style.display = "";
+    }
+    bar.classList.add("show");
+    setTimeout(() => { try { if (ibClose) ibClose.focus(); } catch(e){} }, 80);
+  }
   window.addEventListener("beforeinstallprompt", e => {
     e.preventDefault(); deferred = e;
-    if (!standalone() && !dismissed()) bar.classList.add("show");
+    showInstallBar(false);
   });
-  document.getElementById("ibInstall").addEventListener("click", async () => {
+  if (isIOS() && !standalone() && !dismissed()) setTimeout(() => showInstallBar(true), 1200);
+  ibInstall.addEventListener("click", async () => {
     bar.classList.remove("show");
     if (deferred){ deferred.prompt(); try { await deferred.userChoice; } catch(e){} deferred = null; }
   });
-  document.getElementById("ibClose").addEventListener("click", () => {
+  ibClose.addEventListener("click", () => {
     bar.classList.remove("show");
     try { localStorage.setItem(DKEY, "1"); } catch(e){}
   });
@@ -4777,14 +5102,14 @@ function renderCatList(){
   catListEl.innerHTML = cats.map(c => `
     <div class="cat-item" data-key="${esc(c.key)}">
       <span class="cat-drag" aria-label="拖曳排序" title="拖曳排序"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><g fill="currentColor"><circle cx="6" cy="4" r="1.25"/><circle cx="10" cy="4" r="1.25"/><circle cx="6" cy="8" r="1.25"/><circle cx="10" cy="8" r="1.25"/><circle cx="6" cy="12" r="1.25"/><circle cx="10" cy="12" r="1.25"/></g></svg></span>
-      <button type="button" class="cat-color" data-color="${esc(c.color)}" style="background:${esc(c.color)}" aria-label="顏色"></button>
+      <button type="button" class="cat-color" data-color="${esc(safeColor(c.color))}" style="background:${safeColor(c.color)}" aria-label="顏色"></button>
       <input type="text" class="cat-name" value="${esc(c.key)}" aria-label="類別名稱">
       <span class="cat-count">${catCount(c.key)} 筆</span>
       <button class="cat-del" aria-label="刪除類別">🗑</button>
     </div>`).join("");
 }
-function openCatManager(){ renderCatList(); catNewEl.value = ""; catBg.classList.add("open"); }
-function closeCatManager(){ catBg.classList.remove("open"); }
+function openCatManager(){ renderCatList(); catNewEl.value = ""; catBg.classList.add("open"); lockOverlay(); }
+function closeCatManager(){ catBg.classList.remove("open"); unlockOverlay(); applyPendingMergeIfAny(); }
 document.getElementById("catManage").addEventListener("click", openCatManager);
 document.getElementById("catCloseX").addEventListener("click", closeCatManager);
 document.getElementById("catDone").addEventListener("click", closeCatManager);
@@ -4908,9 +5233,11 @@ catListEl.addEventListener("change", e => {
     // 「同 id、同時間戳、內容不同」,配合舊的偏本機平手裁決 → 互相推翻,改名永遠傳不到另一台。
     const _renameTs = Date.now();
     items.forEach(it => { if (it.cat === oldKey){ it.cat = newKey; it.updatedAt = _renameTs; } });
+    remapColFilterCat(oldKey, newKey);
     if (currentCat === oldKey) currentCat = newKey;
     saveItems();
     refreshCategories();
+    onLocalChange("data");
     toast("已改名");
   }
 });
@@ -4924,10 +5251,15 @@ catListEl.addEventListener("click", e => {
     `刪除類別「${key}」？`,
     n > 0 ? `該類別的 ${n} 筆需求會變成未分類，仍可在「全部」中找到。` : "",
     () => {
+      const ts = Date.now();
+      items.forEach(it => { if (it.cat === key){ it.cat = ""; it.updatedAt = ts; } });
+      if (colFilter.cat){ colFilter.cat.delete(key); if (!colFilter.cat.size) colFilter.cat = null; }
+      saveItems();
       cats = cats.filter(c => c.key !== key);
       if (currentCat === key) currentCat = "";
       refreshCategories();
       renderCatList();
+      onLocalChange("data");
       toast("已刪除類別");
     }
   );
@@ -4998,9 +5330,11 @@ document.addEventListener("pointercancel", endCatDrag);
 
   function overlayOpen(){
     return modalBg.classList.contains("open")
+        || detailBg.classList.contains("open")
         || catBg.classList.contains("open")
         || confirmBg.classList.contains("open")
-        || sortSel.classList.contains("open");
+        || sortSel.classList.contains("open")
+        || fltBg.classList.contains("open");
   }
   function currentView(){
     if (settingsView.classList.contains("active")) return "settings";
@@ -5017,7 +5351,8 @@ document.addEventListener("pointercancel", endCatDrag);
   function swipeClosePopups(){
     let closed = false;
     const show = id => { const el = document.getElementById(id); return !!(el && el.classList.contains("show")); };
-    if (show("toptmenu") || show("catmenu") || document.querySelector(".colflt.show, #colflt.show")){
+    const isOpen = id => { const el = document.getElementById(id); return !!(el && el.classList.contains("open")); };
+    if (show("toptmenu") || show("catmenu") || isOpen("fltBg") || isOpen("sortSel") || isOpen("catSel")){
       if (typeof closeOtherOverlays === "function") closeOtherOverlays("exp");   // 展開列保留,只關彈出物
       closed = true;
     }
@@ -5036,6 +5371,8 @@ document.addEventListener("pointercancel", endCatDrag);
     // 起點若在橫向捲動列 / 輸入框 / 下拉選單 / 表格 / 連結視窗上，則不攔截(讓它們正常運作)
     skip = !!(el.closest && el.closest("#tabs, input, textarea, .cselect, .table-wrap, #linkpop, #catmenu, select"));
     if (modalBg.classList.contains("open")) skip = false;  // 編輯表單開啟時,允許滑動關閉
+    const _cb = document.getElementById("calBg");
+    if (_cb && _cb.classList.contains("open")) skip = true;   // 日曆開啟時不攔手勢(日曆有自己的取消/點外關閉)
   }, { passive: true });
 
   document.addEventListener("touchend", function(e){
@@ -5093,6 +5430,9 @@ let syncConnected = false, syncEmail = null;
   window.__settingsTs = loadTs("settings");
   function saveAuth(){ if (storageOK){ try { localStorage.setItem("customer_app_gauth_v1", JSON.stringify({connected: syncConnected, email: syncEmail})); } catch(e){} } }
   function loadAuth(){ if (storageOK){ try { return JSON.parse(localStorage.getItem("customer_app_gauth_v1")||"{}") || {}; } catch(e){} } return {}; }
+  function saveGToken(){ if (storageOK){ try { localStorage.setItem("customer_app_gtoken_v1", JSON.stringify({ t: accessToken, exp: tokenExpiry, email: syncEmail || "" })); } catch(e){} } }
+  function loadGToken(){ if (storageOK){ try { return JSON.parse(localStorage.getItem("customer_app_gtoken_v1") || "null"); } catch(e){} } return null; }
+  function clearGToken(){ if (storageOK){ try { localStorage.removeItem("customer_app_gtoken_v1"); } catch(e){} } }
 
   // expose touch/schedule hooks (called from mutation sites)
   window.touchCats = function(){ window.__catsTs = Date.now(); saveTs("cats", window.__catsTs); };
@@ -5121,6 +5461,7 @@ let syncConnected = false, syncEmail = null;
         accessToken = resp.access_token;
         tokenExpiry = Date.now() + ((resp.expires_in || 3600) - 90) * 1000;
         needReauth = false;
+        saveGToken();
         resolve(accessToken);
       };
       try {
@@ -5148,7 +5489,7 @@ let syncConnected = false, syncEmail = null;
     const token = await ensureToken();
     opts = opts || {}; opts.headers = Object.assign({}, opts.headers, { Authorization: "Bearer " + token });
     let res = await tfetch(url, opts);
-    if (res.status === 401){ accessToken = null; const t2 = await requestToken(false); opts.headers.Authorization = "Bearer " + t2; res = await tfetch(url, opts); }
+    if (res.status === 401){ accessToken = null; clearGToken(); const t2 = await requestToken(false); opts.headers.Authorization = "Bearer " + t2; res = await tfetch(url, opts); }
     return res;
   }
   async function findFile(name){
@@ -5181,7 +5522,7 @@ let syncConnected = false, syncEmail = null;
     if (!res.ok) return null;
     const text = await res.text();
     if (!text) return null;
-    try { return JSON.parse(text); } catch(e){ return null; }
+    try { return JSON.parse(text); } catch(e){ return { __syncCorrupt: true }; }
   }
   async function upload(id, obj){
     const res = await dfetch("https://www.googleapis.com/upload/drive/v3/files/" + id + "?uploadType=media&fields=version", {
@@ -5301,7 +5642,9 @@ let syncConnected = false, syncEmail = null;
       if (res.status === 401 || res.status === 403){ fileToken = null; token = await requestFileToken(true); res = await dl(token); }
       if (!res.ok) throw new Error("download " + res.status);
       const text = await res.text();
-      applyBackup(JSON.parse(text));   // 成功會跳「已匯入 X 筆需求」
+      let parsed;
+      try { parsed = JSON.parse(text); } catch(e){ toast("匯入失敗：格式不正確"); return; }
+      confirmApplyBackup(parsed);   // 成功會跳「已匯入 X 筆需求」
     } catch (e){
       const err = String((e && (e.error || e.type || e.message)) || "");
       if (err === "access_denied" || err.indexOf("popup") >= 0){ toast("已取消"); }
@@ -5367,7 +5710,7 @@ let syncConnected = false, syncEmail = null;
     items = (merged.data.properties || []).map(function(d){ return Object.assign({}, d, { id: d.id || uid(), updatedAt: d.updatedAt || BASE_TS }); });
     saveItems();
     deleted = merged.deleted || {}; saveDeleted();
-    if (merged.cats && Array.isArray(merged.cats.list) && merged.cats.list.length){
+    if (merged.cats && Array.isArray(merged.cats.list)){
       cats = merged.cats.list.map(function(c){ return Object.assign({}, c); });
       window.__catsTs = merged.cats._updatedAt || window.__catsTs; saveTs("cats", window.__catsTs);
       saveCats();
@@ -5388,19 +5731,22 @@ let syncConnected = false, syncEmail = null;
     renderCover(); renderTabs(); renderCatOptions();
     if (typeof renderSortOptions === "function"){ renderSortOptions(); sortTxt.textContent = (SORTS.find(function(x){ return x.key === currentSort; }) || SORTS[0]).label; }
     setDensity(density);
+    if (typeof applyFilter === "function") applyFilter();
   }
+  window.__applyMerged = applyMerged;
 
   // ---- daily snapshot (insurance; keeps one per day, auto-prune to 30 days) ----
   async function pruneSnapshots(keepDays){
     try {
       const q = encodeURIComponent("name contains 'customer-sync-backup-' and trashed=false");
-      const res = await dfetch("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=appDataFolder&fields=files(id,name)");
+      const res = await dfetch("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=appDataFolder&fields=files(id,name)&pageSize=1000");
       const data = await res.json();
       const files = (data && data.files) || [];
-      const cutoff = new Date(Date.now() - keepDays*86400000).toISOString().slice(0,10);
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - keepDays);
+      const cutoffStr = (function(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })(cutoff);
       for (const f of files){
         const m = /customer-sync-backup-(\d{4}-\d{2}-\d{2})\.json/.exec(f.name || "");
-        if (m && m[1] < cutoff){
+        if (m && m[1] < cutoffStr){
           try { await dfetch("https://www.googleapis.com/drive/v3/files/" + f.id, { method: "DELETE" }); } catch(e){}
         }
       }
@@ -5408,7 +5754,7 @@ let syncConnected = false, syncEmail = null;
   }
   async function maybeSnapshot(obj){
     try {
-      const day = new Date().toISOString().slice(0,10);
+      const day = (function(d){ const t = d || new Date(); return t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0") + "-" + String(t.getDate()).padStart(2,"0"); })(new Date());
       const name = "customer-sync-backup-" + day + ".json";
       const existing = await findFile(name);
       if (existing) return;
@@ -5455,6 +5801,7 @@ let syncConnected = false, syncEmail = null;
     } else { off.style.display = ""; on.style.display = "none"; }
   };
 
+  let syncGen = 0;
   // ---- core two-way sync ----
   async function syncNow(force){
     if (!syncConnected) return;
@@ -5463,40 +5810,60 @@ let syncConnected = false, syncEmail = null;
     // 編輯中暫停同步重繪(避免游標被打斷);但 force=true(切背景/關閉)例外:此時已 flushEditing 存好、使用者要離開了,
     // 應盡力把變更推上雲端(背景重繪看不到、也不會丟資料),否則「編輯沒點掉就切背景」換裝置會拿到舊資料。
     if (!force && window.isTableBusy && window.isTableBusy()){ clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 2000); return; }
+    const thisRun = ++syncGen;
     inFlight = true; setStatus("同步中…", "busy");
-    let __wd = setTimeout(function(){ if (inFlight){ inFlight = false; setStatus("同步逾時，稍後重試", "warn"); if (window.refreshLed) window.refreshLed(); } }, 40000);
+    let __wd = setTimeout(function(){ if (inFlight && thisRun === syncGen){ inFlight = false; setStatus("同步逾時，稍後重試", "warn"); if (window.refreshLed) window.refreshLed(); } }, 40000);
     try {
       await ensureToken();
       await ensureFileId();
-      let tries = 0, pushed = null;
+      let tries = 0, pushed = null, syncComplete = false;
       while (tries < 3){
         tries++;
         const remote = await download();
-        dirty = false;   // 本輪 buildLocal 已涵蓋目前為止的所有變更;若中途又有編輯,scheduleSync 會重新標回 true
+        if (remote && remote.__syncCorrupt){
+          dirty = wasDirty || dirty;
+          setStatus("雲端資料損壞，請從快照還原", "warn");
+          break;
+        }
         const local = buildLocal();
+        dirty = false;   // 本輪 buildLocal 已涵蓋目前為止的所有變更;若中途又有編輯,scheduleSync 會重新標回 true
         const merged = mergeMain(local, remote);
+        const localCanon = canonical(local);
+        const mergedCanon = canonical(merged);
         // 合併結果跟本機一致就不套用:applyMerged 會整表重繪,無故執行會偷走使用中的焦點/游標,
         // 也會讓展開聚焦的淡化轉場重播。只有真的有差異(遠端帶來新東西)才需要重繪。
-        if (canonical(merged) !== canonical(local)) applyMerged(merged);
-        const needPush = !remote || canonical(merged) !== canonical(remote);
-        if (!needPush){ lastVersion = await getVersion(); break; }
+        if (mergedCanon !== localCanon){
+          if (modalBg.classList.contains("open") || detailBg.classList.contains("open") || catBg.classList.contains("open") || fltBg.classList.contains("open") || confirmBg.classList.contains("open")) window._pendingMerge = merged;
+          else applyMerged(merged);
+        }
+        const needPush = !remote || mergedCanon !== canonical(remote);
+        if (!needPush){ lastVersion = await getVersion(); syncComplete = true; break; }
         merged.rev = ((remote && remote.rev) || 0) + 1; merged.lastWriteBy = deviceId; merged.updatedAt = Date.now();
         const newVer = await upload(fileId, merged);
         const afterVer = await getVersion();
         pushed = merged;
-        if (afterVer && newVer && afterVer === newVer){ lastVersion = afterVer; break; }
+        if (afterVer && newVer && afterVer === newVer){ lastVersion = afterVer; syncComplete = true; break; }
         // else someone wrote concurrently → loop and re-merge
       }
-      if (pushed) maybeSnapshot(pushed);
-      retryMs = 5000;   // 成功:重試退避歸位
-      needReauth = false;   // 同步成功=授權有效:清掉可能殘留的「需要重新連結」(離線誤設,或 token 未過期沒走 requestToken 的情況)
-      setStatus("已同步", "ok");
-      try { localStorage.setItem("customer_app_lastsync_v1", String(Date.now())); } catch(e){}
-      window.renderLastSync();
+      if (!syncComplete){
+        dirty = true;
+        setStatus("同步未完成，稍後重試", "warn");
+        clearTimeout(pushTimer);
+        pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
+        retryMs = Math.min(retryMs * 2, 60000);
+      } else {
+        if (pushed) maybeSnapshot(pushed);
+        retryMs = 5000;   // 成功:重試退避歸位
+        needReauth = false;   // 同步成功=授權有效:清掉可能殘留的「需要重新連結」(離線誤設,或 token 未過期沒走 requestToken 的情況)
+        setStatus("已同步", "ok");
+        try { localStorage.setItem("customer_app_lastsync_v1", String(Date.now())); } catch(e){}
+        window.renderLastSync();
+      }
     } catch (e){
       dirty = dirty || wasDirty;   // 這輪沒完成:把進場時的未推狀態還原(中途的新編輯本來就會自己標 true)
       if (e && (e.error === "access_denied" || e.error === "interaction_required" || e.error === "login_required")){
         needReauth = true; setStatus("需要重新連結", "warn"); window.renderSyncCard();
+        clearTimeout(pushTimer); pushTimer = null;
         // 真正的授權問題(token 失效且無法 silent 刷新)才不自動重試:等使用者重新連結。
         // 注意:GIS 元件沒載入(離線常見)的 Error("gis") 已排除在外,改走下面的「稍後重試」,回到有網路會自動再試。
       } else {
@@ -5507,7 +5874,7 @@ let syncConnected = false, syncEmail = null;
         pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
         retryMs = Math.min(retryMs * 2, 60000);
       }
-    } finally { clearTimeout(__wd); inFlight = false; }
+    } finally { if (thisRun === syncGen){ clearTimeout(__wd); inFlight = false; } }
   }
   window.__syncNow = syncNow;
 
@@ -5530,7 +5897,7 @@ let syncConnected = false, syncEmail = null;
       const res = await dfetch("https://www.googleapis.com/oauth2/v2/userinfo");
       const info = await res.json();
       syncEmail = info.email || "已連結"; syncConnected = true; needReauth = false;
-      saveAuth(); window.renderSyncCard();
+      saveAuth(); saveGToken(); window.renderSyncCard();
       await syncNow();
       startPolling();
       toast("已連結 Google 雲端");
@@ -5542,6 +5909,7 @@ let syncConnected = false, syncEmail = null;
     askConfirm("解除 Google 連結？", "只會停止這台裝置的同步，雲端資料不會被刪除。", function(){
       if (accessToken && window.google && google.accounts && google.accounts.oauth2){ try { google.accounts.oauth2.revoke(accessToken, function(){}); } catch(e){} }
       syncConnected = false; syncEmail = null; accessToken = null; tokenExpiry = 0; fileId = null; lastVersion = null; needReauth = false;
+      clearGToken();
       stopPolling(); saveAuth(); window.renderSyncCard(); refreshLed();
       toast("已解除連結");
     });
@@ -5601,6 +5969,10 @@ let syncConnected = false, syncEmail = null;
     const auth = loadAuth();
     if (auth && auth.connected){
       syncConnected = true; syncEmail = auth.email || null;
+      const gt = loadGToken();
+      if (gt && gt.t && gt.exp && Date.now() < gt.exp - 60000 && (gt.email || "") === (syncEmail || "")){
+        accessToken = gt.t; tokenExpiry = gt.exp;
+      }
       window.renderSyncCard();
       syncNow().then(function(){ if (!needReauth) startPolling(); });
     } else {
