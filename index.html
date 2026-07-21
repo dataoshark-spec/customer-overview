@@ -974,6 +974,7 @@
      移除後選取會把「連結」字樣一起框進去,但複製時會由序列化把它還原成原始網址,不會複製到字面文字。 */
   .need-link-chip{cursor:pointer;}
   .need-link-chip:hover{background:var(--accent-tint-bd);color:var(--accent-deep);}
+  .need-link:empty,.need-link-chip:empty{display:none;}   /* 刪線分割時偶發空標籤殼 → 不顯示幽靈泡沫 */
   .need-del{text-decoration:line-through;text-decoration-thickness:1px;}   /* 細刪除線,劃在字的垂直中間 */
   .needexp-ed s,.needexp-ed strike{text-decoration-thickness:1px;}         /* execCommand 剛套上、尚未正規化前也維持細線 */
   .nseg-btns{display:inline-flex;align-items:center;gap:6px;flex:none;}    /* 刪線+標題群組:.nseg-head 是 space-between,不包起來兩顆會被撐開 */
@@ -1499,7 +1500,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.21 R-fix5";
+const APP_VERSION = "2026.07.22 R-fix8";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2115,7 +2116,7 @@ function needTitle(it, sg){
 }
 function commitNeedSeg(id, sg, val){
   const it = items.find(x => x.id === id); if (!it) return;
-  val = (val || "").replace(/\s+$/,"");
+  val = normalizeNeedStorage((val || "").replace(/\s+$/,""));
   if (needSeg(it,sg) === val) return;
   if (sg===2) it.need2 = val; else if (sg===3) it.need3 = val; else it.need = val;
   it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
@@ -2244,9 +2245,36 @@ function unwrapStrikesInRange(ed, rg, reselect){
   }
   return hit;
 }
+// 片段是否「有實質內容」:忽略零寬錨點/空白;連結標籤須有網址(空殼不算,避免刪線分割產生幽靈泡沫)
+function needFragHasStuff(root){
+  const box = document.createElement("div");
+  if (root instanceof DocumentFragment || root.nodeType === 1 || root.nodeType === 3) box.appendChild(root.cloneNode(true));
+  else box.appendChild(root);
+  if ([...box.querySelectorAll(".need-link-chip, .need-link")].some(c => (c.getAttribute("data-url") || c.getAttribute("href") || "").trim())) return true;
+  return !!(box.textContent || "").replace(/[\u200B\s]/g, "");
+}
+// 刪線/標題操作後清掉空連結標籤殼與空的 <s>,避免兩顆連結中間出現綠色空泡
+function cleanupNeedEd(ed){
+  if (!ed) return;
+  ed.querySelectorAll(".need-link-chip, .need-link").forEach(c => {
+    const url = (c.getAttribute("data-url") || c.getAttribute("href") || "").trim();
+    const txt = (c.textContent || "").replace(/\u200B/g, "").trim();
+    if (!url) c.remove();
+    else if (!txt) c.textContent = "連結";
+  });
+  [...ed.querySelectorAll("s.need-del, s, strike")].forEach(s => {
+    if (!isStrikeEl(s) || !s.isConnected) return;
+    const probe = document.createElement("div"); probe.appendChild(s.cloneNode(true));
+    if (!needFragHasStuff(probe)){
+      while (s.firstChild) s.parentNode.insertBefore(s.firstChild, s);
+      s.remove();
+    }
+  });
+  ed.normalize();
+}
 function wrapStrikeRange(rg){
   const probe = document.createElement("div"); probe.appendChild(rg.cloneContents());
-  if (!probe.textContent.trim() && !probe.querySelector(".need-link-chip")) return null;   // 空白/空行不包,避免產生 ~~~~ 垃圾
+  if (!needFragHasStuff(probe)) return null;   // 空白/空行不包,避免產生 ~~~~ 垃圾
   const frag = rg.extractContents();
   const sEl = document.createElement("s"); sEl.className = "need-del";
   sEl.appendChild(frag); rg.insertNode(sEl);
@@ -2262,7 +2290,7 @@ function rangeFullyMarked(rg, sel){
   let n, seen = false;
   while (n = walker.nextNode()){
     if (!rg.intersectsNode(n)) continue;
-    if (!n.textContent.replace(/\s+/g,"")) continue;        // 只看選取內、非空白的文字
+    if (!n.textContent.replace(/[\u200B\s]/g,"")) continue;        // 只看選取內、非空白的文字(零寬錨點不算)
     seen = true;
     if (!(n.parentElement && n.parentElement.closest(sel))) return false;   // 有一段不在標記內 → 非「整段已標記」
   }
@@ -2274,35 +2302,86 @@ function _reselect(first, last){
   try { const s2 = window.getSelection(); s2.removeAllRanges(); const r = document.createRange();
     r.setStartBefore(first); r.setEndAfter(last); s2.addRange(r); } catch(_){}
 }
-function unmarkRange(ed, rg, sel){
-  let node = rg.startContainer; if (node.nodeType === 3) node = node.parentElement;
-  const mk = node && node.closest ? node.closest(sel) : null;
-  // 選取完整落在單一標記元素內 → 拆成 前(保留標記)/選取(去標記)/後(保留標記)
-  if (mk && mk.contains(rg.startContainer) && mk.contains(rg.endContainer)){
-    const preR = document.createRange(); preR.selectNodeContents(mk); preR.setEnd(rg.startContainer, rg.startOffset);
-    const postR = document.createRange(); postR.selectNodeContents(mk); postR.setStart(rg.endContainer, rg.endOffset);
-    const preFrag = preR.cloneContents(), midFrag = rg.cloneContents(), postFrag = postR.cloneContents();
-    const hasStuff = f => f.textContent.replace(/\s+/g,"") || f.querySelector(".need-link-chip");
-    const frag = document.createDocumentFragment();
-    if (hasStuff(preFrag)){ const e = mk.cloneNode(false); e.appendChild(preFrag); frag.appendChild(e); }
-    midFrag.querySelectorAll(sel).forEach(el => { const p = el.parentNode; while (el.firstChild) p.insertBefore(el.firstChild, el); el.remove(); });
-    const midNodes = [...midFrag.childNodes]; midNodes.forEach(nn => frag.appendChild(nn));
-    if (hasStuff(postFrag)){ const e = mk.cloneNode(false); e.appendChild(postFrag); frag.appendChild(e); }
-    mk.parentNode.replaceChild(frag, mk);
+function markAncestor(node, sel){
+  if (!node) return null;
+  if (node.nodeType === 3) node = node.parentElement;
+  return node && node.closest ? node.closest(sel) : null;
+}
+// 選取端點有時落在行 div 而非 <s> 內(連結標籤旁特別常見) → 先校正,避免誤走「整段解除」分支
+function normalizeUnmarkRange(rg, ed, sel){
+  const nr = rg.cloneRange();
+  const startMk = markAncestor(nr.startContainer, sel);
+  let endMk = markAncestor(nr.endContainer, sel);
+  if (startMk && !endMk && nr.endContainer.nodeType === 1){
+    const ec = nr.endContainer, eo = nr.endOffset;
+    if (ec === startMk.parentElement || ec === ed){
+      let hit = false;
+      if (eo > 0){
+        const prev = ec.childNodes[eo - 1];
+        if (prev && (prev === startMk || startMk.contains(prev))) hit = true;
+      }
+      if (hit || startMk.contains(nr.commonAncestorContainer)){
+        try { nr.setEnd(startMk, startMk.childNodes.length); endMk = startMk; } catch(_){}
+      }
+    }
+  }
+  if (!markAncestor(nr.startContainer, sel) && nr.startContainer.nodeType === 1){
+    const sc = nr.startContainer, so = nr.startOffset;
+    if (so < sc.childNodes.length){
+      const next = sc.childNodes[so];
+      if (next && next.nodeType === 1 && next.matches && next.matches(sel)){
+        try { nr.setStart(next, 0); } catch(_){}
+      }
+    }
+  }
+  return nr;
+}
+function splitMarkAtRange(mk, rg, sel){
+  const mkR = document.createRange(); mkR.selectNodeContents(mk);
+  const splitR = document.createRange();
+  try {
+    if (rg.compareBoundaryPoints(Range.START_TO_START, mkR) > 0) splitR.setStart(rg.startContainer, rg.startOffset);
+    else splitR.setStart(mk, 0);
+    if (rg.compareBoundaryPoints(Range.END_TO_END, mkR) < 0) splitR.setEnd(rg.endContainer, rg.endOffset);
+    else splitR.setEnd(mk, mk.childNodes.length);
+  } catch(_){ return; }
+  if (splitR.collapsed) return;
+  const preR = document.createRange(); preR.selectNodeContents(mk); preR.setEnd(splitR.startContainer, splitR.startOffset);
+  const postR = document.createRange(); postR.selectNodeContents(mk); postR.setStart(splitR.endContainer, splitR.endOffset);
+  const preFrag = preR.cloneContents(), midFrag = splitR.cloneContents(), postFrag = postR.cloneContents();
+  const frag = document.createDocumentFragment();
+  if (needFragHasStuff(preFrag)){ const e = mk.cloneNode(false); e.appendChild(preFrag); frag.appendChild(e); }
+  midFrag.querySelectorAll(sel).forEach(el => { const p = el.parentNode; while (el.firstChild) p.insertBefore(el.firstChild, el); el.remove(); });
+  [...midFrag.childNodes].forEach(nn => frag.appendChild(nn));
+  if (needFragHasStuff(postFrag)){ const e = mk.cloneNode(false); e.appendChild(postFrag); frag.appendChild(e); }
+  mk.parentNode.replaceChild(frag, mk);
+}
+function unmarkRange(ed, rg, sel, savedAfter){
+  rg = normalizeUnmarkRange(rg, ed, sel);
+  const startMk = markAncestor(rg.startContainer, sel);
+  const endMk = markAncestor(rg.endContainer, sel);
+  if (startMk && endMk === startMk){
+    splitMarkAtRange(startMk, rg, sel);
     ed.normalize();
-    _reselect(midNodes[0], midNodes[midNodes.length - 1]);
+    if (savedAfter) restoreNeedRange(savedAfter);
     return;
   }
-  // 選取涵蓋整個/多個標記 → 解除所有相交的標記元素
-  let first = null, last = null;
-  [...ed.querySelectorAll(sel)].forEach(el => {
-    let inter = false; try { inter = rg.intersectsNode(el); } catch(_){}
-    if (!inter || !el.isConnected) return;
-    while (el.firstChild){ const c = el.firstChild; el.parentNode.insertBefore(c, el); if (!first) first = c; last = c; }
-    el.remove();
+  const marks = [...ed.querySelectorAll(sel)].filter(el => {
+    if (!el.isConnected) return false;
+    try { return rg.intersectsNode(el); } catch(_) { return false; }
+  });
+  const mkR = document.createRange();
+  marks.reverse().forEach(mk => {
+    mkR.selectNodeContents(mk);
+    let startCmp = 0, endCmp = 0;
+    try { startCmp = rg.compareBoundaryPoints(Range.START_TO_START, mkR); endCmp = rg.compareBoundaryPoints(Range.END_TO_END, mkR); } catch(_){}
+    if (startCmp <= 0 && endCmp >= 0){
+      while (mk.firstChild) mk.parentNode.insertBefore(mk.firstChild, mk);
+      mk.remove();
+    } else splitMarkAtRange(mk, rg, sel);
   });
   ed.normalize();
-  _reselect(first, last);
+  if (savedAfter) restoreNeedRange(savedAfter);
 }
 // 通用:把整段(逐行)包成 wrapFn 產生的元素(刪線 / 標題共用)。savedAfter=操作前存下的選取,優先還原全選範圍(避免只框到部分 made)
 function wrapRangeByLine(ed, srcRg, wrapFn, savedAfter){
@@ -2339,13 +2418,14 @@ function toggleNeedStrike(exp){
   const before = editToNeed(ed);
   const saved = saveNeedRange(rg);
   if (rangeFullyMarked(rg, "s,strike,.need-del")){
-    unmarkRange(ed, rg, "s,strike,.need-del");   // 整段都是刪線 → 只取消選取範圍(部分選取時分割,不整段解除)
+    unmarkRange(ed, rg, "s,strike,.need-del", saved);   // 整段都是刪線 → 只取消選取範圍(部分選取時分割,不整段解除)
   } else {
     unwrapStrikesInRange(ed, rg, false);
     restoreNeedRange(saved);
     const sel2 = window.getSelection();
     if (sel2 && sel2.rangeCount) wrapRangeByLine(ed, sel2.getRangeAt(0), wrapStrikeRange, saved);
   }
+  cleanupNeedEd(ed);
   const after = editToNeed(ed);
   if (after !== before) commitNeedSeg(exp.dataset.for, +ed.dataset.seg, after);
 }
@@ -2369,7 +2449,7 @@ function unwrapHeadingsInRange(ed, rg, reselect){
 }
 function wrapHeadingRange(rg){
   const probe = document.createElement("div"); probe.appendChild(rg.cloneContents());
-  if (!probe.textContent.trim() && !probe.querySelector(".need-link-chip")) return null;
+  if (!needFragHasStuff(probe)) return null;
   const frag = rg.extractContents();
   const hEl = document.createElement("span"); hEl.className = "need-h";
   hEl.appendChild(frag); rg.insertNode(hEl);
@@ -2385,13 +2465,14 @@ function toggleNeedHeading(exp){
   const before = editToNeed(ed);
   const saved = saveNeedRange(rg);
   if (rangeFullyMarked(rg, "span.need-h")){
-    unmarkRange(ed, rg, "span.need-h");   // 整段都是標題 → 只取消選取範圍(部分選取時分割,不整段解除)
+    unmarkRange(ed, rg, "span.need-h", saved);   // 整段都是標題 → 只取消選取範圍(部分選取時分割,不整段解除)
   } else {
     unwrapHeadingsInRange(ed, rg, false);
     restoreNeedRange(saved);
     const sel2 = window.getSelection();
     if (sel2 && sel2.rangeCount) wrapRangeByLine(ed, sel2.getRangeAt(0), wrapHeadingRange, saved);
   }
+  cleanupNeedEd(ed);
   const after = editToNeed(ed);
   if (after !== before) commitNeedSeg(exp.dataset.for, +ed.dataset.seg, after);
 }
@@ -2476,7 +2557,9 @@ function inlineHTML(t, seg){
     if (pos > i) out += seg(t.slice(i, pos));
     const close = t.indexOf(mark, pos + mlen);
     if (close < 0){ out += seg(t.slice(pos)); break; }
-    const inner = inlineHTML(t.slice(pos + mlen, close), seg);
+    const slice = t.slice(pos + mlen, close);
+    if (tag === "s" && !slice.replace(/[\u200B\s]/g, "") && !/https?:\/\//i.test(slice)){ i = close + mlen; continue; }   // 略過空的 ~~..~~,避免幽靈標記
+    const inner = inlineHTML(slice, seg);
     out += (tag === "h") ? `<span class="need-h">${inner}</span>` : `<s class="need-del">${inner}</s>`;
     i = close + mlen;
   }
@@ -2561,6 +2644,9 @@ function editToNeed(ed){
     }
   });
   return out.join("\n").replace(/\s+$/,"");
+}
+function normalizeNeedStorage(t){
+  return String(t == null ? "" : t).replace(/\u200B/g, "").replace(/~~[\u200B\s]*~~/g, "");
 }
 function needCurLine(ed){
   const sel = window.getSelection(); if (!sel || !sel.rangeCount) return null;
@@ -3399,7 +3485,9 @@ function needClipboardHandler(e, isCut){
   e.preventDefault();
   if (isCut && ed.getAttribute("contenteditable") === "true"){
     sel.deleteFromDocument();
-    ed.innerHTML = needToEditHTML(editToNeed(ed)) || "<div><br></div>";   // 剪下後重繪,殘餘網址仍是標籤
+    const htmlFn = ed.classList.contains("fneed-ed") ? needToFormHTML : needToEditHTML;
+    ed.innerHTML = htmlFn(editToNeed(ed)) || "<div><br></div>";
+    cleanupNeedEd(ed);   // 剪下後重繪,殘餘網址仍是標籤
     if (typeof placeNeedCaretEnd === "function") placeNeedCaretEnd(ed);
     if (ed.classList.contains("needexp-ed")){
       const w = ed.closest(".needexp"), sg = +ed.dataset.seg;
@@ -3920,15 +4008,25 @@ const F = {
 if (F.ask) F.ask.addEventListener("blur", () => { const v = normAsk(F.ask.value); if (F.ask.value !== v) F.ask.value = v; });
 
 // 表單需求欄(contenteditable):貼上網址→「連結」標籤;游標緊鄰標籤時可整顆刪除
+function pasteNeedField(ed, tx){
+  if (!ed) return;
+  tx = String(tx == null ? "" : tx);
+  if (tx && caretAfterChip(ed)) tx = " " + tx;
+  if (tx.indexOf("\n") < 0) pasteNeedInline(ed, tx);
+  else {
+    try { document.execCommand("insertText", false, tx); } catch(err){}
+    ed.innerHTML = needToFormHTML(editToNeed(ed)) || "<div><br></div>";
+    placeNeedCaretEnd(ed);
+  }
+  cleanupNeedEd(ed);
+}
 [F.need, F.need2, F.need3].forEach(ed => {
   if (!ed) return;
   ed.addEventListener("paste", e => {
     e.preventDefault();
     const cd = e.clipboardData || window.clipboardData;
     let tx = ""; try { tx = (cd && cd.getData("text/plain")) || ""; } catch(err){}
-    try { document.execCommand("insertText", false, tx); } catch(err){}
-    ed.innerHTML = needToFormHTML(editToNeed(ed)) || "<div><br></div>";
-    placeNeedCaretEnd(ed);
+    pasteNeedField(ed, tx);
   });
   ed.addEventListener("keydown", e => {
     if (e.key !== "Backspace" && e.key !== "Delete") return;
@@ -3938,12 +4036,12 @@ if (F.ask) F.ask.addEventListener("blur", () => { const v = normAsk(F.ask.value)
     let chip = null;
     if (e.key === "Backspace"){
       if (node.nodeType === 1) chip = isChip(node.childNodes[off-1]) ? node.childNodes[off-1] : null;
-      else if (node.nodeType === 3 && off === 0) chip = isChip(node.previousSibling) ? node.previousSibling : null;
+      else if (node.nodeType === 3){ let o = off; while (o > 0 && node.textContent[o-1] === "\u200B") o--; if (o === 0) chip = isChip(node.previousSibling) ? node.previousSibling : null; }
     } else {
       if (node.nodeType === 1) chip = isChip(node.childNodes[off]) ? node.childNodes[off] : null;
       else if (node.nodeType === 3 && off === node.textContent.length) chip = isChip(node.nextSibling) ? node.nextSibling : null;
     }
-    if (chip){ e.preventDefault(); chip.remove(); }
+    if (chip){ e.preventDefault(); const _zw = chip.nextSibling; chip.remove(); if (_zw && _zw.nodeType === 3){ _zw.textContent = _zw.textContent.replace(/^\u200B/,""); if (!_zw.textContent) _zw.remove(); } }
   });
 });
 
