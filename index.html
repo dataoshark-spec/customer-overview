@@ -1500,7 +1500,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.22 R-fix10";
+const APP_VERSION = "2026.07.22 R-fix11";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2229,6 +2229,70 @@ function restoreNeedRange(saved){
     return true;
   } catch(_){ return false; }
 }
+function needLines(ed){ return [...ed.querySelectorAll(":scope > div")]; }
+function needOffsetInLine(line, container, offset){
+  const r = document.createRange();
+  r.selectNodeContents(line);
+  try { r.setEnd(container, offset); } catch(_){ return 0; }
+  return r.toString().length;
+}
+function needPointAtOffset(line, off){
+  const r0 = document.createRange(); r0.selectNodeContents(line);
+  const len = r0.toString().length;
+  off = Math.max(0, Math.min(off, len));
+  if (off === 0){
+    const w = document.createTreeWalker(line, NodeFilter.SHOW_TEXT, null);
+    const n = w.nextNode();
+    if (n) return { node: n, offset: 0 };
+    return { node: line, offset: 0 };
+  }
+  let pos = 0;
+  const w = document.createTreeWalker(line, NodeFilter.SHOW_TEXT, null);
+  let n;
+  while (n = w.nextNode()){
+    const t = n.textContent;
+    for (let i = 0; i < t.length; i++){
+      if (pos === off) return { node: n, offset: i };
+      pos++;
+    }
+    if (pos === off) return { node: n, offset: t.length };
+  }
+  return { node: r0.endContainer, offset: r0.endOffset };
+}
+function saveNeedBookmark(ed, rg){
+  const sL = lineDivOf(rg.startContainer, ed, rg.startOffset, false);
+  const eL = lineDivOf(rg.endContainer, ed, rg.endOffset, true);
+  if (!sL || !eL) return null;
+  const lines = needLines(ed);
+  const si = lines.indexOf(sL), ei = lines.indexOf(eL);
+  if (si < 0 || ei < 0) return null;
+  return {
+    si, ei,
+    so: needOffsetInLine(sL, rg.startContainer, rg.startOffset),
+    eo: needOffsetInLine(eL, rg.endContainer, rg.endOffset)
+  };
+}
+function restoreNeedBookmark(ed, bm){
+  if (!bm) return false;
+  const lines = needLines(ed);
+  const sL = lines[bm.si], eL = lines[bm.ei];
+  if (!sL || !eL) return false;
+  const start = needPointAtOffset(sL, bm.so);
+  const end = needPointAtOffset(eL, bm.eo);
+  if (!start || !end) return false;
+  try {
+    const sel = window.getSelection(); sel.removeAllRanges();
+    const r = document.createRange();
+    r.setStart(start.node, start.offset);
+    r.setEnd(end.node, end.offset);
+    sel.addRange(r);
+    return true;
+  } catch(_){ return false; }
+}
+function reselectAfterNeedOp(ed, bookmark, pick){
+  if (restoreNeedBookmark(ed, bookmark)) return true;
+  return reselectNeedPick(pick, null);
+}
 function unwrapStrikesInRange(ed, rg, reselect){
   const strikeSel = "s,strike,.need-del";
   let hit = false, first = null, last = null;
@@ -2453,11 +2517,11 @@ function toggleNeedStrike(exp){
   const ed = el && el.closest ? el.closest('.needexp-ed[contenteditable="true"]') : (an === undefined ? null : (an && an.nodeType === 1 && an.classList && an.classList.contains("needexp-ed") ? an : null));
   if (!ed || !exp.contains(ed)){ toast("先選取要加刪除線的文字"); return; }
   const before = editToNeed(ed);
+  const bookmark = saveNeedBookmark(ed, rg);
   const saved = saveNeedRange(rg);
   let pick = null;
   if (rangeFullyMarked(rg, "s,strike,.need-del")){
     pick = unmarkRange(ed, rg, "s,strike,.need-del");
-    reselectNeedPick(pick, null);
   } else {
     unwrapStrikesInRange(ed, rg, false);
     restoreNeedRange(saved);
@@ -2465,6 +2529,7 @@ function toggleNeedStrike(exp){
     if (sel2 && sel2.rangeCount) wrapRangeByLine(ed, sel2.getRangeAt(0), wrapStrikeRange, saved);
   }
   cleanupNeedEd(ed);
+  reselectAfterNeedOp(ed, bookmark, pick);
   const after = editToNeed(ed);
   if (after !== before) commitNeedSeg(exp.dataset.for, +ed.dataset.seg, after);
 }
@@ -2502,11 +2567,11 @@ function toggleNeedHeading(exp){
   const ed = el && el.closest ? el.closest('.needexp-ed[contenteditable="true"]') : null;
   if (!ed || !exp.contains(ed)){ toast("先選取要設為標題的文字"); return; }
   const before = editToNeed(ed);
+  const bookmark = saveNeedBookmark(ed, rg);
   const saved = saveNeedRange(rg);
   let pick = null;
   if (rangeFullyMarked(rg, "span.need-h")){
     pick = unmarkRange(ed, rg, "span.need-h");
-    reselectNeedPick(pick, null);
   } else {
     unwrapHeadingsInRange(ed, rg, false);
     restoreNeedRange(saved);
@@ -2514,6 +2579,7 @@ function toggleNeedHeading(exp){
     if (sel2 && sel2.rangeCount) wrapRangeByLine(ed, sel2.getRangeAt(0), wrapHeadingRange, saved);
   }
   cleanupNeedEd(ed);
+  reselectAfterNeedOp(ed, bookmark, pick);
   const after = editToNeed(ed);
   if (after !== before) commitNeedSeg(exp.dataset.for, +ed.dataset.seg, after);
 }
