@@ -1500,7 +1500,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.22 R-fix13";
+const APP_VERSION = "2026.07.22 R-fix14";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2037,9 +2037,11 @@ function isNeedExpEditing(){
   if (a.dataset && a.dataset.titleedit) return true;
   return false;
 }
-// 編輯中(格子聚焦、連結框或類別選單開啟)時,暫停同步重繪,避免游標被打斷、畫面跳動
+// 編輯中(格子聚焦、連結框或類別選單開啟)時,暫停同步重繪,避免游標被打斷、畫面跳動。
+// 注意:唯讀詳情(detailBg)不算忙碌——雲端合併已走 _pendingMerge,關詳情再套用;
+// 若把 detail 算 busy,瀏覽卡片時燈會一直橘黃閃(pending)、同步也被卡住。
 window.isTableBusy = function(){
-  if (modalBg.classList.contains("open") || detailBg.classList.contains("open")) return true;
+  if (modalBg.classList.contains("open")) return true;   // 編輯/新增表單才算忙碌
   if (tselMode) return true;             // 批次刪除選取中:暫停同步重繪,選取狀態不被洗掉
   const a = document.activeElement;
   if (a && a.classList && a.classList.contains("tcell")) return true;
@@ -4551,6 +4553,7 @@ function closeDetail(){
   detailBg.classList.remove("open");
   unlockOverlay();
   applyPendingMergeIfAny();
+  if (window.refreshLed) window.refreshLed();   // 關詳情後刷新燈(避免殘留 pending 顯示)
 }
 document.getElementById("detailClose").addEventListener("click", closeDetail);
 // 詳情頁:水平滑動(左滑或右滑)返回。只在「水平位移明顯大於垂直」時觸發,避免和內容的垂直捲動衝突
