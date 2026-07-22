@@ -1500,7 +1500,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.22 R-fix12";
+const APP_VERSION = "2026.07.22 R-fix13";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -4049,12 +4049,18 @@ function toast(msg){
   toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
 }
 // ---- 全螢幕遮罩:背景捲動鎖定 + 焦點輔助 ----
-let _overlayLock = 0, _focusReturn = null, _inertEls = null;
+let _overlayLock = 0, _focusReturn = null, _inertEls = null, _scrollLockY = 0;
 function lockOverlay(returnEl){
   _overlayLock++;
   if (_overlayLock === 1){
+    _scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
     document.documentElement.classList.add("picker-open");
     document.body.classList.add("picker-open");
+    document.body.style.position = "fixed";
+    document.body.style.top = (-_scrollLockY) + "px";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
     const app = document.getElementById("app");
     if (app){
       _inertEls = [];
@@ -4071,8 +4077,15 @@ function lockOverlay(returnEl){
 function unlockOverlay(){
   _overlayLock = Math.max(0, _overlayLock - 1);
   if (_overlayLock === 0){
+    const y = _scrollLockY;
     document.documentElement.classList.remove("picker-open");
     document.body.classList.remove("picker-open");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    window.scrollTo(0, y);
     if (_inertEls){
       _inertEls.forEach(el => {
         el.removeAttribute("aria-hidden");
@@ -4080,7 +4093,7 @@ function unlockOverlay(){
       });
       _inertEls = null;
     }
-    try { if (_focusReturn && _focusReturn.focus) _focusReturn.focus(); } catch(e){}
+    try { if (_focusReturn && _focusReturn.focus) _focusReturn.focus({ preventScroll: true }); } catch(e){ try { if (_focusReturn && _focusReturn.focus) _focusReturn.focus(); } catch(e2){} }
     _focusReturn = null;
   }
 }
