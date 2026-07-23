@@ -14,6 +14,13 @@
   /* 註冊 service worker:讓 Chrome 網址列出現「安裝」圖示,並支援離線開啟 */
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
+      var h = location.hostname;
+      if (h === "127.0.0.1" || h === "localhost") {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) { r.unregister(); });
+        });
+        return;
+      }
       navigator.serviceWorker.register("sw.js").catch(function () {});
     });
   }
@@ -743,7 +750,10 @@
     padding:11px 20px;border-radius:11px;cursor:pointer;transition:filter .15s ease;}
   .btn-danger:hover{filter:brightness(.93);}
   #calBg{z-index:60;}
-  #f_date{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%2394a0ac' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='4.5' width='18' height='16' rx='2.5'/%3E%3Cpath d='M3 9.5h18M8 2.5v4M16 2.5v4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;background-size:18px;padding:10px 40px 10px 12px;cursor:pointer;}
+  #f_date{font-size:.85rem;font-variant-numeric:tabular-nums;color:var(--ink-soft);font-weight:600;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%2394a0ac' stroke-width='2' stroke-linecap='round'%3E%3Crect x='3' y='4.5' width='18' height='16' rx='2.5'/%3E%3Cpath d='M3 9.5h18M8 2.5v4M16 2.5v4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;background-size:16px;padding:9px 34px 9px 10px;cursor:pointer;}
+  #f_budget{font-weight:700;font-variant-numeric:tabular-nums;}
+  #ptypeSel .cselect-btn,#pnumSel .cselect-btn{font-size:.82rem;}
   /* 日曆彈窗:一般情況維持標準遮罩;只有疊在「編輯客戶」表單上時才用近乎不透明的底,避免疊視窗感 */
   #calBg{z-index:60;}
   #calBg.over-modal{background:rgba(255,255,255,.99);}
@@ -864,6 +874,10 @@
   .tcell{padding:9px 10px;min-height:40px;line-height:22px;outline:none;cursor:text;transition:background .12s,box-shadow .12s;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .tcell[data-field="tel"],.tcell[data-field="line"]{font-size:.72rem;}
+  .tcell[data-field="date"],.tcell.tdate{font-size:.66rem;font-variant-numeric:tabular-nums;color:var(--ink-soft);font-weight:600;}
+  .tcell[data-field="budget"]{font-weight:700;font-variant-numeric:tabular-nums;}
+  .tcell[data-field="pType"],.tcell[data-field="pNum"],
+  .topt-trigger[data-field="pType"],.topt-trigger[data-field="pNum"]{font-size:.72rem;}
   .tneed{cursor:pointer;}
   .tneed-ph{color:var(--text-faint);}
   .tneed .tneed-ph{display:block;text-align:center;font-size:.85rem;}
@@ -1109,6 +1123,7 @@
     border:1px solid var(--line);border-radius:11px;box-shadow:0 14px 36px rgba(22,34,42,.2);padding:5px;}
   .catmenu.show{display:block;}
   .topt-trigger{display:block;width:100%;max-width:100%;box-sizing:border-box;min-height:40px;line-height:22px;background:transparent;border:0;border-radius:6px;padding:9px 10px;margin:0;font-family:inherit;font-size:.85rem;color:var(--ink);text-align:center;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .topt-trigger[data-field="date"]{font-size:.66rem;font-weight:600;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
   @media (hover:hover){ .topt-trigger:hover{background:var(--surface-2);} }
   @media (hover:hover){ .exp-open .topt-trigger:hover{background:transparent;} }
   /* 狀態欄(A/S/C 等):表格內一律粗體;空值「—」仍由下方 empty::before 鎖 font-weight:400 */
@@ -1502,7 +1517,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.23A";
+const APP_VERSION = "2026.07.24D";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
