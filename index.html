@@ -1521,7 +1521,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.24I";
+const APP_VERSION = "2026.07.24J";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2144,17 +2144,23 @@ function tPlaceCaretAtPoint(el, x, y){
     } else caretEnd(el);
   } catch(e){ caretEnd(el); }
 }
+function tCellBeginType(cell){
+  if (!cell || !cell.classList.contains("tcell") || !cell.dataset.field || !editMode) return;
+  const active = document.activeElement;
+  if (active && active !== cell && tCellIsEditing(active)) tCellExitEdit(active, {flash: false, defer: true});
+  cell.textContent = "";
+  cell.setAttribute("contenteditable", "true");
+  cell.focus({ preventScroll: true });
+  caretEnd(cell);
+}
 function tCellEdit(cell, x, y){
   if (!cell || !cell.classList.contains("tcell") || !cell.dataset.field || !editMode) return;
   const active = document.activeElement;
   if (active && active !== cell && tCellIsEditing(active)) tCellExitEdit(active, {flash: false, defer: true});
   cell.setAttribute("contenteditable", "true");
   cell.focus({ preventScroll: true });
-  const place = () => {
-    if (x != null && y != null) tPlaceCaretAtPoint(cell, x, y);
-    else caretEnd(cell);
-  };
-  requestAnimationFrame(place);
+  if (x != null && y != null) requestAnimationFrame(() => tPlaceCaretAtPoint(cell, x, y));
+  else caretEnd(cell);
   tScrollFieldIntoView(cell);
 }
 function tNavFieldFromEl(el){
@@ -3180,14 +3186,23 @@ tableWrap.addEventListener("keydown", e => {
   if (e.key === "Delete" || e.key === "Backspace"){
     e.preventDefault(); c.textContent = ""; tCommitCell(c); return;
   }
+  if (e.isComposing || e.key === "Process" || e.keyCode === 229){
+    tCellBeginType(c);
+    return;
+  }
   if (e.key.length === 1){
     e.preventDefault();
-    c.textContent = "";
-    tCellEdit(c);
+    tCellBeginType(c);
     try { document.execCommand("insertText", false, e.key); } catch(err){ c.textContent = e.key; caretEnd(c); }
     clearTimeout(c._saveT);
     c._saveT = setTimeout(function(){ if (c.isConnected) tCommitCell(c); }, 400);
   }
+}, true);
+tableWrap.addEventListener("compositionstart", e => {
+  if (!editMode) return;
+  const c = e.target;
+  if (!c.classList || !c.classList.contains("tcell") || !c.dataset.field || tCellIsEditing(c)) return;
+  tCellBeginType(c);
 }, true);
 // 編輯模式:方向鍵在「選取狀態」直接換欄;「編輯狀態」則在欄內移動游標
 tableWrap.addEventListener("keydown", e => {
