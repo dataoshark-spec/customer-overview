@@ -1521,7 +1521,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.24O";
+const APP_VERSION = "2026.07.24P";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2193,6 +2193,14 @@ function tCellPastePlain(cell, text){
   tCellInsertPlainText(cell, text);
   clearTimeout(cell._saveT);
   cell._saveT = setTimeout(function(){ if (cell.isConnected) tCommitCell(cell); }, 200);
+}
+function tCellCopyPlain(cell){
+  if (!cell || !editMode) return "";
+  const text = (cell.textContent || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  cell.classList.remove("saved"); void cell.offsetWidth; cell.classList.add("saved");
+  setTimeout(() => cell.classList.remove("saved"), 700);
+  return text;
 }
 function tNavFieldFromEl(el){
   if (!el) return null;
@@ -3065,6 +3073,17 @@ tableWrap.addEventListener("paste", e => {
   if (!inEdit && !inSelect) return;
   e.preventDefault();
   tCellPastePlain(cell, tCellExtractPasteText(e));
+});
+// 選取狀態(contenteditable=false)也支援 Ctrl+C 複製整格文字(類 Excel)
+tableWrap.addEventListener("copy", e => {
+  const cell = (e.target && e.target.closest) ? e.target.closest(".tcell[data-field]") : null;
+  if (!cell || !editMode) return;
+  if (tCellIsEditing(cell)) return;
+  if (document.activeElement !== cell) return;
+  const text = tCellCopyPlain(cell);
+  if (!text) return;
+  e.preventDefault();
+  try { e.clipboardData.setData("text/plain", text); } catch(err){}
 });
 // 「連結」標籤刪除:游標緊鄰標籤時按 Backspace/Delete 整顆刪除
 tableWrap.addEventListener("keydown", e => {
