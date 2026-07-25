@@ -1521,7 +1521,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.24M";
+const APP_VERSION = "2026.07.24N";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2153,15 +2153,46 @@ function tCellBeginType(cell){
   cell.focus({ preventScroll: true });
   caretEnd(cell);
 }
-function tCellEdit(cell, x, y){
+function tCellEdit(cell, x, y, opts){
+  opts = opts || {};
   if (!cell || !cell.classList.contains("tcell") || !cell.dataset.field || !editMode) return;
   const active = document.activeElement;
   if (active && active !== cell && tCellIsEditing(active)) tCellExitEdit(active, {flash: false, defer: true});
   cell.setAttribute("contenteditable", "true");
   cell.focus({ preventScroll: true });
-  if (x != null && y != null) requestAnimationFrame(() => tPlaceCaretAtPoint(cell, x, y));
-  else caretEnd(cell);
+  if (x != null && y != null){
+    if (opts.syncCaret) tPlaceCaretAtPoint(cell, x, y);
+    else requestAnimationFrame(() => tPlaceCaretAtPoint(cell, x, y));
+  } else caretEnd(cell);
   tScrollFieldIntoView(cell);
+}
+function tCellExtractPasteText(e){
+  const cd = e.clipboardData || window.clipboardData;
+  let text = "";
+  try { text = (cd && cd.getData("text/plain")) || ""; } catch(err){}
+  if (!text && cd){
+    try { const html = cd.getData("text/html") || ""; if (html){ const tmp = document.createElement("div"); tmp.innerHTML = html; text = tmp.textContent || tmp.innerText || ""; } } catch(err){}
+  }
+  return text.replace(/[\r\n\t]+/g, " ");
+}
+function tCellInsertPlainText(cell, text){
+  let ok = false;
+  try { ok = document.execCommand("insertText", false, text); } catch(err){}
+  if (!ok){
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount){
+      const r = sel.getRangeAt(0); r.deleteContents();
+      const n = document.createTextNode(text); r.insertNode(n);
+      r.setStartAfter(n); r.collapse(true); sel.removeAllRanges(); sel.addRange(r);
+    } else { cell.textContent = text; caretEnd(cell); }
+  }
+}
+function tCellPastePlain(cell, text){
+  if (!cell || !text || !editMode) return;
+  if (!tCellIsEditing(cell)) tCellBeginType(cell);
+  tCellInsertPlainText(cell, text);
+  clearTimeout(cell._saveT);
+  cell._saveT = setTimeout(function(){ if (cell.isConnected) tCommitCell(cell); }, 200);
 }
 function tNavFieldFromEl(el){
   if (!el) return null;
@@ -2921,10 +2952,10 @@ tableWrap.addEventListener("blur", e=>{
   else if (c.dataset && c.dataset.titleedit){ const w = c.closest(".needexp"); if (w) commitNeedTitle(w.dataset.for, +c.dataset.seg, c.textContent); }
 }, true);
 let _tCellTap = { cell: null, t: 0 };
-function tCellEnterEdit(cell, x, y){
+function tCellEnterEdit(cell, x, y, opts){
   if (!cell) return;
   clearTimeout(cell._tSelDelay);
-  tCellEdit(cell, x, y);
+  tCellEdit(cell, x, y, opts);
 }
 // 類 Excel:單擊選取整格、雙擊進入文字編輯(手動偵測雙擊+dblclick 備援;第一下 preventDefault 會讓 detail>=2 失效)
 tableWrap.addEventListener("pointerdown", e => {
@@ -2936,7 +2967,7 @@ tableWrap.addEventListener("pointerdown", e => {
   _tCellTap = { cell, t: now };
   if (dbl){
     e.preventDefault();
-    tCellEnterEdit(cell, e.clientX, e.clientY);
+    tCellEnterEdit(cell, e.clientX, e.clientY, {syncCaret: true});
     return;
   }
   if (tCellIsEditing(cell)) return;
@@ -2948,7 +2979,7 @@ tableWrap.addEventListener("dblclick", e => {
   const cell = e.target.closest(".tcell[data-field]");
   if (!cell) return;
   e.preventDefault();
-  if (!tCellIsEditing(cell)) tCellEnterEdit(cell, e.clientX, e.clientY);
+  if (!tCellIsEditing(cell)) tCellEnterEdit(cell, e.clientX, e.clientY, {syncCaret: true});
 }, true);
 
 tableWrap.addEventListener("keydown", e => { if (e.target.dataset && e.target.dataset.titleedit && e.key === "Enter"){ e.preventDefault(); e.target.blur(); } }, true);
@@ -3027,15 +3058,13 @@ tableWrap.addEventListener("paste", e => {
     if (w) commitNeedSeg(w.dataset.for, sg, editToNeed(nedBody));
     return;
   }
-  const cell = e.target.closest && e.target.closest(".tcell");
-  if (!cell || cell.getAttribute("contenteditable") !== "true") return;
+  const cell = e.target.closest && e.target.closest(".tcell[data-field]");
+  if (!cell || !editMode) return;
+  const inEdit = tCellIsEditing(cell);
+  const inSelect = !inEdit && document.activeElement === cell;
+  if (!inEdit && !inSelect) return;
   e.preventDefault();
-  const cd = e.clipboardData || window.clipboardData;
-  let text = "";
-  try { text = (cd && cd.getData("text/plain")) || ""; } catch(err){}
-  if (!text && cd){ try { const h = cd.getData("text/html") || ""; if (h){ const t = document.createElement("div"); t.innerHTML = h; text = t.textContent || ""; } } catch(err){} }
-  text = text.replace(/[\r\n\t]+/g, " ");
-  try { document.execCommand("insertText", false, text); } catch(err){}
+  tCellPastePlain(cell, tCellExtractPasteText(e));
 });
 // 「連結」標籤刪除:游標緊鄰標籤時按 Backspace/Delete 整顆刪除
 tableWrap.addEventListener("keydown", e => {
