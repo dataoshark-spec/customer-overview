@@ -1560,7 +1560,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.24Z";
+const APP_VERSION = "2026.07.24ZA";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -4022,7 +4022,13 @@ function openLinkPopNeed(chip){
   setTimeout(()=>document.addEventListener("click", lpOutside), 0);
 }
 lpInput.addEventListener("input", lpRefresh);
-lpInput.addEventListener("keydown", e=>{ if (e.key==="Enter"){ e.preventDefault(); commitLink(); } else if (e.key==="Escape"){ closeLinkPop(); } });
+lpInput.addEventListener("keydown", e=>{
+  if (e.key==="Enter"){ e.preventDefault(); commitLink(); }
+  else if (e.key==="Escape"){
+    e.preventDefault(); e.stopPropagation();   // 必須擋冒泡:否則 document Esc 會接著 closeNeedExp 把展開整列收掉
+    closeLinkPop();
+  }
+});
 document.getElementById("lpDone").addEventListener("click", commitLink);
 document.getElementById("lpClear").addEventListener("click", ()=>{ lpInput.value=""; lpRefresh(); lpInput.focus(); });
 document.getElementById("lpPaste").addEventListener("click", ()=>{
@@ -5712,13 +5718,13 @@ document.addEventListener("keydown", e => {
   else if (fltBg.classList.contains("open")){ if (document.getElementById("fltBody").classList.contains("editing")) exitFltEditing(); else closeColFlt(); }   // 篩選:排序模式先退出,否則關彈窗
   else if (catmenu.classList.contains("show")) closeCatMenu();                                   // 桌面 ESC:表格類型選單
   else if (toptmenu.classList.contains("show")) closeOptMenu();                                  // 桌面 ESC:先關表格格子下拉
-  else if (lpop.classList.contains("show")) closeLinkPop();                                      // 連結編輯(取消,不儲存)
+  else if (lpop.classList.contains("show")){ e.preventDefault(); closeLinkPop(); }              // 連結編輯(只關面板,不收合需求展開)
   else if (cpick.classList.contains("show")) cpClose(false);                                     // 調色盤
   else if (document.querySelector(".opt-sel.open")){ document.querySelectorAll(".opt-sel.open").forEach(x => x.classList.remove("open")); }   // 再關表單下拉
   else if (modalBg.classList.contains("open")) closeForm();
   else if (tselMode){ exitTselMode(); }                                                         // 桌面 ESC:退出表格批次選取
   else if (selectMode){ exitSelectMode(); }                                                     // 桌面 ESC:退出卡片多選
-  else if (openNeedId && viewMode === "table" && listView.classList.contains("active")) closeNeedExp();   // 桌面按 ESC 收合展開(僅表格檢視中)
+  else if (openNeedId && viewMode === "table" && listView.classList.contains("active")) closeNeedExp();   // 桌面按 ESC 收合展開(僅表格檢視中;連結面板已在上方優先處理)
   else if (typeof settingsView !== "undefined" && settingsView && settingsView.classList.contains("active")){ closeSettings(); }   // 設定頁 Esc→關設定
   else if (document.activeElement && document.activeElement.isContentEditable){ try { document.activeElement.blur(); } catch(err){} }   // 表格格編輯中:只失焦
   else if (listView.classList.contains("active")){ e.preventDefault(); showCover(); }   // 列表(卡片/表格) Esc→回封面(與 ← 相同)
