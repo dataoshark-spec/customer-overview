@@ -744,6 +744,7 @@
   .multi-pri{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   /* 下拉已刪但資料仍保留:列表用灰色標示,避免誤刪選項時整批清空 */
   .multi-pri.opt-orphan,.tcell .opt-orphan,.topt-label .opt-orphan,.cselect-txt .opt-orphan,.card-status.opt-orphan{color:var(--text-faint);font-weight:500;}
+  .cselect-opt .opt-orphan-hint{font-size:.72rem;color:var(--text-faint);font-weight:500;white-space:nowrap;}
   .multi-dot{flex:none;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.75;box-shadow:none;}
   .tcat-badge .multi-wrap,.tcat-label.multi-wrap{max-width:100%;}
   .topt-label.multi-wrap{display:inline-flex;max-width:100%;}
@@ -1638,7 +1639,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.27W";
+const APP_VERSION = "2026.07.27X";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2109,7 +2110,7 @@ function toggleFieldVal(cur, v, asPrimary){
   if (asPrimary) a.unshift(s); else a.push(s);
   return packFieldVals(a);
 }
-/** 多選下拉點擊：未選→加入；已選非優先→設優先；已優先→取消；點 ✓→取消 */
+/** 多選下拉點擊：未選→加入；已選非優先→設優先；已優先→取消；點 ✓→取消；孤兒(已移除)→一律取消 */
 function clickMultiFieldVal(cur, v, opts){
   if (opts === true || (opts && opts.asPrimary)) return toggleFieldVal(cur, v, true);
   const s = String(v == null ? "" : v).trim();
@@ -2117,10 +2118,36 @@ function clickMultiFieldVal(cur, v, opts){
   if (opts && opts.shiftKey) return toggleFieldVal(cur, v, true);
   const a = asFieldVals(cur);
   const i = a.indexOf(s);
+  if (opts && opts.orphan && i >= 0) return toggleFieldVal(cur, v, false);
   if (opts && opts.chkClick && i >= 0) return toggleFieldVal(cur, v, false);
   if (i < 0) return toggleFieldVal(cur, v, false);
   if (a[0] === s) return toggleFieldVal(cur, v, false);
   return toggleFieldVal(cur, v, true);
+}
+function orphanFieldVals(curArr, optKey){
+  const list = optList(optKey);
+  const set = new Set(list.map(String));
+  return asFieldVals(curArr).filter(v => v && !set.has(String(v)));
+}
+function buildOptMenuRowHTML(v, { multi, curArr, curSingle, isOrphan }){
+  const on = multi ? curArr.includes(v) : v === curSingle;
+  const pri = multi && on && curArr[0] === v;
+  const orphanCls = isOrphan ? " opt-orphan-row" : "";
+  const txtCls = isOrphan ? " opt-orphan" : "";
+  const orphanHint = isOrphan ? `<span class="opt-orphan-hint">（已移除）</span>` : "";
+  const drag = isOrphan ? "" : `<span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span>`;
+  const del = isOrphan ? "" : `<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span>`;
+  const pin = multi && on && !isOrphan ? (pri ? `<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>` : `<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`) : "";
+  const chk = multi ? `<span class="chk">✓</span>` : "";
+  const title = isOrphan ? ` title="已從下拉移除，點一下取消此筆"` : "";
+  return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}${orphanCls}" data-v="${esc(v)}" data-orphan="${isOrphan?1:0}"${title}>${drag}<span class="opt-txt${txtCls}">${esc(v)}</span>${orphanHint}${pin}${chk}${del}</button>`;
+}
+function buildOptMenuHTML(optKey, curArr, multi, emptyOn, curSingle){
+  const orphans = multi ? orphanFieldVals(curArr, optKey) : [];
+  const rows = optList(optKey).map(v => buildOptMenuRowHTML(v, { multi, curArr, curSingle, isOrphan:false }))
+    .concat(orphans.map(v => buildOptMenuRowHTML(v, { multi, curArr, curSingle, isOrphan:true })));
+  return `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>` + rows.join("")
+    + `<div class="opt-add"><input placeholder="自訂…"><button type="button">加入</button></div>`;
 }
 const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","詢問","客戶需求"];
 const T_FIELDS = ["date","status","area","cat","budget","rooms","pType","pNum","cust","tel","line","ask","need"];
@@ -4217,13 +4244,7 @@ function renderToptMenu(){
   const curArr = multi ? fieldVals(it, toptField) : [toptField === "pNum" ? (it.pNum ? String(it.pNum) : "") : String(it[toptField] || "")].filter((v,i,a)=> true);
   const curSingle = multi ? "" : (toptField === "pNum" ? (it.pNum ? String(it.pNum) : "") : String(it[toptField] || ""));
   const emptyOn = multi ? curArr.length === 0 : curSingle === "";
-  toptmenu.innerHTML = `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>` +
-    optList(toptKey).map(v => {
-      const on = multi ? curArr.includes(v) : v === curSingle;
-      const pri = multi && on && curArr[0] === v;
-      return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}" data-v="${esc(v)}"><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span>${multi&&on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}${multi?`<span class="chk">✓</span>`:""}<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`;
-    }).join("") +
-    `<div class="opt-add"><input placeholder="自訂…"><button type="button">加入</button></div>`;
+  toptmenu.innerHTML = buildOptMenuHTML(toptKey, curArr, multi, emptyOn, curSingle);
 }
 function openOptMenu(trigger){
   closeOtherOverlays("opt");   // 只留這個下拉,關掉其他浮層
@@ -4280,6 +4301,7 @@ function setOptValue(v, opts){
   const it = tFindItem(toptTrigger); if (!it) return;
   const multi = toptIsMulti();
   const forcePri = opts === true || (opts && opts.asPrimary);
+  const beforeVals = multi ? fieldVals(it, toptField) : [];
   if (multi){
     const next = (v === "" || v == null) ? "" : (forcePri ? toggleFieldVal(it[toptField], v, true) : clickMultiFieldVal(it[toptField], v, opts));
     it[toptField] = next;
@@ -4291,7 +4313,13 @@ function setOptValue(v, opts){
   }
   it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
   paintOptTrigger(toptTrigger, it, toptField);
-  if (multi) renderToptMenu();
+  if (multi){
+    const afterVals = fieldVals(it, toptField);
+    // #region agent log
+    fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'orphan-pri',hypothesisId:'C',location:'setOptValue',message:'multi field update',data:{field:toptField,v,before:beforeVals,after:afterVals,pri:afterVals[0]||'',orphan:!!(opts&&opts.orphan)},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    renderToptMenu();
+  }
 }
 toptmenu.addEventListener("click", e => {
   const del = e.target.closest(".opt-del");
@@ -4332,12 +4360,8 @@ toptmenu.addEventListener("click", e => {
       if (o.dataset.v === ""){ setOptValue(""); }
       else {
         const chkClick = !!(e.target.closest(".chk") && o.classList.contains("sel"));
-        const before = fieldVals(tFindItem(toptTrigger), toptField);
-        setOptValue(o.dataset.v, { shiftKey: e.shiftKey, chkClick });
-        // #region agent log
-        const after = fieldVals(tFindItem(toptTrigger), toptField);
-        fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'pri-click',hypothesisId:'B',location:'toptmenu.click',message:'multi opt click',data:{v:o.dataset.v,chkClick,wasSel:before.includes(o.dataset.v),wasPri:before[0]===o.dataset.v,after,pri:after[0]||''},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
+        const orphan = o.dataset.orphan === "1" || (toptKey && isOptOrphan(toptKey, o.dataset.v));
+        setOptValue(o.dataset.v, { shiftKey: e.shiftKey, chkClick, orphan });
       }
     } else { setOptValue(o.dataset.v); closeOptMenu(); }
   }
@@ -5510,13 +5534,7 @@ function makeOptSel(key, emptyLabel, multi){
   let vals = [];   // multi:字串陣列;單選也用長度 0/1 的陣列簡化
   function renderMenu(){
     const emptyOn = vals.length === 0;
-    menu.innerHTML = `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>` +
-      optList(key).map(v => {
-        const on = vals.includes(v);
-        const pri = multi && on && vals[0] === v;
-        return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}" data-v="${esc(v)}"><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span>${multi&&on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}${multi?`<span class="chk">✓</span>`:""}<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`;
-      }).join("") +
-      `<div class="opt-add"><input placeholder="自訂…"><button type="button">加入</button></div>`;
+    menu.innerHTML = buildOptMenuHTML(key, vals, multi, emptyOn, vals[0] || "");
   }
   function show(){
     const p = vals[0] || "";
@@ -5577,7 +5595,8 @@ function makeOptSel(key, emptyLabel, multi){
         if (o.dataset.v === "") set("");
         else {
           const chkClick = !!(e.target.closest(".chk") && vals.includes(o.dataset.v));
-          set(clickMultiFieldVal(vals, o.dataset.v, { shiftKey: e.shiftKey, chkClick }));
+          const orphan = o.dataset.orphan === "1" || isOptOrphan(key, o.dataset.v);
+          set(clickMultiFieldVal(vals, o.dataset.v, { shiftKey: e.shiftKey, chkClick, orphan }));
         }
         renderMenu();
       } else { set(o.dataset.v); sel.classList.remove("open"); }
