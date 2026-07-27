@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -732,6 +732,8 @@
   .cselect-opt.sel{background:rgba(43,92,168,.07);}
   .cselect-opt.kb{outline:2px solid var(--accent);outline-offset:-2px;}
   .catmenu-opt.kb{outline:2px solid var(--accent);outline-offset:-2px;}
+  /* 已是優先（有「優」）時不再加鍵盤框，避免雙重提示 */
+  .cselect-opt.is-pri.kb,.catmenu-opt.is-pri.kb{outline:none;}
   .cselect-opt .dot{flex:none;width:10px;height:10px;border-radius:50%;}
   .cselect-opt .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
   .cselect-opt.sel .nm{color:var(--accent-deep);}
@@ -740,6 +742,8 @@
   /* 區域/類型/房數/車類/車數:多選時欄位只顯示優先項 + 色點;完整清單靠懸浮 */
   .multi-wrap{display:inline-flex;align-items:center;justify-content:center;gap:5px;max-width:100%;min-width:0;vertical-align:middle;}
   .multi-pri{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* 下拉已刪但資料仍保留:列表用灰色標示,避免誤刪選項時整批清空 */
+  .multi-pri.opt-orphan,.tcell .opt-orphan,.topt-label .opt-orphan,.cselect-txt .opt-orphan,.card-status.opt-orphan{color:var(--text-faint);font-weight:500;}
   .multi-dot{flex:none;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.75;box-shadow:none;}
   .tcat-badge .multi-wrap,.tcat-label.multi-wrap{max-width:100%;}
   .topt-label.multi-wrap{display:inline-flex;max-width:100%;}
@@ -748,24 +752,23 @@
   .cselect-opt .pri-pin{flex:none;opacity:0;pointer-events:none;font-size:.65rem;font-weight:700;letter-spacing:.02em;color:var(--accent-deep);border:1px solid transparent;background:transparent;border-radius:5px;padding:1px 6px;line-height:1.25;white-space:nowrap;transition:opacity .12s,background .12s,color .12s;}
   .cselect-opt .pri-pin.is-set{font-size:.68rem;font-weight:600;color:var(--accent);background:transparent;border:none;padding:1px 4px;}
   .cselect-opt.sel:not(.is-pri):hover .pri-pin.is-set{opacity:1;pointer-events:auto;}
-  .cselect-opt.is-pri{background:var(--accent-tint);}
+  /* 優先項不再加深底色；已選時與其他 .sel 同色，靠「優」區分 */
   .cselect-opt.is-pri .pri-pin{opacity:1;pointer-events:auto;background:var(--accent);color:#fff;border-color:var(--accent);}
+  .cselect-opt.is-pri.sel{background:rgba(43,92,168,.07);}
   .cselect-opt.is-pri .nm,.cselect-opt.is-pri .opt-txt{color:var(--accent-deep);font-weight:700;}
   .catmenu-opt.sel{background:rgba(43,92,168,.07);}
-  .catmenu-opt.is-pri{background:var(--accent-tint);}
+  .catmenu-opt.is-pri.sel{background:rgba(43,92,168,.07);}
   .catmenu-opt .chk{margin-left:auto;color:var(--accent);opacity:0;font-weight:600;font-size:.78rem;}
   .catmenu-opt.sel .chk{opacity:1;}
-  #multiHover{position:fixed;z-index:221;display:none;pointer-events:none;max-width:min(560px,92vw);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 16px 40px rgba(22,34,42,.24);}
+  #multiHover{position:fixed;z-index:221;display:none;pointer-events:none;max-width:min(280px,90vw);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:0 12px 32px rgba(22,34,42,.22);}
   #multiHover.show{display:block;}
-  #multiHover .mh-tt{font-size:1.2rem;font-weight:500;color:var(--text-faint);margin-bottom:10px;letter-spacing:.04em;}
-  #multiHover .mh-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
-  #multiHover .mh-list li{font-size:1.7rem;font-weight:600;color:var(--ink);line-height:1.35;padding:10px 14px;border-radius:10px;background:var(--surface-1);}
+  #multiHover .mh-tt{font-size:.68rem;font-weight:400;color:var(--text-faint);margin-bottom:5px;letter-spacing:.04em;}
+  #multiHover .mh-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;}
+  #multiHover .mh-list li{font-size:.88rem;font-weight:600;color:var(--ink);line-height:1.35;padding:4px 8px;border-radius:7px;background:var(--surface-1);}
   #multiHover .mh-list li.pri{background:var(--accent-tint);color:var(--accent-deep);}
+  #multiHover .mh-list li.orphan{color:var(--text-faint);font-weight:500;}
+  #multiHover .mh-list li.pri.orphan{background:var(--surface-2);color:var(--text-faint);}
   @media (hover:none){ #multiHover{display:none !important;} }
-  /* 欄位截斷內容懸浮(取代瀏覽器原生 title);約 2 倍字級。客戶需求(#needHover)不套用 */
-  #cellHover{position:fixed;z-index:222;display:none;pointer-events:none;max-width:min(92vw,560px);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;box-shadow:0 16px 40px rgba(22,34,42,.24);font-size:1.7rem;font-weight:600;line-height:1.4;color:var(--ink);letter-spacing:.01em;white-space:pre-wrap;word-break:break-word;}
-  #cellHover.show{display:block;}
-  @media (hover:none){ #cellHover{display:none !important;} }
   /* 觸控無 hover:不顯示「設為優先」提示;優先項仍標「優」(可用 Shift 點選改優先) */
   @media (hover:none){
     .cselect-opt.sel:not(.is-pri):hover .pri-pin.is-set{opacity:0;pointer-events:none;}
@@ -1270,7 +1273,7 @@
     color:var(--ink);background:none;border:none;border-radius:7px;padding:9px 10px;cursor:pointer;text-align:left;transition:background .12s;}
   .catmenu-opt:hover{background:var(--surface-2);}
   .catmenu-opt.sel{background:rgba(43,92,168,.07);}
-  .catmenu-opt.is-pri{background:var(--accent-tint);font-weight:700;}
+  .catmenu-opt.is-pri.sel{background:rgba(43,92,168,.07);font-weight:700;}
   .catmenu-opt .dot{width:10px;height:10px;border-radius:50%;flex:none;}
   .tdi{width:15px;height:15px;flex:none;}
 
@@ -1608,7 +1611,6 @@
 <div id="toptmenu" role="listbox"></div>
 <div id="needHover" role="tooltip" aria-hidden="true"></div>
 <div id="multiHover" role="tooltip" aria-hidden="true"></div>
-<div id="cellHover" role="tooltip" aria-hidden="true"></div>
 
 <!-- ===== Link paste popover (table view) ===== -->
 <div class="cpick" id="cpick" aria-label="選取顏色">
@@ -1633,7 +1635,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.27H";
+const APP_VERSION = "2026.07.27T";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1717,17 +1719,20 @@ function cardHTML(d){
   const areaDot = fieldIsMulti(d, "area") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
   const roomsDot = fieldIsMulti(d, "rooms") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
   const catDot = fieldIsMulti(d, "cat") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
+  const areaOrphan = areaPri && typeof isOptOrphan === "function" && isOptOrphan("area", areaPri);
+  const roomsOrphan = roomsPri && typeof isOptOrphan === "function" && isOptOrphan("rooms", roomsPri);
+  const statusOrphan = d.status && typeof isOptOrphan === "function" && isOptOrphan("status", d.status);
   if (density === "compact"){
     const cbits = [];
-    if (areaPri) cbits.push({t: areaPri, tip: areaTip, dot: areaDot});
-    if (roomsPri) cbits.push({t: roomsPri, tip: roomsTip, dot: roomsDot});
-    if (d.parking) cbits.push({t: /車/.test(d.parking) ? d.parking : d.parking + "車位", tip: d.parking, dot: ""});
-    const csub = cbits.length ? cbits.map(p => { const v = normAsk(p.t); return `<span class="cv multi-wrap" data-copy="${esc(v)}" title="${esc(p.tip)}"><span class="multi-pri">${esc(v)}</span>${p.dot}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
+    if (areaPri) cbits.push({t: areaPri, tip: areaTip, dot: areaDot, orphan: areaOrphan});
+    if (roomsPri) cbits.push({t: roomsPri, tip: roomsTip, dot: roomsDot, orphan: roomsOrphan});
+    if (d.parking) cbits.push({t: /車/.test(d.parking) ? d.parking : d.parking + "車位", tip: d.parking, dot: "", orphan: false});
+    const csub = cbits.length ? cbits.map(p => { const v = normAsk(p.t); return `<span class="cv multi-wrap" data-copy="${esc(v)}" title="${esc(p.tip)}"><span class="multi-pri${p.orphan?" opt-orphan":""}">${esc(v)}</span>${p.dot}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
     return `<article class="card compact-card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
       <div class="card-head">
-        ${d.status ? `<span class="card-status" data-copy="${esc(d.status)}">${esc(d.status)}</span>` : ``}
+        ${d.status ? `<span class="card-status${statusOrphan?" opt-orphan":""}" data-copy="${esc(d.status)}">${esc(d.status)}</span>` : ``}
         <h3 class="name">${nameHTML}</h3>
         <span class="badge multi-wrap" title="${esc(catTip)}"><span class="multi-pri">${esc(catPri)}</span>${catDot}</span>
       </div>
@@ -1740,14 +1745,14 @@ function cardHTML(d){
   }
   const topBits = [];
   if (d.date) topBits.push(`<span class="ct-item">建檔 <span class="cv" data-copy="${esc(d.date)}">${esc(d.date)}</span></span>`);
-  if (areaPri) topBits.push(`<span class="multi-wrap" data-copy="${esc(areaPri)}" title="${esc(areaTip)}"><span class="multi-pri">${esc(areaPri)}</span>${areaDot}</span>`);
+  if (areaPri) topBits.push(`<span class="multi-wrap" data-copy="${esc(areaPri)}" title="${esc(areaOrphan ? areaTip + "（已從下拉移除）" : areaTip)}"><span class="multi-pri${areaOrphan?" opt-orphan":""}">${esc(areaPri)}</span>${areaDot}</span>`);
   const topHTML = topBits.length ? `<div class="card-top">${topBits.join('<span class="dot">／</span>')}</div>` : "";
   return `<article class="card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
       ${topHTML}
       <div class="card-head">
-        ${d.status ? `<span class="card-status" data-copy="${esc(d.status)}">${esc(d.status)}</span>` : ``}
+        ${d.status ? `<span class="card-status${statusOrphan?" opt-orphan":""}" data-copy="${esc(d.status)}">${esc(d.status)}</span>` : ``}
         <h3 class="name">${nameHTML}</h3>
         <span class="badge multi-wrap" title="${esc(catTip)}"><span class="multi-pri">${esc(catPri)}</span>${catDot}</span>
       </div>
@@ -1755,7 +1760,7 @@ function cardHTML(d){
         <span class="price-value"><span class="num" data-copy="${esc(d.budget)}">${esc(d.budget)}</span></span>
       </div>` : ``}
       ${(roomsPri || d.parking) ? `<div class="meta">
-        ${roomsPri ? `<span class="multi-wrap" data-copy="${esc(roomsPri)}" title="${esc(roomsTip)}"><i class="ml">房數</i> <span class="multi-pri">${esc(roomsPri)}</span>${roomsDot}</span>` : ``}
+        ${roomsPri ? `<span class="multi-wrap" data-copy="${esc(roomsPri)}" title="${esc(roomsOrphan ? roomsTip + "（已從下拉移除）" : roomsTip)}"><i class="ml">房數</i> <span class="multi-pri${roomsOrphan?" opt-orphan":""}">${esc(roomsPri)}</span>${roomsDot}</span>` : ``}
         ${d.parking ? `<span data-copy="${esc(d.parking)}"><i class="ml">車位</i> ${esc(d.parking)}</span>` : ``}
       </div>` : ``}
       ${d.need ? `<div class="ov-need"><div class="ov-need-in">${linkifyNeed(needToPlain(d.need))}</div></div>` : ``}
@@ -2036,7 +2041,6 @@ function setViewMode(vm){
   if (viewMode !== "table"){                                     // 離開表格:收合展開,避免殘留的隱藏展開之後把舊內容寫回
     if (typeof closeNeedExp === "function") closeNeedExp();
     if (typeof hideNeedHover === "function") hideNeedHover();
-    if (typeof hideCellHover === "function") hideCellHover();
   }
   applyFilter();
 }
@@ -2068,13 +2072,26 @@ function fieldVals(d, f){ return asFieldVals(d && d[f]); }
 function fieldPrimary(d, f){ return fieldVals(d, f)[0] || ""; }
 function fieldIsMulti(d, f){ return fieldVals(d, f).length > 1; }
 function fieldHas(d, f, v){ return fieldVals(d, f).includes(String(v)); }
-function multiInnerHTML(vals){
+// 值還在資料裡、但不在下拉選單 → 視為孤兒(列表灰字保留,不清空)
+// 注意:開頁早期 renderCover 可能在 customOpts 初始化前就畫卡片,必須吞掉 TDZ,避免整支腳本中斷
+function isOptOrphan(optKey, value){
+  if (!optKey || value == null || value === "") return false;
+  try {
+    if (typeof optList !== "function") return false;
+    return !optList(optKey).includes(String(value));
+  } catch (e) {
+    return false;
+  }
+}
+function multiInnerHTML(vals, optKey){
   const a = asFieldVals(vals);
   const primary = a[0] || "";
   const multi = a.length > 1;
-  if (!primary) return { a, primary:"", multi:false, html:"" };
+  if (!primary) return { a, primary:"", multi:false, orphan:false, html:"" };
+  const orphan = !!optKey && isOptOrphan(optKey, primary);
   const dot = multi ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
-  return { a, primary, multi, html: `<span class="multi-wrap"><span class="multi-pri">${esc(primary)}</span>${dot}</span>` };
+  const tip = orphan ? ` title="已從下拉選單移除（資料仍保留）"` : "";
+  return { a, primary, multi, orphan, html: `<span class="multi-wrap"><span class="multi-pri${orphan?" opt-orphan":""}"${tip}>${esc(primary)}</span>${dot}</span>` };
 }
 function toggleFieldVal(cur, v, asPrimary){
   const a = asFieldVals(cur);
@@ -2128,30 +2145,28 @@ function trowHTML(d){
   const ce = "false";
   const tTab = editMode ? ' tabindex="0"' : "";
   const catMultiAttr = catM.multi ? ` data-multifield="cat" data-multivals="${esc(catVals.join("\u001f"))}"` : "";
-  const catTipAttr = (!catM.multi && catPri) ? ` data-tip="${esc(catPri)}"` : "";
   const catCell = editMode
     // 沒選類型就不畫 pill 邊框(改 transparent 而非 border:0,盒子尺寸不變,選好時邊框浮現不位移)
-    ? `<td class="tcat"><button type="button" class="tcat-trigger" data-field="cat" style="border-color:${catPri ? color : "transparent"}"${catMultiAttr}${catTipAttr}><span class="tcat-label">${catM.html}</span></button></td>`
-    : `<td class="tcat"><span class="tcat-badge" style="border-color:${catPri ? color : "transparent"}"${catMultiAttr}${catTipAttr}>${catM.html}</span></td>`;
+    ? `<td class="tcat"><button type="button" class="tcat-trigger" data-field="cat" style="border-color:${catPri ? color : "transparent"}"${catMultiAttr}><span class="tcat-label">${catM.html}</span></button></td>`
+    : `<td class="tcat"><span class="tcat-badge" style="border-color:${catPri ? color : "transparent"}"${catMultiAttr}>${catM.html}</span></td>`;
   const delCell = editMode
     ? `<td class="tdel"><button data-act="del" title="刪除此列">${ICON_TRASH}</button></td>`
     : `<td class="tdel"></td>`;
-  const cell = (f, cls) => `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}"${d[f]?` data-tip="${esc(d[f])}"`:""}>${esc(d[f])}</div></td>`;
+  const cell = (f, cls) => `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}" title="${esc(d[f])}">${esc(d[f])}</div></td>`;
   const segCell = (f, cls) => editMode
-    ? `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}"${d[f]?` data-tip="${esc(d[f])}"`:""}>${esc(d[f])}</div></td>`
-    : `<td><div class="tcell segcell${cls?" "+cls:""}" data-field="${f}"${d[f]?` data-tip="${esc(d[f])}"`:""}>${segCopyHTML(d[f])}</div></td>`;
+    ? `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}" title="${esc(d[f])}">${esc(d[f])}</div></td>`
+    : `<td><div class="tcell segcell${cls?" "+cls:""}" data-field="${f}" title="${esc(d[f])}">${segCopyHTML(d[f])}</div></td>`;
   const optCell = (f, optKey) => {
     const vals = fieldVals(d, f);
-    const m = multiInnerHTML(vals);
+    const m = multiInnerHTML(vals, optKey);
     const multiAttr = m.multi ? ` data-multifield="${f}" data-multivals="${esc(vals.join("\u001f"))}"` : "";
-    const tipAttr = (!m.multi && vals[0]) ? ` data-tip="${esc(vals[0])}"` : "";
     return editMode
-      ? `<td><button type="button" class="topt-trigger" data-field="${f}" data-optkey="${optKey}"${multiAttr}${tipAttr}><span class="topt-label">${m.html}</span></button></td>`
-      : `<td><div class="tcell" data-field="${f}"${multiAttr}${tipAttr}>${m.html}</div></td>`;
+      ? `<td><button type="button" class="topt-trigger" data-field="${f}" data-optkey="${optKey}"${multiAttr}><span class="topt-label">${m.html}</span></button></td>`
+      : `<td><div class="tcell" data-field="${f}" data-optkey="${optKey}"${multiAttr}>${m.html}</div></td>`;
   };
   const dateInner = editMode                                   // 編輯模式:建檔日改為日曆選擇(與卡片檢視同一個日曆)
-    ? `<button type="button" class="topt-trigger" data-field="date" data-cal="1"${d.date?` data-tip="${esc(d.date)}"`:""}><span class="topt-label">${esc(d.date)}</span></button>`
-    : `<div class="tcell tdate" data-field="date"${d.date?` data-tip="${esc(d.date)}"`:""}>${esc(d.date)}</div>`;
+    ? `<button type="button" class="topt-trigger" data-field="date" data-cal="1"><span class="topt-label">${esc(d.date)}</span></button>`
+    : `<div class="tcell tdate" data-field="date" title="${esc(d.date)}">${esc(d.date)}</div>`;
   const dateCell = `<td class="datewrap"><span class="gen-edge"></span><button type="button" class="gen-btn" tabindex="-1" data-gen="1" title="生成買方名稱並複製" aria-label="生成買方名稱並複製">${GEN_ICON}<span class="gen-label">生成</span></button>${dateInner}</td>`;
   // 重繪時直接帶上列狀態:展開列(首次排版即為淡化樣式,聚焦轉場不會重播)+ 批次選取列(同步重繪不掉選取)
   const _trCls = ((openNeedId === d.id) ? ("exp-open" + (editMode ? " exp-editing" : "") + " ") : "") + ((tselMode && selected.has(d.id)) ? "tsel-row" : "");
@@ -2299,7 +2314,6 @@ function tCommitCell(cell){                       // 回傳 true=值有變更(�
     if (field === "budget"){ const r = parseBudget(val); it.bMin = (r && isFinite(r[0]) && r[0] > 0) ? r[0] : null; it.bMax = (r && isFinite(r[1])) ? r[1] : null; }
     if (field === "pType"){ it.parking = fmtParking(val, it.pNum); }
     else if (field === "pNum"){ it.pNum = val || ""; it.parking = fmtParking(it.pType, val); setCellText(cell, val || ""); }   // 車數自由文字:保留原始選項(「1車」不再剝成 1);車位描述 fmtParking 內部仍自動抓數字
-    if (val) cell.setAttribute("data-tip", val); else cell.removeAttribute("data-tip");
     it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
     return true;
   }
@@ -2507,7 +2521,7 @@ function commitNeedSeg(id, sg, val){
   if (sg===1){
     const tr = tableWrap.querySelector(`tr[data-id="${id}"]`);
     const cell = tr && tr.querySelector(".tneed");
-    if (cell){ if (val){ cell.innerHTML = linkifyNeed(needToPlain(val)); } else { cell.innerHTML = '<span class="tneed-ph">—</span>'; } cell.removeAttribute("title"); }
+    if (cell){ if (val){ cell.innerHTML = linkifyNeed(needToPlain(val)); } else { cell.innerHTML = '<span class="tneed-ph">—</span>'; } cell.title = needToPlain(val); }
   }
 }
 function commitNeedTitle(id, sg, val){
@@ -3918,7 +3932,6 @@ if (window.matchMedia && window.matchMedia("(hover: hover)").matches){
     if (typeof closeOptMenu === "function") closeOptMenu();
     if (typeof closeColFlt === "function") closeColFlt();
     hideMultiHover();
-    hideCellHover();
     showNeedHover(cell, it);
   });
   tableWrap.addEventListener("mouseout", e => {
@@ -3942,8 +3955,12 @@ function showMultiHover(el){
   const vals = raw.split("\u001f").map(s => s.trim()).filter(Boolean);
   if (vals.length < 2){ hideMultiHover(); return; }
   const field = el.getAttribute("data-multifield") || "";
+  const optKey = el.getAttribute("data-optkey") || "";
   const title = MULTI_HOVER_NAME[field] || "已選";
-  multiHover.innerHTML = `<div class="mh-tt">${esc(title)}（${vals.length}）</div><ul class="mh-list">${vals.map((v,i) => `<li class="${i===0?"pri":""}">${esc(v)}</li>`).join("")}</ul>`;
+  multiHover.innerHTML = `<div class="mh-tt">${esc(title)}（${vals.length}）</div><ul class="mh-list">${vals.map((v,i) => {
+    const orphan = optKey && typeof isOptOrphan === "function" && isOptOrphan(optKey, v);
+    return `<li class="${i===0?"pri":""}${orphan?" orphan":""}">${esc(v)}${orphan?"（已移除）":""}</li>`;
+  }).join("")}</ul>`;
   multiHover.style.visibility = "hidden";
   multiHover.classList.add("show");
   multiHover.setAttribute("aria-hidden","false");
@@ -3963,7 +3980,6 @@ if (window.matchMedia && window.matchMedia("(hover: hover)").matches){
     const from = e.relatedTarget;
     if (from && el.contains(from)) return;
     hideNeedHover();
-    hideCellHover();
     showMultiHover(el);
   });
   document.addEventListener("mouseout", e => {
@@ -3975,57 +3991,6 @@ if (window.matchMedia && window.matchMedia("(hover: hover)").matches){
   });
   window.addEventListener("scroll", hideMultiHover, true);
   window.addEventListener("resize", hideMultiHover);
-}
-
-// ---- 欄位截斷內容懸浮:美化自訂提示(約 2 倍字),取代瀏覽器原生 title ----
-const cellHover = document.getElementById("cellHover");
-function hideCellHover(){ if (cellHover){ cellHover.classList.remove("show"); cellHover.setAttribute("aria-hidden","true"); } }
-function tipOverflow(el){
-  if (!el) return false;
-  if (el.scrollWidth > el.clientWidth + 1) return true;
-  const label = el.querySelector(".topt-label, .tcat-label, .multi-pri, .seg");
-  if (label && label.scrollWidth > label.clientWidth + 1) return true;
-  return false;
-}
-function showCellHover(el){
-  if (!cellHover || !el) return;
-  if (el.classList.contains("tneed") || el.closest(".tneed")){ hideCellHover(); return; }
-  if (el.hasAttribute("data-multivals")){ hideCellHover(); return; }   // 多選走 multiHover
-  const tip = (el.getAttribute("data-tip") || "").trim();
-  if (!tip){ hideCellHover(); return; }
-  if (!tipOverflow(el) && tip === (el.textContent || "").replace(/\s+/g," ").trim()){ hideCellHover(); return; }
-  cellHover.textContent = tip;
-  cellHover.style.visibility = "hidden";
-  cellHover.classList.add("show");
-  cellHover.setAttribute("aria-hidden","false");
-  const r = el.getBoundingClientRect();
-  const hw = cellHover.offsetWidth, hh = cellHover.offsetHeight;
-  let left = Math.min(r.left, window.innerWidth - hw - 8); left = Math.max(8, left);
-  let top = r.bottom + 8;
-  if (top + hh > window.innerHeight - 8) top = Math.max(8, r.top - hh - 8);
-  cellHover.style.left = left + "px";
-  cellHover.style.top = top + "px";
-  cellHover.style.visibility = "";
-}
-if (window.matchMedia && window.matchMedia("(hover: hover)").matches){
-  document.addEventListener("mouseover", e => {
-    const el = e.target.closest("[data-tip]");
-    if (!el) return;
-    const from = e.relatedTarget;
-    if (from && el.contains(from)) return;
-    hideNeedHover();
-    hideMultiHover();
-    showCellHover(el);
-  });
-  document.addEventListener("mouseout", e => {
-    const el = e.target.closest("[data-tip]");
-    if (!el) return;
-    const to = e.relatedTarget;
-    if (to && el.contains(to)) return;
-    hideCellHover();
-  });
-  window.addEventListener("scroll", hideCellHover, true);
-  window.addEventListener("resize", hideCellHover);
 }
 
 // ---- 正常模式:點格子複製內容 ----
@@ -4090,7 +4055,6 @@ function closeOtherOverlays(keep){
   if (keep !== "exp" && typeof closeNeedExp === "function") closeNeedExp();
   if (typeof hideNeedHover === "function") hideNeedHover();
   if (typeof hideMultiHover === "function") hideMultiHover();
-  if (typeof hideCellHover === "function") hideCellHover();
 }
 function applyCatChoice(key, asPrimary){
   if (!catTrigger) return;
@@ -4180,6 +4144,14 @@ function toptIsMulti(){ return !!(toptField && MULTI_OPT_FIELDS[toptField]); }
 function toptMenuOpts(){ return [...toptmenu.querySelectorAll(".cselect-opt")]; }
 function toptMenuHighlight(){
   toptMenuOpts().forEach((o, i) => o.classList.toggle("kb", i === toptMenuIdx));
+  // #region agent log
+  const kbOpt = toptMenuOpts()[toptMenuIdx];
+  if (kbOpt) {
+    const selOpts = toptMenuOpts().filter(o => o.classList.contains('sel'));
+    const bgOf = o => getComputedStyle(o).backgroundColor;
+    fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'pri-bg',hypothesisId:'A',location:'toptMenuHighlight',message:'selected row backgrounds',data:{pri:selOpts.filter(o=>o.classList.contains('is-pri')).map(o=>({label:(o.querySelector('.nm,.opt-txt')||{}).textContent,bg:bgOf(o)})),normal:selOpts.filter(o=>!o.classList.contains('is-pri')).slice(0,2).map(o=>({label:(o.querySelector('.nm,.opt-txt')||{}).textContent,bg:bgOf(o)}))},timestamp:Date.now()})}).catch(()=>{});
+  }
+  // #endregion
 }
 function toptMenuSyncIdx(){
   const opts = toptMenuOpts();
@@ -4207,7 +4179,7 @@ document.addEventListener("keydown", onToptMenuKey, true);
 function paintOptTrigger(trigger, it, field){
   if (!trigger) return;
   const vals = fieldVals(it, field);
-  const m = multiInnerHTML(vals);
+  const m = multiInnerHTML(vals, trigger.dataset.optkey);
   const lbl = trigger.querySelector(".topt-label");
   if (lbl) lbl.innerHTML = m.html;
   if (m.multi){ trigger.setAttribute("data-multifield", field); trigger.setAttribute("data-multivals", vals.join("\u001f")); }
@@ -4255,6 +4227,13 @@ function openOptMenu(trigger){
 }
 function toptOutside(e){ if (e.target.closest("#toptmenu") || e.target.closest(".topt-trigger")) return; closeOptMenu(); }
 function closeOptMenu(){ document.removeEventListener("click", toptOutside); toptmenu.classList.remove("show"); toptTrigger = null; if (window.refreshLed) window.refreshLed(); }
+// 表格滾動時關閉格子下拉(fixed 選單不會跟著移);選單本身內部捲動不關
+document.addEventListener("scroll", e => {
+  const t = e.target;
+  if (t && t.closest && (t.closest("#toptmenu") || t.closest("#catmenu"))) return;
+  if (toptmenu && toptmenu.classList.contains("show")) closeOptMenu();
+  if (catmenu && catmenu.classList.contains("show")) closeCatMenu();
+}, true);
 // 表格編輯模式:建檔日 → 開共用日曆(與卡片檢視同一個);存檔方式比照 setOptValue(就地更新,不重排)
 function openTableCal(trigger){
   const it = tFindItem(trigger); if (!it) return;
@@ -4295,7 +4274,13 @@ toptmenu.addEventListener("click", e => {
       customOpts.hidden[toptKey] = customOpts.hidden[toptKey] || [];
       if (!customOpts.hidden[toptKey].map(String).includes(dv)) customOpts.hidden[toptKey].push(dv);
     }
-    saveOpts(); renderToptMenu(); return; }
+    saveOpts();
+    // 不清空客戶資料:列表改灰字標示「已從下拉移除」
+    const still = items.filter(it => asFieldVals(it[toptField]).includes(String(dv))).length;
+    if (typeof toast === "function") toast(still ? ("已從下拉移除；" + still + " 筆仍保留（灰色顯示）") : "已從下拉移除選項");
+    if (typeof applyFilter === "function") applyFilter();
+    else renderToptMenu();
+    return; }
   const pin = e.target.closest(".pri-pin");
   if (pin){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row) setOptValue(row.dataset.v, true); return; }
   const add = e.target.closest(".opt-add");
@@ -4304,7 +4289,15 @@ toptmenu.addEventListener("click", e => {
       if (v){ let ch = unhideOpt(toptKey, v);                                        // 先解除隱藏,否則加了也不會顯示
         if (!optList(toptKey).includes(v)){ customOpts[toptKey].push(v); ch = true; }
         if (ch) saveOpts();
-        setOptValue(v, true); if (!toptIsMulti()) closeOptMenu(); else { inp.value = ""; renderToptMenu(); } } }
+        setOptValue(v, true);
+        // 選項加回清單後,其他列的灰字也要一併重繪(不能只更新目前這列)
+        if (ch && typeof applyFilter === "function") applyFilter();
+        else if (!toptIsMulti()) closeOptMenu();
+        else { inp.value = ""; renderToptMenu(); }
+        // #region agent log
+        if (ch) fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'post-fix',hypothesisId:'D',location:'toptmenu.opt-add',message:'option restored; full list refresh',data:{toptKey,v,grayBefore:document.querySelectorAll('.opt-orphan').length,inList:optList(toptKey).includes(v)},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+      } }
     return; }
   if (toptmenu.__lp){ toptmenu.__lp = false; return; }
   const o = e.target.closest(".cselect-opt"); if (o){
@@ -5492,15 +5485,18 @@ function makeOptSel(key, emptyLabel, multi){
   }
   function show(){
     const p = vals[0] || "";
+    const orphan = p && isOptOrphan(key, p);
     if (vals.length){
       txt.innerHTML = vals.length > 1
-        ? `<span class="multi-wrap"><span class="multi-pri">${esc(p)}</span><span class="multi-dot" aria-hidden="true"></span></span>`
-        : esc(p);
+        ? `<span class="multi-wrap"><span class="multi-pri${orphan?" opt-orphan":""}">${esc(p)}</span><span class="multi-dot" aria-hidden="true"></span></span>`
+        : `<span class="multi-pri${orphan?" opt-orphan":""}">${esc(p)}</span>`;
       txt.classList.remove("ph");
-    } else { txt.textContent = emptyLabel; txt.classList.add("ph"); }
+      if (orphan) txt.title = "已從下拉選單移除（資料仍保留）";
+      else txt.removeAttribute("title");
+    } else { txt.textContent = emptyLabel; txt.classList.add("ph"); txt.removeAttribute("title"); }
     btn.classList.toggle("is-multi", multi && vals.length > 1);
-    if (multi && vals.length > 1){ btn.setAttribute("data-multifield", key); btn.setAttribute("data-multivals", vals.join("\u001f")); }
-    else { btn.removeAttribute("data-multifield"); btn.removeAttribute("data-multivals"); }
+    if (multi && vals.length > 1){ btn.setAttribute("data-multifield", key); btn.setAttribute("data-multivals", vals.join("\u001f")); btn.setAttribute("data-optkey", key); }
+    else { btn.removeAttribute("data-multifield"); btn.removeAttribute("data-multivals"); btn.removeAttribute("data-optkey"); }
   }
   function set(v){ vals = asFieldVals(v); if (!multi && vals.length > 1) vals = [vals[0]]; show(); }
   function get(){ return packFieldVals(vals); }
@@ -5516,7 +5512,15 @@ function makeOptSel(key, emptyLabel, multi){
         if (!customOpts.hidden[key].map(String).includes(dv)) customOpts.hidden[key].push(dv);
       }
       saveOpts();
-      vals = vals.filter(x => x !== dv); show(); renderMenu(); return; }
+      // 表單目前選到的值也保留;改以灰字表示已不在下拉
+      const still = items.filter(it => {
+        const f = ({area:"area",rooms:"rooms",ptype:"pType",pnum:"pNum",status:"status"})[key];
+        return f && asFieldVals(it[f]).includes(String(dv));
+      }).length;
+      if (typeof toast === "function") toast(still ? ("已從下拉移除；" + still + " 筆仍保留（灰色顯示）") : "已從下拉移除選項");
+      show(); renderMenu();
+      if (typeof applyFilter === "function") applyFilter();
+      return; }
     const pin = e.target.closest(".pri-pin");
     if (pin && multi){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row){ set(toggleFieldVal(vals, row.dataset.v, true)); renderMenu(); } return; }
     const add = e.target.closest(".opt-add");
@@ -5527,6 +5531,10 @@ function makeOptSel(key, emptyLabel, multi){
           if (ch) saveOpts();
           if (multi){ set(toggleFieldVal(vals, v, true)); renderMenu(); inp.value = ""; }
           else { set(v); sel.classList.remove("open"); }
+          if (ch && typeof applyFilter === "function") applyFilter();
+          // #region agent log
+          if (ch) fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'post-fix',hypothesisId:'D',location:'form.opt-add',message:'option restored; full list refresh',data:{key,v,grayAfter:document.querySelectorAll('.opt-orphan').length,inList:optList(key).includes(v)},timestamp:Date.now()})}).catch(()=>{});
+          // #endregion
         } }
       return; }
     const o = e.target.closest(".cselect-opt"); if (o){ if (menu.__lp){ menu.__lp = false; return; }
@@ -5610,6 +5618,8 @@ function makeOptSel(key, emptyLabel, multi){
 const areaPick = makeOptSel("area","選擇區域", true), roomsPick = makeOptSel("rooms","選擇房數", true),
       ptypePick = makeOptSel("ptype","選擇車位", true), pnumPick = makeOptSel("pnum","數量", true),
       statusPick = makeOptSel("status","選擇狀態", false);
+// 選項清單就緒後重繪一次,讓「已移除選項」的灰字正確套上(開頁早期 render 時 opts 尚未就緒)
+if (typeof applyFilter === "function") applyFilter();
 document.addEventListener("click", e => { document.querySelectorAll(".opt-sel.open").forEach(el => { if (!el.contains(e.target)) el.classList.remove("open"); }); });
 
 // ---- 預算/車位 結構化 ----
