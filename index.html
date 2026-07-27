@@ -1639,7 +1639,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.27Y";
+const APP_VERSION = "2026.07.27Z";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -4340,11 +4340,20 @@ toptmenu.addEventListener("click", e => {
     if (curPurged){ saveItems(); onLocalChange("data"); paintOptTrigger(toptTrigger, it, toptField); }
     const still = items.filter(x => x !== it && asFieldVals(x[toptField]).includes(String(dv))).length;
     if (typeof toast === "function") toast(still ? ("已從下拉移除；其他 " + still + " 筆仍保留（灰色顯示）") : (curPurged ? "已從下拉移除並取消此列選取" : "已從下拉移除選項"));
+    const menuOpen = toptmenu.classList.contains("show");
+    const rowId = toptTrigger && toptTrigger.closest("tr") && toptTrigger.closest("tr").dataset.id;
+    const savedField = toptField;
+    const wasEditing = toptmenu.classList.contains("opt-editing");
+    if (typeof applyFilter === "function") applyFilter();
+    const grayCount = document.querySelectorAll(".topt-label .opt-orphan, .tcell .opt-orphan").length;
     // #region agent log
-    fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'opt-del',hypothesisId:'A',location:'toptmenu.opt-del',message:'option deleted',data:{dv,toptKey,curPurged,menuOpen:toptmenu.classList.contains('show'),still},timestamp:Date.now()})}).catch(()=>{});
+    fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'orphan-gray',hypothesisId:'A',location:'toptmenu.opt-del',message:'after applyFilter',data:{dv,toptKey,still,grayCount,menuOpen},timestamp:Date.now()})}).catch(()=>{});
     // #endregion
-    if (toptmenu.classList.contains("show")) renderToptMenu();
-    else if (typeof applyFilter === "function") applyFilter();
+    if (menuOpen && rowId && savedField){
+      const tr = document.querySelector('tr[data-id="' + String(rowId).replace(/\\/g,"\\\\").replace(/"/g,'\\"') + '"]');
+      const trig = tr && tr.querySelector('.topt-trigger[data-field="' + savedField + '"]');
+      if (trig){ openOptMenu(trig); if (wasEditing) toptmenu.classList.add("opt-editing"); }
+    }
     return; }
   const pin = e.target.closest(".pri-pin");
   if (pin){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row) setOptValue(row.dataset.v, true); return; }
@@ -5581,7 +5590,7 @@ function makeOptSel(key, emptyLabel, multi){
       }).length;
       if (typeof toast === "function") toast(still ? ("已從下拉移除；其他 " + still + " 筆仍保留（灰色顯示）") : "已從下拉移除並取消選取");
       renderMenu();
-      if (!sel.classList.contains("open") && typeof applyFilter === "function") applyFilter();
+      if (typeof applyFilter === "function") applyFilter();
       return; }
     const pin = e.target.closest(".pri-pin");
     if (pin && multi){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row){ set(toggleFieldVal(vals, row.dataset.v, true)); renderMenu(); } return; }
