@@ -1593,7 +1593,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.24ZR";
+const APP_VERSION = "2026.07.24ZS";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -4878,6 +4878,7 @@ function isTabStop(el){
   if (el.tabIndex < 0) return false;
   if (el.getAttribute("aria-hidden") === "true") return false;
   if (el.closest("[inert]")) return false;
+  if (el.closest(".need-link, .need-link-chip")) return false;   // 「連結」只滑鼠點,不進 TAB
   const bg = el.closest(".modal-bg");
   if (bg && !bg.classList.contains("open")) return false;
   const ib = el.closest("#installBar");
@@ -4894,30 +4895,30 @@ function getTabStops(container){
   if (!container) return [];
   return Array.prototype.filter.call(container.querySelectorAll(TAB_SEL), isTabStop);
 }
+/* 一律自行搬焦點:只在邊界才 preventDefault 時,中段仍可能被瀏覽器帶到視窗「三個點」 */
 function trapFocusKey(e, container){
   if (e.key !== "Tab" || !container) return;
   const nodes = getTabStops(container);
-  if (!nodes.length){ e.preventDefault(); return; }
-  const first = nodes[0], last = nodes[nodes.length - 1];
+  e.preventDefault();
+  if (!nodes.length) return;
   const active = document.activeElement;
-  if (!container.contains(active)){ e.preventDefault(); try { first.focus(); } catch(err){} return; }
-  /* 面板本身 tabindex=-1 承接焦點時:Tab 才進第一個控件(開窗不先亮「日期格式切換」) */
-  if (active === container){ e.preventDefault(); try { (e.shiftKey ? last : first).focus(); } catch(err){} return; }
-  const idx = nodes.indexOf(active);
-  if (idx < 0){
-    /* 點到 tabindex=-1 的「連結」等:Tab 仍應留在容器內循環,不要跳出到視窗三個點 */
-    e.preventDefault();
-    let prev = null, next = null;
-    for (let i = 0; i < nodes.length; i++){
-      const pos = active.compareDocumentPosition(nodes[i]);
-      if (pos & Node.DOCUMENT_POSITION_FOLLOWING){ next = nodes[i]; break; }
-      prev = nodes[i];
+  const n = nodes.length;
+  let i = nodes.indexOf(active);
+  if (i < 0){
+    if (!container.contains(active)){
+      try { (e.shiftKey ? nodes[n - 1] : nodes[0]).focus(); } catch(err){}
+      return;
     }
-    try { (e.shiftKey ? (prev || last) : (next || first)).focus(); } catch(err){}
+    let prev = -1, nextI = n;
+    for (let j = 0; j < n; j++){
+      if (active.compareDocumentPosition(nodes[j]) & Node.DOCUMENT_POSITION_FOLLOWING){ nextI = j; break; }
+      prev = j;
+    }
+    try { (e.shiftKey ? (prev >= 0 ? nodes[prev] : nodes[n - 1]) : (nextI < n ? nodes[nextI] : nodes[0])).focus(); } catch(err){}
     return;
   }
-  if (e.shiftKey && idx === 0){ e.preventDefault(); try { last.focus(); } catch(err){} }
-  else if (!e.shiftKey && idx === nodes.length - 1){ e.preventDefault(); try { first.focus(); } catch(err){} }
+  const j = e.shiftKey ? (i - 1 + n) % n : (i + 1) % n;
+  try { nodes[j].focus(); } catch(err){}
 }
 function tabTrapTarget(){
   if (confirmBg && confirmBg.classList.contains("open")) return confirmBg.querySelector(".confirm");
@@ -5401,7 +5402,6 @@ function openDetail(id){
   const seg = (t, c, ic) => `<div class="dtl-sec"><div class="dtl-h">${ic}${esc(t)}</div><div class="needexp-ed needexp-view">${c ? needToViewHTML(c) : '<span class="tneed-ph">—</span>'}</div></div>`;
   const segHTML = seg(needTitle(d,1), d.need, IC_DOC) + seg(needTitle(d,2), d.need2, IC_EYE) + seg(needTitle(d,3), d.need3, IC_CHECK);
   document.getElementById("detailBody").innerHTML = contact + buy + segHTML;
-  document.getElementById("detailBody").querySelectorAll(".need-link").forEach(a => { a.tabIndex = 0; });   // 詳情內「連結」納入 TAB 循環(表格仍用 -1)
   detailBg.classList.add("open");
   lockOverlay();
 }
@@ -5961,11 +5961,11 @@ let _mbDownOnBg = false;
 modalBg.addEventListener("pointerdown", e => { _mbDownOnBg = (e.target === modalBg); });
 modalBg.addEventListener("click", e => { if (e.target === modalBg && _mbDownOnBg) closeForm(); _mbDownOnBg = false; });
 document.addEventListener("keydown", e => {
+  if (e.key === "Tab"){ trapFocusKey(e, tabTrapTarget()); }
+}, true);
+document.addEventListener("keydown", e => {
   if (e.key === "Enter" && confirmBg.classList.contains("open")){ e.preventDefault(); document.getElementById("confirmOk").click(); return; }
-  if (e.key === "Tab"){
-    trapFocusKey(e, tabTrapTarget());
-    return;
-  }
+  if (e.key === "Tab") return;   // Tab 已由 capture 階段 trapFocusKey 處理
   if (e.key !== "Escape") return;
   const ib = document.getElementById("installBar");
   if (ib && ib.classList.contains("show")){ ib.classList.remove("show"); try { localStorage.setItem("customer_app_install_dismiss_v1", "1"); } catch(err){} return; }
