@@ -1639,7 +1639,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.27X";
+const APP_VERSION = "2026.07.27Y";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2110,7 +2110,7 @@ function toggleFieldVal(cur, v, asPrimary){
   if (asPrimary) a.unshift(s); else a.push(s);
   return packFieldVals(a);
 }
-/** 多選下拉點擊：未選→加入；已選非優先→設優先；已優先→取消；點 ✓→取消；孤兒(已移除)→一律取消 */
+/** 多選下拉點擊：未選→加入；已選非優先→設優先；已優先→取消；點 ✓→取消 */
 function clickMultiFieldVal(cur, v, opts){
   if (opts === true || (opts && opts.asPrimary)) return toggleFieldVal(cur, v, true);
   const s = String(v == null ? "" : v).trim();
@@ -2118,35 +2118,39 @@ function clickMultiFieldVal(cur, v, opts){
   if (opts && opts.shiftKey) return toggleFieldVal(cur, v, true);
   const a = asFieldVals(cur);
   const i = a.indexOf(s);
-  if (opts && opts.orphan && i >= 0) return toggleFieldVal(cur, v, false);
   if (opts && opts.chkClick && i >= 0) return toggleFieldVal(cur, v, false);
   if (i < 0) return toggleFieldVal(cur, v, false);
   if (a[0] === s) return toggleFieldVal(cur, v, false);
   return toggleFieldVal(cur, v, true);
 }
-function orphanFieldVals(curArr, optKey){
-  const list = optList(optKey);
-  const set = new Set(list.map(String));
-  return asFieldVals(curArr).filter(v => v && !set.has(String(v)));
+function purgeOptFromItem(it, field, v){
+  if (!it || !field || v == null || v === "") return false;
+  const a = asFieldVals(it[field]);
+  const s = String(v);
+  if (!a.includes(s)) return false;
+  it[field] = toggleFieldVal(it[field], s, false);
+  if (field === "pNum" || field === "pType") it.parking = fmtParking(fieldPrimary(it, "pType"), fieldPrimary(it, "pNum"));
+  it.updatedAt = Date.now();
+  return true;
 }
-function buildOptMenuRowHTML(v, { multi, curArr, curSingle, isOrphan }){
+function stripOrphansFromItem(it, field, optKey){
+  if (!it || !field || !optKey) return false;
+  const a = fieldVals(it, field);
+  const kept = a.filter(v => !isOptOrphan(optKey, v));
+  if (kept.length === a.length) return false;
+  it[field] = packFieldVals(kept);
+  if (field === "pNum" || field === "pType") it.parking = fmtParking(fieldPrimary(it, "pType"), fieldPrimary(it, "pNum"));
+  it.updatedAt = Date.now();
+  return true;
+}
+function buildOptMenuRowHTML(v, { multi, curArr, curSingle }){
   const on = multi ? curArr.includes(v) : v === curSingle;
   const pri = multi && on && curArr[0] === v;
-  const orphanCls = isOrphan ? " opt-orphan-row" : "";
-  const txtCls = isOrphan ? " opt-orphan" : "";
-  const orphanHint = isOrphan ? `<span class="opt-orphan-hint">（已移除）</span>` : "";
-  const drag = isOrphan ? "" : `<span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span>`;
-  const del = isOrphan ? "" : `<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span>`;
-  const pin = multi && on && !isOrphan ? (pri ? `<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>` : `<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`) : "";
-  const chk = multi ? `<span class="chk">✓</span>` : "";
-  const title = isOrphan ? ` title="已從下拉移除，點一下取消此筆"` : "";
-  return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}${orphanCls}" data-v="${esc(v)}" data-orphan="${isOrphan?1:0}"${title}>${drag}<span class="opt-txt${txtCls}">${esc(v)}</span>${orphanHint}${pin}${chk}${del}</button>`;
+  return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}" data-v="${esc(v)}"><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span>${multi&&on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}${multi?`<span class="chk">✓</span>`:""}<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`;
 }
 function buildOptMenuHTML(optKey, curArr, multi, emptyOn, curSingle){
-  const orphans = multi ? orphanFieldVals(curArr, optKey) : [];
-  const rows = optList(optKey).map(v => buildOptMenuRowHTML(v, { multi, curArr, curSingle, isOrphan:false }))
-    .concat(orphans.map(v => buildOptMenuRowHTML(v, { multi, curArr, curSingle, isOrphan:true })));
-  return `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>` + rows.join("")
+  return `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>`
+    + optList(optKey).map(v => buildOptMenuRowHTML(v, { multi, curArr, curSingle })).join("")
     + `<div class="opt-add"><input placeholder="自訂…"><button type="button">加入</button></div>`;
 }
 const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","詢問","客戶需求"];
@@ -3995,15 +3999,12 @@ function hideMultiHover(){ if (multiHover){ multiHover.classList.remove("show");
 function showMultiHover(el){
   if (!multiHover || !el) return;
   const raw = el.getAttribute("data-multivals") || "";
-  const vals = raw.split("\u001f").map(s => s.trim()).filter(Boolean);
-  if (vals.length < 2){ hideMultiHover(); return; }
   const field = el.getAttribute("data-multifield") || "";
   const optKey = el.getAttribute("data-optkey") || "";
+  const vals = raw.split("\u001f").map(s => s.trim()).filter(Boolean).filter(v => !optKey || !isOptOrphan(optKey, v));
+  if (vals.length < 2){ hideMultiHover(); return; }
   const title = MULTI_HOVER_NAME[field] || "已選";
-  multiHover.innerHTML = `<div class="mh-tt">${esc(title)}（${vals.length}）</div><ul class="mh-list">${vals.map((v,i) => {
-    const orphan = optKey && typeof isOptOrphan === "function" && isOptOrphan(optKey, v);
-    return `<li class="${i===0?"pri":""}${orphan?" orphan":""}">${esc(v)}${orphan?"（已移除）":""}</li>`;
-  }).join("")}</ul>`;
+  multiHover.innerHTML = `<div class="mh-tt">${esc(title)}（${vals.length}）</div><ul class="mh-list">${vals.map((v,i) => `<li class="${i===0?"pri":""}">${esc(v)}</li>`).join("")}</ul>`;
   multiHover.style.visibility = "hidden";
   multiHover.classList.add("show");
   multiHover.setAttribute("aria-hidden","false");
@@ -4250,6 +4251,10 @@ function openOptMenu(trigger){
   closeOtherOverlays("opt");   // 只留這個下拉,關掉其他浮層
   toptTrigger = trigger; toptField = trigger.dataset.field; toptKey = trigger.dataset.optkey;
   toptmenu.classList.remove("opt-editing");   // 每次開啟先回乾淨狀態(長按才進排序模式)
+  const it = tFindItem(trigger);
+  if (it && toptIsMulti() && stripOrphansFromItem(it, toptField, toptKey)){
+    saveItems(); onLocalChange("data"); paintOptTrigger(trigger, it, toptField);
+  }
   renderToptMenu();
   toptmenu.classList.add("show");
   if (window.refreshLed) window.refreshLed();
@@ -4316,7 +4321,7 @@ function setOptValue(v, opts){
   if (multi){
     const afterVals = fieldVals(it, toptField);
     // #region agent log
-    fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'orphan-pri',hypothesisId:'C',location:'setOptValue',message:'multi field update',data:{field:toptField,v,before:beforeVals,after:afterVals,pri:afterVals[0]||'',orphan:!!(opts&&opts.orphan)},timestamp:Date.now()})}).catch(()=>{});
+    fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'opt-del',hypothesisId:'B',location:'setOptValue',message:'multi field update',data:{field:toptField,v,before:beforeVals,after:afterVals,pri:afterVals[0]||''},timestamp:Date.now()})}).catch(()=>{});
     // #endregion
     renderToptMenu();
   }
@@ -4324,17 +4329,22 @@ function setOptValue(v, opts){
 toptmenu.addEventListener("click", e => {
   const del = e.target.closest(".opt-del");
   if (del){ e.stopPropagation(); const dv = del.dataset.del;
-    customOpts[toptKey] = customOpts[toptKey].filter(x => String(x) !== dv);        // 自訂清單移除
-    if (DEF_OPTS[toptKey].map(String).includes(dv)){                                 // 預設選項 → 加入隱藏名單
+    customOpts[toptKey] = customOpts[toptKey].filter(x => String(x) !== dv);
+    if (DEF_OPTS[toptKey].map(String).includes(dv)){
       customOpts.hidden[toptKey] = customOpts.hidden[toptKey] || [];
       if (!customOpts.hidden[toptKey].map(String).includes(dv)) customOpts.hidden[toptKey].push(dv);
     }
     saveOpts();
-    // 不清空客戶資料:列表改灰字標示「已從下拉移除」
-    const still = items.filter(it => asFieldVals(it[toptField]).includes(String(dv))).length;
-    if (typeof toast === "function") toast(still ? ("已從下拉移除；" + still + " 筆仍保留（灰色顯示）") : "已從下拉移除選項");
-    if (typeof applyFilter === "function") applyFilter();
-    else renderToptMenu();
+    const it = tFindItem(toptTrigger);
+    const curPurged = it && toptField && purgeOptFromItem(it, toptField, dv);
+    if (curPurged){ saveItems(); onLocalChange("data"); paintOptTrigger(toptTrigger, it, toptField); }
+    const still = items.filter(x => x !== it && asFieldVals(x[toptField]).includes(String(dv))).length;
+    if (typeof toast === "function") toast(still ? ("已從下拉移除；其他 " + still + " 筆仍保留（灰色顯示）") : (curPurged ? "已從下拉移除並取消此列選取" : "已從下拉移除選項"));
+    // #region agent log
+    fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'opt-del',hypothesisId:'A',location:'toptmenu.opt-del',message:'option deleted',data:{dv,toptKey,curPurged,menuOpen:toptmenu.classList.contains('show'),still},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    if (toptmenu.classList.contains("show")) renderToptMenu();
+    else if (typeof applyFilter === "function") applyFilter();
     return; }
   const pin = e.target.closest(".pri-pin");
   if (pin){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row) setOptValue(row.dataset.v, true); return; }
@@ -4360,8 +4370,7 @@ toptmenu.addEventListener("click", e => {
       if (o.dataset.v === ""){ setOptValue(""); }
       else {
         const chkClick = !!(e.target.closest(".chk") && o.classList.contains("sel"));
-        const orphan = o.dataset.orphan === "1" || (toptKey && isOptOrphan(toptKey, o.dataset.v));
-        setOptValue(o.dataset.v, { shiftKey: e.shiftKey, chkClick, orphan });
+        setOptValue(o.dataset.v, { shiftKey: e.shiftKey, chkClick });
       }
     } else { setOptValue(o.dataset.v); closeOptMenu(); }
   }
@@ -5555,7 +5564,7 @@ function makeOptSel(key, emptyLabel, multi){
   function get(){ return packFieldVals(vals); }
   btn.addEventListener("click", e => { e.stopPropagation(); const was = sel.classList.contains("open");
     document.querySelectorAll(".opt-sel.open").forEach(x => x.classList.remove("open")); closeCatSel();
-    if (!was){ menu.classList.remove("opt-editing"); renderMenu(); sel.classList.add("open"); } });
+    if (!was){ menu.classList.remove("opt-editing"); vals = asFieldVals(vals).filter(v => !isOptOrphan(key, v)); show(); renderMenu(); sel.classList.add("open"); } });
   menu.addEventListener("click", e => {
     const del = e.target.closest(".opt-del");
     if (del){ e.stopPropagation(); const dv = del.dataset.del;
@@ -5565,14 +5574,14 @@ function makeOptSel(key, emptyLabel, multi){
         if (!customOpts.hidden[key].map(String).includes(dv)) customOpts.hidden[key].push(dv);
       }
       saveOpts();
-      // 表單目前選到的值也保留;改以灰字表示已不在下拉
+      if (vals.includes(String(dv))){ vals = asFieldVals(toggleFieldVal(vals, dv, false)); show(); }
       const still = items.filter(it => {
         const f = ({area:"area",rooms:"rooms",ptype:"pType",pnum:"pNum",status:"status"})[key];
         return f && asFieldVals(it[f]).includes(String(dv));
       }).length;
-      if (typeof toast === "function") toast(still ? ("已從下拉移除；" + still + " 筆仍保留（灰色顯示）") : "已從下拉移除選項");
-      show(); renderMenu();
-      if (typeof applyFilter === "function") applyFilter();
+      if (typeof toast === "function") toast(still ? ("已從下拉移除；其他 " + still + " 筆仍保留（灰色顯示）") : "已從下拉移除並取消選取");
+      renderMenu();
+      if (!sel.classList.contains("open") && typeof applyFilter === "function") applyFilter();
       return; }
     const pin = e.target.closest(".pri-pin");
     if (pin && multi){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row){ set(toggleFieldVal(vals, row.dataset.v, true)); renderMenu(); } return; }
@@ -5595,8 +5604,7 @@ function makeOptSel(key, emptyLabel, multi){
         if (o.dataset.v === "") set("");
         else {
           const chkClick = !!(e.target.closest(".chk") && vals.includes(o.dataset.v));
-          const orphan = o.dataset.orphan === "1" || isOptOrphan(key, o.dataset.v);
-          set(clickMultiFieldVal(vals, o.dataset.v, { shiftKey: e.shiftKey, chkClick, orphan }));
+          set(clickMultiFieldVal(vals, o.dataset.v, { shiftKey: e.shiftKey, chkClick }));
         }
         renderMenu();
       } else { set(o.dataset.v); sel.classList.remove("open"); }
