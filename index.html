@@ -1639,7 +1639,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.27Z";
+const APP_VERSION = "2026.07.28A";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2356,6 +2356,7 @@ function tCommitCell(cell){                       // 回傳 true=值有變更(�
   let val = cell.textContent.trim();
   if (field === "ask") val = normAsk(val);
   if (!(field === "ask" && tCellIsEditing(cell))) setCellText(cell, val);   // 編輯中不重寫 DOM,避免 normAsk 大寫化時游標跳回開頭
+  cell.title = val;   // trowHTML 初繪寫入 title;inline 編輯後須同步,懸浮提示才會即時更新
   if (it[field] !== val){
     it[field] = val;
     if (field === "budget"){ const r = parseBudget(val); it.bMin = (r && isFinite(r[0]) && r[0] > 0) ? r[0] : null; it.bMax = (r && isFinite(r[1])) ? r[1] : null; }
@@ -4198,14 +4199,6 @@ function toptIsMulti(){ return !!(toptField && MULTI_OPT_FIELDS[toptField]); }
 function toptMenuOpts(){ return [...toptmenu.querySelectorAll(".cselect-opt")]; }
 function toptMenuHighlight(){
   toptMenuOpts().forEach((o, i) => o.classList.toggle("kb", i === toptMenuIdx));
-  // #region agent log
-  const kbOpt = toptMenuOpts()[toptMenuIdx];
-  if (kbOpt) {
-    const selOpts = toptMenuOpts().filter(o => o.classList.contains('sel'));
-    const bgOf = o => getComputedStyle(o).backgroundColor;
-    fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'pri-bg',hypothesisId:'A',location:'toptMenuHighlight',message:'selected row backgrounds',data:{pri:selOpts.filter(o=>o.classList.contains('is-pri')).map(o=>({label:(o.querySelector('.nm,.opt-txt')||{}).textContent,bg:bgOf(o)})),normal:selOpts.filter(o=>!o.classList.contains('is-pri')).slice(0,2).map(o=>({label:(o.querySelector('.nm,.opt-txt')||{}).textContent,bg:bgOf(o)}))},timestamp:Date.now()})}).catch(()=>{});
-  }
-  // #endregion
 }
 function toptMenuSyncIdx(){
   const opts = toptMenuOpts();
@@ -4306,7 +4299,6 @@ function setOptValue(v, opts){
   const it = tFindItem(toptTrigger); if (!it) return;
   const multi = toptIsMulti();
   const forcePri = opts === true || (opts && opts.asPrimary);
-  const beforeVals = multi ? fieldVals(it, toptField) : [];
   if (multi){
     const next = (v === "" || v == null) ? "" : (forcePri ? toggleFieldVal(it[toptField], v, true) : clickMultiFieldVal(it[toptField], v, opts));
     it[toptField] = next;
@@ -4318,13 +4310,7 @@ function setOptValue(v, opts){
   }
   it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
   paintOptTrigger(toptTrigger, it, toptField);
-  if (multi){
-    const afterVals = fieldVals(it, toptField);
-    // #region agent log
-    fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'opt-del',hypothesisId:'B',location:'setOptValue',message:'multi field update',data:{field:toptField,v,before:beforeVals,after:afterVals,pri:afterVals[0]||''},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-    renderToptMenu();
-  }
+  if (multi) renderToptMenu();
 }
 toptmenu.addEventListener("click", e => {
   const del = e.target.closest(".opt-del");
@@ -4345,10 +4331,6 @@ toptmenu.addEventListener("click", e => {
     const savedField = toptField;
     const wasEditing = toptmenu.classList.contains("opt-editing");
     if (typeof applyFilter === "function") applyFilter();
-    const grayCount = document.querySelectorAll(".topt-label .opt-orphan, .tcell .opt-orphan").length;
-    // #region agent log
-    fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'orphan-gray',hypothesisId:'A',location:'toptmenu.opt-del',message:'after applyFilter',data:{dv,toptKey,still,grayCount,menuOpen},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     if (menuOpen && rowId && savedField){
       const tr = document.querySelector('tr[data-id="' + String(rowId).replace(/\\/g,"\\\\").replace(/"/g,'\\"') + '"]');
       const trig = tr && tr.querySelector('.topt-trigger[data-field="' + savedField + '"]');
@@ -4368,9 +4350,6 @@ toptmenu.addEventListener("click", e => {
         if (ch && typeof applyFilter === "function") applyFilter();
         else if (!toptIsMulti()) closeOptMenu();
         else { inp.value = ""; renderToptMenu(); }
-        // #region agent log
-        if (ch) fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'post-fix',hypothesisId:'D',location:'toptmenu.opt-add',message:'option restored; full list refresh',data:{toptKey,v,grayBefore:document.querySelectorAll('.opt-orphan').length,inList:optList(toptKey).includes(v)},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
       } }
     return; }
   if (toptmenu.__lp){ toptmenu.__lp = false; return; }
@@ -5603,9 +5582,6 @@ function makeOptSel(key, emptyLabel, multi){
           if (multi){ set(toggleFieldVal(vals, v, true)); renderMenu(); inp.value = ""; }
           else { set(v); sel.classList.remove("open"); }
           if (ch && typeof applyFilter === "function") applyFilter();
-          // #region agent log
-          if (ch) fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'post-fix',hypothesisId:'D',location:'form.opt-add',message:'option restored; full list refresh',data:{key,v,grayAfter:document.querySelectorAll('.opt-orphan').length,inList:optList(key).includes(v)},timestamp:Date.now()})}).catch(()=>{});
-          // #endregion
         } }
       return; }
     const o = e.target.closest(".cselect-opt"); if (o){ if (menu.__lp){ menu.__lp = false; return; }
