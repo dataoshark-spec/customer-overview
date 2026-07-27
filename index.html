@@ -1593,7 +1593,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.24ZS";
+const APP_VERSION = "2026.07.24ZT";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2440,7 +2440,7 @@ function openNeedExp(tr, doFocus){
   exp.className = editMode ? "needexp editing" : "needexp"; exp.dataset.for = id;
   const head = (sg) => {
     const ti = needTitle(it, sg);
-    const thtml = `<span class="nseg-t" contenteditable="${editMode?"true":"false"}" data-seg="${sg}" data-titleedit="1" spellcheck="false">${esc(ti)}</span>`;
+    const thtml = `<span class="nseg-t" tabindex="0" contenteditable="${editMode?"true":"false"}" data-seg="${sg}" data-titleedit="1" spellcheck="false">${esc(ti)}</span>`;
     // 編輯模式:三段都放真「刪線／標題」(窄螢幕直排時需求/想看也要能按;寬螢幕三欄並排仍各自一組)
     const bhtml = editMode
       ? `<span class="nseg-btns"><button type="button" class="nseg-hbtn nseg-sbtn" data-seg="${sg}" title="把選取中的文字加上／取消刪除線">刪線</button><button type="button" class="nseg-hbtn nseg-tbtn" data-seg="${sg}" title="把選取中的文字設為／取消標題">標題</button></span>`
@@ -4889,13 +4889,15 @@ function isTabStop(el){
     const st = window.getComputedStyle(el);
     if (st.display === "none" || st.visibility === "hidden") return false;
   } catch(err){}
+  // 關閉的下拉選項等:子元素 computed 仍可能是 flex/visible,但無版面;focus() 會失敗 → TAB 卡死只能動一格
+  if (!(el.offsetWidth || el.offsetHeight || (el.getClientRects && el.getClientRects().length))) return false;
   return true;
 }
 function getTabStops(container){
   if (!container) return [];
   return Array.prototype.filter.call(container.querySelectorAll(TAB_SEL), isTabStop);
 }
-/* 一律自行搬焦點:只在邊界才 preventDefault 時,中段仍可能被瀏覽器帶到視窗「三個點」 */
+/* 一律自行搬焦點,避免跳出到視窗「三個點」;略過無版面的隱藏下拉選項(否則 focus 失敗會卡死) */
 function trapFocusKey(e, container){
   if (e.key !== "Tab" || !container) return;
   const nodes = getTabStops(container);
