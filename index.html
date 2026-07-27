@@ -729,12 +729,48 @@
     font-family:inherit;font-size:.95rem;color:var(--ink);background:none;border:none;
     border-radius:8px;padding:9px 10px;cursor:pointer;text-align:left;transition:background .12s ease;}
   .cselect-opt:hover{background:var(--surface-2);}
-  .cselect-opt.sel{background:var(--accent-tint);}
+  .cselect-opt.sel{background:rgba(43,92,168,.07);}
+  .cselect-opt.kb{outline:2px solid var(--accent);outline-offset:-2px;}
+  .catmenu-opt.kb{outline:2px solid var(--accent);outline-offset:-2px;}
   .cselect-opt .dot{flex:none;width:10px;height:10px;border-radius:50%;}
   .cselect-opt .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
   .cselect-opt.sel .nm{color:var(--accent-deep);}
-  .cselect-opt .chk{flex:none;color:var(--accent);font-size:.85rem;opacity:0;}
+  .cselect-opt .chk{flex:none;color:var(--accent);font-size:.78rem;font-weight:600;opacity:0;width:1em;text-align:center;}
   .cselect-opt.sel .chk{opacity:1;}
+  /* 區域/類型/房數/車類/車數:多選時欄位只顯示優先項 + 色點;完整清單靠懸浮 */
+  .multi-wrap{display:inline-flex;align-items:center;justify-content:center;gap:5px;max-width:100%;min-width:0;vertical-align:middle;}
+  .multi-pri{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .multi-dot{flex:none;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.75;box-shadow:none;}
+  .tcat-badge .multi-wrap,.tcat-label.multi-wrap{max-width:100%;}
+  .topt-label.multi-wrap{display:inline-flex;max-width:100%;}
+  .cselect-btn.is-multi .cselect-txt{display:inline-flex;align-items:center;gap:5px;}
+  /* 優先項才顯示「優」;其他已選滑過改顯示「設為優先」(動作,不是狀態) */
+  .cselect-opt .pri-pin{flex:none;opacity:0;pointer-events:none;font-size:.65rem;font-weight:700;letter-spacing:.02em;color:var(--accent-deep);border:1px solid transparent;background:transparent;border-radius:5px;padding:1px 6px;line-height:1.25;white-space:nowrap;transition:opacity .12s,background .12s,color .12s;}
+  .cselect-opt .pri-pin.is-set{font-size:.68rem;font-weight:600;color:var(--accent);background:transparent;border:none;padding:1px 4px;}
+  .cselect-opt.sel:not(.is-pri):hover .pri-pin.is-set{opacity:1;pointer-events:auto;}
+  .cselect-opt.is-pri{background:var(--accent-tint);}
+  .cselect-opt.is-pri .pri-pin{opacity:1;pointer-events:auto;background:var(--accent);color:#fff;border-color:var(--accent);}
+  .cselect-opt.is-pri .nm,.cselect-opt.is-pri .opt-txt{color:var(--accent-deep);font-weight:700;}
+  .catmenu-opt.sel{background:rgba(43,92,168,.07);}
+  .catmenu-opt.is-pri{background:var(--accent-tint);}
+  .catmenu-opt .chk{margin-left:auto;color:var(--accent);opacity:0;font-weight:600;font-size:.78rem;}
+  .catmenu-opt.sel .chk{opacity:1;}
+  #multiHover{position:fixed;z-index:221;display:none;pointer-events:none;max-width:min(560px,92vw);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 16px 40px rgba(22,34,42,.24);}
+  #multiHover.show{display:block;}
+  #multiHover .mh-tt{font-size:1.2rem;font-weight:500;color:var(--text-faint);margin-bottom:10px;letter-spacing:.04em;}
+  #multiHover .mh-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
+  #multiHover .mh-list li{font-size:1.7rem;font-weight:600;color:var(--ink);line-height:1.35;padding:10px 14px;border-radius:10px;background:var(--surface-1);}
+  #multiHover .mh-list li.pri{background:var(--accent-tint);color:var(--accent-deep);}
+  @media (hover:none){ #multiHover{display:none !important;} }
+  /* 欄位截斷內容懸浮(取代瀏覽器原生 title);約 2 倍字級。客戶需求(#needHover)不套用 */
+  #cellHover{position:fixed;z-index:222;display:none;pointer-events:none;max-width:min(92vw,560px);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;box-shadow:0 16px 40px rgba(22,34,42,.24);font-size:1.7rem;font-weight:600;line-height:1.4;color:var(--ink);letter-spacing:.01em;white-space:pre-wrap;word-break:break-word;}
+  #cellHover.show{display:block;}
+  @media (hover:none){ #cellHover{display:none !important;} }
+  /* 觸控無 hover:不顯示「設為優先」提示;優先項仍標「優」(可用 Shift 點選改優先) */
+  @media (hover:none){
+    .cselect-opt.sel:not(.is-pri):hover .pri-pin.is-set{opacity:0;pointer-events:none;}
+    .cselect-opt.is-pri .pri-pin{opacity:1;pointer-events:auto;}
+  }
   .modal-foot{display:flex;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:var(--card);}
   .modal-foot .spacer{flex:1;}
   .btn-primary{background:var(--accent);color:#fff;border:none;font-family:inherit;font-weight:700;font-size:.98rem;
@@ -981,7 +1017,8 @@
   .opt-editing .opt-line .opt-drag{display:inline-flex;}
   .opt-line .opt-drag:active{cursor:grabbing;}
   .opt-line.dragging{background:var(--surface-2);border-radius:8px;position:relative;z-index:2;}
-  .opt-line .opt-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .opt-line .opt-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
+  .opt-line.is-pri .opt-txt{font-weight:700;}
   .opt-del{flex:0 0 auto;display:none;align-items:center;justify-content:center;width:28px;height:28px;padding:0;
     font-size:0;color:transparent;border:0;border-radius:50%;background:transparent;box-shadow:none;transition:background .15s,box-shadow .15s;}
   .opt-del::before{content:"";width:13px;height:13px;background:var(--text-faint);transition:background .15s;
@@ -1229,10 +1266,11 @@
   }
   @media (hover:none){ #needHover{display:none !important;} }  #toptmenu .opt-add{margin:0 -5px;padding:9px 12px 13px;border-radius:0 0 11px 11px;}
   .cselect-opt.topt-empty{justify-content:center;color:var(--text-faint);font-weight:600;}
-  .catmenu-opt{display:flex;align-items:center;gap:9px;width:100%;font-family:inherit;font-size:.9rem;font-weight:600;
+  .catmenu-opt{display:flex;align-items:center;gap:9px;width:100%;font-family:inherit;font-size:.9rem;font-weight:500;
     color:var(--ink);background:none;border:none;border-radius:7px;padding:9px 10px;cursor:pointer;text-align:left;transition:background .12s;}
   .catmenu-opt:hover{background:var(--surface-2);}
-  .catmenu-opt.sel{background:var(--accent-tint);}
+  .catmenu-opt.sel{background:rgba(43,92,168,.07);}
+  .catmenu-opt.is-pri{background:var(--accent-tint);font-weight:700;}
   .catmenu-opt .dot{width:10px;height:10px;border-radius:50%;flex:none;}
   .tdi{width:15px;height:15px;flex:none;}
 
@@ -1569,6 +1607,8 @@
 <div class="catmenu" id="catmenu" role="listbox"></div>
 <div id="toptmenu" role="listbox"></div>
 <div id="needHover" role="tooltip" aria-hidden="true"></div>
+<div id="multiHover" role="tooltip" aria-hidden="true"></div>
+<div id="cellHover" role="tooltip" aria-hidden="true"></div>
 
 <!-- ===== Link paste popover (table view) ===== -->
 <div class="cpick" id="cpick" aria-label="選取顏色">
@@ -1593,7 +1633,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.24ZT";
+const APP_VERSION = "2026.07.27H";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1672,19 +1712,24 @@ function cardHTML(d){
   const sel = selected.has(d.id) ? " selected" : "";
   const nameHTML = d.cust ? segCopyHTML(d.cust) : `<span class="cv-empty">（未填稱呼）</span>`;
   const TELSVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.53 15.53 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg>`;
+  const areaPri = fieldPrimary(d, "area"), roomsPri = fieldPrimary(d, "rooms"), catPri = fieldPrimary(d, "cat");
+  const areaTip = fieldVals(d, "area").join("、"), roomsTip = fieldVals(d, "rooms").join("、"), catTip = fieldVals(d, "cat").join("、");
+  const areaDot = fieldIsMulti(d, "area") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
+  const roomsDot = fieldIsMulti(d, "rooms") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
+  const catDot = fieldIsMulti(d, "cat") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
   if (density === "compact"){
     const cbits = [];
-    if (d.area) cbits.push(d.area);
-    if (d.rooms) cbits.push(d.rooms);
-    if (d.parking) cbits.push(/車/.test(d.parking) ? d.parking : d.parking + "車位");
-    const csub = cbits.length ? cbits.map(p => { const v = normAsk(p); return `<span class="cv" data-copy="${esc(v)}">${esc(v)}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
+    if (areaPri) cbits.push({t: areaPri, tip: areaTip, dot: areaDot});
+    if (roomsPri) cbits.push({t: roomsPri, tip: roomsTip, dot: roomsDot});
+    if (d.parking) cbits.push({t: /車/.test(d.parking) ? d.parking : d.parking + "車位", tip: d.parking, dot: ""});
+    const csub = cbits.length ? cbits.map(p => { const v = normAsk(p.t); return `<span class="cv multi-wrap" data-copy="${esc(v)}" title="${esc(p.tip)}"><span class="multi-pri">${esc(v)}</span>${p.dot}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
     return `<article class="card compact-card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
       <div class="card-head">
         ${d.status ? `<span class="card-status" data-copy="${esc(d.status)}">${esc(d.status)}</span>` : ``}
         <h3 class="name">${nameHTML}</h3>
-        <span class="badge">${esc(d.cat)}</span>
+        <span class="badge multi-wrap" title="${esc(catTip)}"><span class="multi-pri">${esc(catPri)}</span>${catDot}</span>
       </div>
       <div class="sub-row">
         <span class="addr">${csub}</span>
@@ -1695,7 +1740,7 @@ function cardHTML(d){
   }
   const topBits = [];
   if (d.date) topBits.push(`<span class="ct-item">建檔 <span class="cv" data-copy="${esc(d.date)}">${esc(d.date)}</span></span>`);
-  if (d.area) topBits.push(`<span data-copy="${esc(d.area)}">${esc(d.area)}</span>`);
+  if (areaPri) topBits.push(`<span class="multi-wrap" data-copy="${esc(areaPri)}" title="${esc(areaTip)}"><span class="multi-pri">${esc(areaPri)}</span>${areaDot}</span>`);
   const topHTML = topBits.length ? `<div class="card-top">${topBits.join('<span class="dot">／</span>')}</div>` : "";
   return `<article class="card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
@@ -1704,13 +1749,13 @@ function cardHTML(d){
       <div class="card-head">
         ${d.status ? `<span class="card-status" data-copy="${esc(d.status)}">${esc(d.status)}</span>` : ``}
         <h3 class="name">${nameHTML}</h3>
-        <span class="badge">${esc(d.cat)}</span>
+        <span class="badge multi-wrap" title="${esc(catTip)}"><span class="multi-pri">${esc(catPri)}</span>${catDot}</span>
       </div>
       ${d.budget ? `<div class="price">
         <span class="price-value"><span class="num" data-copy="${esc(d.budget)}">${esc(d.budget)}</span></span>
       </div>` : ``}
-      ${(d.rooms || d.parking) ? `<div class="meta">
-        ${d.rooms ? `<span data-copy="${esc(d.rooms)}"><i class="ml">房數</i> ${esc(d.rooms)}</span>` : ``}
+      ${(roomsPri || d.parking) ? `<div class="meta">
+        ${roomsPri ? `<span class="multi-wrap" data-copy="${esc(roomsPri)}" title="${esc(roomsTip)}"><i class="ml">房數</i> <span class="multi-pri">${esc(roomsPri)}</span>${roomsDot}</span>` : ``}
         ${d.parking ? `<span data-copy="${esc(d.parking)}"><i class="ml">車位</i> ${esc(d.parking)}</span>` : ``}
       </div>` : ``}
       ${d.need ? `<div class="ov-need"><div class="ov-need-in">${linkifyNeed(needToPlain(d.need))}</div></div>` : ``}
@@ -1840,7 +1885,7 @@ function loadCats(){
 function saveCats(){ if (storageOK){ try { localStorage.setItem(CATS_KEY, JSON.stringify(cats)); } catch (e) {} } }
 let cats = loadCats();
 
-const catCount = key => items.filter(d => d.cat === key).length;
+const catCount = key => items.filter(d => fieldHas(d, "cat", key)).length;
 const catColor = key => { const c = cats.find(x => x.key === key); return c ? safeColor(c.color) : "#8494A0"; };
 const nextColor = () => CAT_PALETTE.find(col => !cats.some(c => c.color === col)) || CAT_PALETTE[cats.length % CAT_PALETTE.length];
 
@@ -1991,11 +2036,59 @@ function setViewMode(vm){
   if (viewMode !== "table"){                                     // 離開表格:收合展開,避免殘留的隱藏展開之後把舊內容寫回
     if (typeof closeNeedExp === "function") closeNeedExp();
     if (typeof hideNeedHover === "function") hideNeedHover();
+    if (typeof hideCellHover === "function") hideCellHover();
   }
   applyFilter();
 }
 
 // ---- table rendering ----
+// 區域/類型/房數/車類/車數可多選:資料存字串(單值)或字串陣列(多值);顯示只秀優先項(第一個)+色點,懸浮看全部
+const MULTI_OPT_FIELDS = { area:1, cat:1, rooms:1, pType:1, pNum:1 };
+function asFieldVals(v){
+  if (v == null || v === "") return [];
+  if (Array.isArray(v)){
+    const out = [], seen = new Set();
+    for (const x of v){
+      const s = String(x == null ? "" : x).trim();
+      if (!s || seen.has(s)) continue;
+      seen.add(s); out.push(s);
+    }
+    return out;
+  }
+  const s = String(v).trim();
+  return s ? [s] : [];
+}
+function packFieldVals(arr){
+  const a = asFieldVals(arr);
+  if (!a.length) return "";
+  if (a.length === 1) return a[0];
+  return a;
+}
+function fieldVals(d, f){ return asFieldVals(d && d[f]); }
+function fieldPrimary(d, f){ return fieldVals(d, f)[0] || ""; }
+function fieldIsMulti(d, f){ return fieldVals(d, f).length > 1; }
+function fieldHas(d, f, v){ return fieldVals(d, f).includes(String(v)); }
+function multiInnerHTML(vals){
+  const a = asFieldVals(vals);
+  const primary = a[0] || "";
+  const multi = a.length > 1;
+  if (!primary) return { a, primary:"", multi:false, html:"" };
+  const dot = multi ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
+  return { a, primary, multi, html: `<span class="multi-wrap"><span class="multi-pri">${esc(primary)}</span>${dot}</span>` };
+}
+function toggleFieldVal(cur, v, asPrimary){
+  const a = asFieldVals(cur);
+  const s = String(v == null ? "" : v).trim();
+  if (!s) return packFieldVals([]);
+  const i = a.indexOf(s);
+  if (i >= 0){
+    if (asPrimary){ a.splice(i, 1); a.unshift(s); return packFieldVals(a); }
+    a.splice(i, 1);
+    return packFieldVals(a);
+  }
+  if (asPrimary) a.unshift(s); else a.push(s);
+  return packFieldVals(a);
+}
 const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","詢問","客戶需求"];
 const T_FIELDS = ["date","status","area","cat","budget","rooms","pType","pNum","cust","tel","line","ask","need"];
 const DEFAULT_COLW = {date:84,area:120,cat:80,budget:112,rooms:88,pType:96,pNum:64,status:88,cust:120,tel:104,line:96,ask:116};
@@ -2015,40 +2108,50 @@ const GEN_ICON = '<svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="ro
 function buildBuyerName(d){
   const ask = String(d.ask == null ? "" : d.ask).trim();
   const cust = String(d.cust == null ? "" : d.cust).trim();
+  const cats = fieldVals(d, "cat");
+  const rooms = fieldVals(d, "rooms");
   let tail;
-  if (String(d.cat == null ? "" : d.cat).trim() === "大樓"){
-    const nums = String(d.rooms == null ? "" : d.rooms).match(/\d+/g);
+  if (cats.includes("大樓") || fieldPrimary(d, "cat") === "大樓"){
+    const nums = rooms.join("").match(/\d+/g) || String(rooms[0] || "").match(/\d+/g);
     tail = nums ? nums.map(n => n + "房").join("") : "";
   } else {
-    tail = String(d.cat == null ? "" : d.cat).trim();
+    tail = fieldPrimary(d, "cat");
   }
   const head = ["買方", ask, cust].filter(x => x !== "").join("-");
   return tail ? head + "(" + tail : head;
 }
 function trowHTML(d){
-  const color = catColor(d.cat);
+  const catVals = fieldVals(d, "cat");
+  const catPri = catVals[0] || "";
+  const color = catColor(catPri);
+  const catM = multiInnerHTML(catVals);
   const ce = "false";
   const tTab = editMode ? ' tabindex="0"' : "";
+  const catMultiAttr = catM.multi ? ` data-multifield="cat" data-multivals="${esc(catVals.join("\u001f"))}"` : "";
+  const catTipAttr = (!catM.multi && catPri) ? ` data-tip="${esc(catPri)}"` : "";
   const catCell = editMode
     // 沒選類型就不畫 pill 邊框(改 transparent 而非 border:0,盒子尺寸不變,選好時邊框浮現不位移)
-    ? `<td class="tcat"><button type="button" class="tcat-trigger" data-field="cat" style="border-color:${d.cat ? color : "transparent"}"><span class="tcat-label">${esc(d.cat)}</span></button></td>`
-    : `<td class="tcat"><span class="tcat-badge" style="border-color:${d.cat ? color : "transparent"}">${esc(d.cat)}</span></td>`;
+    ? `<td class="tcat"><button type="button" class="tcat-trigger" data-field="cat" style="border-color:${catPri ? color : "transparent"}"${catMultiAttr}${catTipAttr}><span class="tcat-label">${catM.html}</span></button></td>`
+    : `<td class="tcat"><span class="tcat-badge" style="border-color:${catPri ? color : "transparent"}"${catMultiAttr}${catTipAttr}>${catM.html}</span></td>`;
   const delCell = editMode
     ? `<td class="tdel"><button data-act="del" title="刪除此列">${ICON_TRASH}</button></td>`
     : `<td class="tdel"></td>`;
-  const cell = (f, cls) => `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}" title="${esc(d[f])}">${esc(d[f])}</div></td>`;
+  const cell = (f, cls) => `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}"${d[f]?` data-tip="${esc(d[f])}"`:""}>${esc(d[f])}</div></td>`;
   const segCell = (f, cls) => editMode
-    ? `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}" title="${esc(d[f])}">${esc(d[f])}</div></td>`
-    : `<td><div class="tcell segcell${cls?" "+cls:""}" data-field="${f}" title="${esc(d[f])}">${segCopyHTML(d[f])}</div></td>`;
+    ? `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}"${d[f]?` data-tip="${esc(d[f])}"`:""}>${esc(d[f])}</div></td>`
+    : `<td><div class="tcell segcell${cls?" "+cls:""}" data-field="${f}"${d[f]?` data-tip="${esc(d[f])}"`:""}>${segCopyHTML(d[f])}</div></td>`;
   const optCell = (f, optKey) => {
-    const dv = (f === "pNum") ? (d.pNum ? String(d.pNum) : "") : (d[f] || "");
+    const vals = fieldVals(d, f);
+    const m = multiInnerHTML(vals);
+    const multiAttr = m.multi ? ` data-multifield="${f}" data-multivals="${esc(vals.join("\u001f"))}"` : "";
+    const tipAttr = (!m.multi && vals[0]) ? ` data-tip="${esc(vals[0])}"` : "";
     return editMode
-      ? `<td><button type="button" class="topt-trigger" data-field="${f}" data-optkey="${optKey}"><span class="topt-label">${esc(dv)}</span></button></td>`
-      : `<td><div class="tcell" data-field="${f}" title="${esc(dv)}">${esc(dv)}</div></td>`;
+      ? `<td><button type="button" class="topt-trigger" data-field="${f}" data-optkey="${optKey}"${multiAttr}${tipAttr}><span class="topt-label">${m.html}</span></button></td>`
+      : `<td><div class="tcell" data-field="${f}"${multiAttr}${tipAttr}>${m.html}</div></td>`;
   };
   const dateInner = editMode                                   // 編輯模式:建檔日改為日曆選擇(與卡片檢視同一個日曆)
-    ? `<button type="button" class="topt-trigger" data-field="date" data-cal="1"><span class="topt-label">${esc(d.date)}</span></button>`
-    : `<div class="tcell tdate" data-field="date" title="${esc(d.date)}">${esc(d.date)}</div>`;
+    ? `<button type="button" class="topt-trigger" data-field="date" data-cal="1"${d.date?` data-tip="${esc(d.date)}"`:""}><span class="topt-label">${esc(d.date)}</span></button>`
+    : `<div class="tcell tdate" data-field="date"${d.date?` data-tip="${esc(d.date)}"`:""}>${esc(d.date)}</div>`;
   const dateCell = `<td class="datewrap"><span class="gen-edge"></span><button type="button" class="gen-btn" tabindex="-1" data-gen="1" title="生成買方名稱並複製" aria-label="生成買方名稱並複製">${GEN_ICON}<span class="gen-label">生成</span></button>${dateInner}</td>`;
   // 重繪時直接帶上列狀態:展開列(首次排版即為淡化樣式,聚焦轉場不會重播)+ 批次選取列(同步重繪不掉選取)
   const _trCls = ((openNeedId === d.id) ? ("exp-open" + (editMode ? " exp-editing" : "") + " ") : "") + ((tselMode && selected.has(d.id)) ? "tsel-row" : "");
@@ -2196,6 +2299,7 @@ function tCommitCell(cell){                       // 回傳 true=值有變更(�
     if (field === "budget"){ const r = parseBudget(val); it.bMin = (r && isFinite(r[0]) && r[0] > 0) ? r[0] : null; it.bMax = (r && isFinite(r[1])) ? r[1] : null; }
     if (field === "pType"){ it.parking = fmtParking(val, it.pNum); }
     else if (field === "pNum"){ it.pNum = val || ""; it.parking = fmtParking(it.pType, val); setCellText(cell, val || ""); }   // 車數自由文字:保留原始選項(「1車」不再剝成 1);車位描述 fmtParking 內部仍自動抓數字
+    if (val) cell.setAttribute("data-tip", val); else cell.removeAttribute("data-tip");
     it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
     return true;
   }
@@ -2403,7 +2507,7 @@ function commitNeedSeg(id, sg, val){
   if (sg===1){
     const tr = tableWrap.querySelector(`tr[data-id="${id}"]`);
     const cell = tr && tr.querySelector(".tneed");
-    if (cell){ if (val){ cell.innerHTML = linkifyNeed(needToPlain(val)); } else { cell.innerHTML = '<span class="tneed-ph">—</span>'; } cell.title = needToPlain(val); }
+    if (cell){ if (val){ cell.innerHTML = linkifyNeed(needToPlain(val)); } else { cell.innerHTML = '<span class="tneed-ph">—</span>'; } cell.removeAttribute("title"); }
   }
 }
 function commitNeedTitle(id, sg, val){
@@ -3813,6 +3917,8 @@ if (window.matchMedia && window.matchMedia("(hover: hover)").matches){
     if (typeof closeCatMenu === "function") closeCatMenu();   // 滑到需求欄觸發懸浮時,關掉開著的下拉/篩選,只留懸浮
     if (typeof closeOptMenu === "function") closeOptMenu();
     if (typeof closeColFlt === "function") closeColFlt();
+    hideMultiHover();
+    hideCellHover();
     showNeedHover(cell, it);
   });
   tableWrap.addEventListener("mouseout", e => {
@@ -3824,6 +3930,102 @@ if (window.matchMedia && window.matchMedia("(hover: hover)").matches){
   });
   window.addEventListener("scroll", hideNeedHover, true);
   window.addEventListener("resize", hideNeedHover);
+}
+
+// ---- 多選欄位懸浮:顯示完整選項(優先項標示) ----
+const multiHover = document.getElementById("multiHover");
+const MULTI_HOVER_NAME = { area:"區域", cat:"類型", rooms:"房數", pType:"車類", pNum:"車數", ptype:"車類", pnum:"車數" };
+function hideMultiHover(){ if (multiHover){ multiHover.classList.remove("show"); multiHover.setAttribute("aria-hidden","true"); } }
+function showMultiHover(el){
+  if (!multiHover || !el) return;
+  const raw = el.getAttribute("data-multivals") || "";
+  const vals = raw.split("\u001f").map(s => s.trim()).filter(Boolean);
+  if (vals.length < 2){ hideMultiHover(); return; }
+  const field = el.getAttribute("data-multifield") || "";
+  const title = MULTI_HOVER_NAME[field] || "已選";
+  multiHover.innerHTML = `<div class="mh-tt">${esc(title)}（${vals.length}）</div><ul class="mh-list">${vals.map((v,i) => `<li class="${i===0?"pri":""}">${esc(v)}</li>`).join("")}</ul>`;
+  multiHover.style.visibility = "hidden";
+  multiHover.classList.add("show");
+  multiHover.setAttribute("aria-hidden","false");
+  const r = el.getBoundingClientRect();
+  const hw = multiHover.offsetWidth, hh = multiHover.offsetHeight;
+  let left = Math.min(r.left, window.innerWidth - hw - 8); left = Math.max(8, left);
+  let top = r.bottom + 6;
+  if (top + hh > window.innerHeight - 8) top = Math.max(8, r.top - hh - 6);
+  multiHover.style.left = left + "px";
+  multiHover.style.top = top + "px";
+  multiHover.style.visibility = "";
+}
+if (window.matchMedia && window.matchMedia("(hover: hover)").matches){
+  document.addEventListener("mouseover", e => {
+    const el = e.target.closest("[data-multivals]");
+    if (!el) return;
+    const from = e.relatedTarget;
+    if (from && el.contains(from)) return;
+    hideNeedHover();
+    hideCellHover();
+    showMultiHover(el);
+  });
+  document.addEventListener("mouseout", e => {
+    const el = e.target.closest("[data-multivals]");
+    if (!el) return;
+    const to = e.relatedTarget;
+    if (to && el.contains(to)) return;
+    hideMultiHover();
+  });
+  window.addEventListener("scroll", hideMultiHover, true);
+  window.addEventListener("resize", hideMultiHover);
+}
+
+// ---- 欄位截斷內容懸浮:美化自訂提示(約 2 倍字),取代瀏覽器原生 title ----
+const cellHover = document.getElementById("cellHover");
+function hideCellHover(){ if (cellHover){ cellHover.classList.remove("show"); cellHover.setAttribute("aria-hidden","true"); } }
+function tipOverflow(el){
+  if (!el) return false;
+  if (el.scrollWidth > el.clientWidth + 1) return true;
+  const label = el.querySelector(".topt-label, .tcat-label, .multi-pri, .seg");
+  if (label && label.scrollWidth > label.clientWidth + 1) return true;
+  return false;
+}
+function showCellHover(el){
+  if (!cellHover || !el) return;
+  if (el.classList.contains("tneed") || el.closest(".tneed")){ hideCellHover(); return; }
+  if (el.hasAttribute("data-multivals")){ hideCellHover(); return; }   // 多選走 multiHover
+  const tip = (el.getAttribute("data-tip") || "").trim();
+  if (!tip){ hideCellHover(); return; }
+  if (!tipOverflow(el) && tip === (el.textContent || "").replace(/\s+/g," ").trim()){ hideCellHover(); return; }
+  cellHover.textContent = tip;
+  cellHover.style.visibility = "hidden";
+  cellHover.classList.add("show");
+  cellHover.setAttribute("aria-hidden","false");
+  const r = el.getBoundingClientRect();
+  const hw = cellHover.offsetWidth, hh = cellHover.offsetHeight;
+  let left = Math.min(r.left, window.innerWidth - hw - 8); left = Math.max(8, left);
+  let top = r.bottom + 8;
+  if (top + hh > window.innerHeight - 8) top = Math.max(8, r.top - hh - 8);
+  cellHover.style.left = left + "px";
+  cellHover.style.top = top + "px";
+  cellHover.style.visibility = "";
+}
+if (window.matchMedia && window.matchMedia("(hover: hover)").matches){
+  document.addEventListener("mouseover", e => {
+    const el = e.target.closest("[data-tip]");
+    if (!el) return;
+    const from = e.relatedTarget;
+    if (from && el.contains(from)) return;
+    hideNeedHover();
+    hideMultiHover();
+    showCellHover(el);
+  });
+  document.addEventListener("mouseout", e => {
+    const el = e.target.closest("[data-tip]");
+    if (!el) return;
+    const to = e.relatedTarget;
+    if (to && el.contains(to)) return;
+    hideCellHover();
+  });
+  window.addEventListener("scroll", hideCellHover, true);
+  window.addEventListener("resize", hideCellHover);
 }
 
 // ---- 正常模式:點格子複製內容 ----
@@ -3887,26 +4089,50 @@ function closeOtherOverlays(keep){
   if (keep !== "flt" && typeof closeColFlt === "function") closeColFlt();
   if (keep !== "exp" && typeof closeNeedExp === "function") closeNeedExp();
   if (typeof hideNeedHover === "function") hideNeedHover();
+  if (typeof hideMultiHover === "function") hideMultiHover();
+  if (typeof hideCellHover === "function") hideCellHover();
 }
-function applyCatChoice(key){
+function applyCatChoice(key, asPrimary){
   if (!catTrigger) return;
   const it = tFindItem(catTrigger);
   if (it){
-    if (it.cat !== key){ it.cat = key; it.updatedAt = Date.now(); saveItems(); onLocalChange("data"); }
-    catTrigger.style.borderColor = catColor(it.cat);
-    const lbl = catTrigger.querySelector(".tcat-label"); if (lbl) lbl.textContent = it.cat;
+    const next = key === "" ? "" : toggleFieldVal(it.cat, key, !!asPrimary);
+    if (JSON.stringify(asFieldVals(it.cat)) !== JSON.stringify(asFieldVals(next))){
+      it.cat = next; it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
+    }
+    paintCatTrigger(catTrigger, it);
+    renderCatMenuSelected();
+    return;
   }
-  const trig = catTrigger;
-  closeCatMenu();
-  if (trig && trig.isConnected) trig.focus();
+}
+function paintCatTrigger(trigger, it){
+  if (!trigger) return;
+  const vals = fieldVals(it, "cat");
+  const m = multiInnerHTML(vals);
+  const pri = m.primary;
+  trigger.style.borderColor = pri ? catColor(pri) : "transparent";
+  const lbl = trigger.querySelector(".tcat-label"); if (lbl) lbl.innerHTML = m.html;
+  if (m.multi){ trigger.setAttribute("data-multifield", "cat"); trigger.setAttribute("data-multivals", vals.join("\u001f")); }
+  else { trigger.removeAttribute("data-multifield"); trigger.removeAttribute("data-multivals"); }
+}
+function renderCatMenuSelected(){
+  if (!catTrigger || !catmenu.classList.contains("show")) return;
+  const it = tFindItem(catTrigger); if (!it) return;
+  const cur = fieldVals(it, "cat");
+  catmenu.querySelectorAll(".catmenu-opt").forEach(o => {
+    const on = cur.includes(o.dataset.key);
+    o.classList.toggle("sel", on);
+    o.classList.toggle("is-pri", on && cur[0] === o.dataset.key);
+  });
 }
 function catMenuHighlight(){
-  catmenu.querySelectorAll(".catmenu-opt").forEach((o, i) => o.classList.toggle("sel", i === catMenuIdx));
+  const opts = [...catmenu.querySelectorAll(".catmenu-opt")];
+  opts.forEach((o, i) => o.classList.toggle("kb", i === catMenuIdx));
 }
 function catMenuSyncIdx(){
   const opts = [...catmenu.querySelectorAll(".catmenu-opt")];
-  const i = opts.findIndex(o => o.classList.contains("sel"));
-  catMenuIdx = i >= 0 ? i : 0;
+  const i = opts.findIndex(o => o.classList.contains("kb"));
+  catMenuIdx = i >= 0 ? i : Math.max(0, opts.findIndex(o => o.classList.contains("is-pri")));
   catMenuHighlight();
 }
 function onCatMenuKey(e){
@@ -3915,7 +4141,7 @@ function onCatMenuKey(e){
   if (!opts.length) return;
   if (e.key === "ArrowDown"){ e.preventDefault(); e.stopPropagation(); catMenuIdx = (catMenuIdx + 1) % opts.length; catMenuHighlight(); }
   else if (e.key === "ArrowUp"){ e.preventDefault(); e.stopPropagation(); catMenuIdx = (catMenuIdx - 1 + opts.length) % opts.length; catMenuHighlight(); }
-  else if (e.key === "Enter" || e.key === " "){ e.preventDefault(); e.stopPropagation(); const opt = opts[catMenuIdx]; if (opt) applyCatChoice(opt.dataset.key); }
+  else if (e.key === "Enter" || e.key === " "){ e.preventDefault(); e.stopPropagation(); const opt = opts[catMenuIdx]; if (opt) applyCatChoice(opt.dataset.key, e.shiftKey); }
   else if (e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); const trig = catTrigger; closeCatMenu(); if (trig) trig.focus(); }
   else if (e.key === "Tab"){ closeCatMenu(); }
 }
@@ -3924,8 +4150,9 @@ function openCatMenu(trigger){
   closeOtherOverlays("cat");
   const it = tFindItem(trigger); if (!it) return;
   catTrigger = trigger;
+  const cur = fieldVals(it, "cat");
   catmenu.innerHTML = cats.map(c =>
-    `<button type="button" class="catmenu-opt${c.key===it.cat?' sel':''}" data-key="${esc(c.key)}"><span class="dot" style="background:${safeColor(c.color)}"></span>${esc(c.key)}</button>`
+    `<button type="button" class="catmenu-opt${cur.includes(c.key)?" sel":""}${cur[0]===c.key?" is-pri":""}" data-key="${esc(c.key)}"><span class="dot" style="background:${safeColor(c.color)}"></span>${esc(c.key)}<span class="chk">✓</span></button>`
   ).join("");
   const r = trigger.getBoundingClientRect();
   catmenu.classList.add("show");
@@ -3942,19 +4169,22 @@ function catMenuOutside(e){ if (e.target.closest("#catmenu") || e.target.closest
 function closeCatMenu(){ document.removeEventListener("click", catMenuOutside); catmenu.classList.remove("show"); catTrigger = null; if (window.refreshLed) window.refreshLed(); }
 catmenu.addEventListener("click", e=>{
   const opt = e.target.closest(".catmenu-opt"); if (!opt || !catTrigger) return;
-  applyCatChoice(opt.dataset.key);
+  // 點已選項的「✓」或 Shift+點 → 設為優先;一般點 → 切換勾選(選單保持開啟)
+  if ((e.target.closest(".chk") && opt.classList.contains("sel")) || e.shiftKey) applyCatChoice(opt.dataset.key, true);
+  else applyCatChoice(opt.dataset.key, false);
 });
 // ---- 表格選項欄浮動選單(區域/房數/車類/車數,共用卡片表單的選項清單) ----
 const toptmenu = document.getElementById("toptmenu");
 let toptTrigger = null, toptField = null, toptKey = null, toptMenuIdx = 0;
+function toptIsMulti(){ return !!(toptField && MULTI_OPT_FIELDS[toptField]); }
 function toptMenuOpts(){ return [...toptmenu.querySelectorAll(".cselect-opt")]; }
 function toptMenuHighlight(){
-  toptMenuOpts().forEach((o, i) => o.classList.toggle("sel", i === toptMenuIdx));
+  toptMenuOpts().forEach((o, i) => o.classList.toggle("kb", i === toptMenuIdx));
 }
 function toptMenuSyncIdx(){
   const opts = toptMenuOpts();
-  const i = opts.findIndex(o => o.classList.contains("sel"));
-  toptMenuIdx = i >= 0 ? i : 0;
+  const i = opts.findIndex(o => o.classList.contains("kb"));
+  toptMenuIdx = i >= 0 ? i : Math.max(0, opts.findIndex(o => o.classList.contains("is-pri") || (o.classList.contains("sel") && o.classList.contains("topt-empty"))));
   toptMenuHighlight();
 }
 function onToptMenuKey(e){
@@ -3964,16 +4194,37 @@ function onToptMenuKey(e){
   if (!opts.length) return;
   if (e.key === "ArrowDown"){ e.preventDefault(); e.stopPropagation(); toptMenuIdx = (toptMenuIdx + 1) % opts.length; toptMenuHighlight(); }
   else if (e.key === "ArrowUp"){ e.preventDefault(); e.stopPropagation(); toptMenuIdx = (toptMenuIdx - 1 + opts.length) % opts.length; toptMenuHighlight(); }
-  else if (e.key === "Enter" || e.key === " "){ e.preventDefault(); e.stopPropagation(); const opt = opts[toptMenuIdx]; if (opt){ setOptValue(opt.dataset.v); const trig = toptTrigger; closeOptMenu(); if (trig && trig.isConnected) trig.focus(); } }
+  else if (e.key === "Enter" || e.key === " "){
+    e.preventDefault(); e.stopPropagation();
+    const opt = opts[toptMenuIdx]; if (!opt) return;
+    if (toptIsMulti()){ setOptValue(opt.dataset.v, e.shiftKey); }
+    else { setOptValue(opt.dataset.v); const trig = toptTrigger; closeOptMenu(); if (trig && trig.isConnected) trig.focus(); }
+  }
   else if (e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); const trig = toptTrigger; closeOptMenu(); if (trig) trig.focus(); }
   else if (e.key === "Tab"){ closeOptMenu(); }
 }
 document.addEventListener("keydown", onToptMenuKey, true);
+function paintOptTrigger(trigger, it, field){
+  if (!trigger) return;
+  const vals = fieldVals(it, field);
+  const m = multiInnerHTML(vals);
+  const lbl = trigger.querySelector(".topt-label");
+  if (lbl) lbl.innerHTML = m.html;
+  if (m.multi){ trigger.setAttribute("data-multifield", field); trigger.setAttribute("data-multivals", vals.join("\u001f")); }
+  else { trigger.removeAttribute("data-multifield"); trigger.removeAttribute("data-multivals"); }
+}
 function renderToptMenu(){
   const it = tFindItem(toptTrigger); if (!it) return;
-  const cur = toptField === "pNum" ? (it.pNum ? String(it.pNum) : "") : String(it[toptField] || "");
-  toptmenu.innerHTML = `<button type="button" class="cselect-opt topt-empty${cur===""?" sel":""}" data-v="">－</button>` +
-    optList(toptKey).map(v => `<button type="button" class="cselect-opt opt-line${v===cur?" sel":""}" data-v="${esc(v)}"><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span><span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`).join("") +
+  const multi = toptIsMulti();
+  const curArr = multi ? fieldVals(it, toptField) : [toptField === "pNum" ? (it.pNum ? String(it.pNum) : "") : String(it[toptField] || "")].filter((v,i,a)=> true);
+  const curSingle = multi ? "" : (toptField === "pNum" ? (it.pNum ? String(it.pNum) : "") : String(it[toptField] || ""));
+  const emptyOn = multi ? curArr.length === 0 : curSingle === "";
+  toptmenu.innerHTML = `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>` +
+    optList(toptKey).map(v => {
+      const on = multi ? curArr.includes(v) : v === curSingle;
+      const pri = multi && on && curArr[0] === v;
+      return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}" data-v="${esc(v)}"><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span>${multi&&on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}${multi?`<span class="chk">✓</span>`:""}<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`;
+    }).join("") +
     `<div class="opt-add"><input placeholder="自訂…"><button type="button">加入</button></div>`;
 }
 function openOptMenu(trigger){
@@ -4020,14 +4271,21 @@ function openTableCal(trigger){
     }
   });
 }
-function setOptValue(v){
+function setOptValue(v, asPrimary){
   const it = tFindItem(toptTrigger); if (!it) return;
-  if (toptField === "pNum"){ it.pNum = v || ""; it.parking = fmtParking(it.pType, v); }   // 車數自由文字:保留原文
-  else if (toptField === "pType"){ it.pType = v; it.parking = fmtParking(v, it.pNum); }
-  else { it[toptField] = v; }
+  const multi = toptIsMulti();
+  if (multi){
+    const next = (v === "" || v == null) ? "" : toggleFieldVal(it[toptField], v, !!asPrimary);
+    it[toptField] = next;
+    if (toptField === "pNum" || toptField === "pType") it.parking = fmtParking(fieldPrimary(it, "pType"), fieldPrimary(it, "pNum"));
+  } else {
+    if (toptField === "pNum"){ it.pNum = v || ""; it.parking = fmtParking(it.pType, v); }
+    else if (toptField === "pType"){ it.pType = v; it.parking = fmtParking(v, it.pNum); }
+    else { it[toptField] = v; }
+  }
   it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
-  const lbl = toptTrigger.querySelector(".topt-label");
-  if (lbl) lbl.textContent = (toptField === "pNum") ? (it.pNum ? String(it.pNum) : "") : (it[toptField] || "");
+  paintOptTrigger(toptTrigger, it, toptField);
+  if (multi) renderToptMenu();
 }
 toptmenu.addEventListener("click", e => {
   const del = e.target.closest(".opt-del");
@@ -4038,16 +4296,23 @@ toptmenu.addEventListener("click", e => {
       if (!customOpts.hidden[toptKey].map(String).includes(dv)) customOpts.hidden[toptKey].push(dv);
     }
     saveOpts(); renderToptMenu(); return; }
+  const pin = e.target.closest(".pri-pin");
+  if (pin){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row) setOptValue(row.dataset.v, true); return; }
   const add = e.target.closest(".opt-add");
   if (add){ e.stopPropagation();
     if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = inp.value.trim();
       if (v){ let ch = unhideOpt(toptKey, v);                                        // 先解除隱藏,否則加了也不會顯示
         if (!optList(toptKey).includes(v)){ customOpts[toptKey].push(v); ch = true; }
         if (ch) saveOpts();
-        setOptValue(v); closeOptMenu(); } }
+        setOptValue(v, true); if (!toptIsMulti()) closeOptMenu(); else { inp.value = ""; renderToptMenu(); } } }
     return; }
   if (toptmenu.__lp){ toptmenu.__lp = false; return; }
-  const o = e.target.closest(".cselect-opt"); if (o){ setOptValue(o.dataset.v); closeOptMenu(); }
+  const o = e.target.closest(".cselect-opt"); if (o){
+    if (toptIsMulti()){
+      if (o.dataset.v === ""){ setOptValue(""); }
+      else setOptValue(o.dataset.v, e.shiftKey);
+    } else { setOptValue(o.dataset.v); closeOptMenu(); }
+  }
 });
 toptmenu.addEventListener("keydown", e => { if (e.target.matches(".opt-add input") && e.key === "Enter"){ e.preventDefault(); e.target.closest(".opt-add").querySelector("button").click(); } });
 (function(){
@@ -4481,7 +4746,7 @@ function loadFltOrder(){ if (storageOK){ try { const s = JSON.parse(localStorage
 let filterOrder = loadFltOrder();
 function saveFltOrder(){ if (storageOK){ try { localStorage.setItem("customer_app_fltorder_v1", JSON.stringify(filterOrder)); } catch(e){} } }
 function orderedFilterVals(f){
-  const present = [...new Set(items.map(d => String(d[f]||"").trim()).filter(Boolean))];
+  const present = [...new Set(items.flatMap(d => MULTI_OPT_FIELDS[f] ? fieldVals(d, f) : [String(d[f]||"").trim()]).filter(Boolean))];
   const saved = (filterOrder[f] || []).filter(v => present.includes(v));          // 已存順序(只留還存在的值)
   const rest = present.filter(v => !saved.includes(v)).sort((a,b)=>a.localeCompare(b,"zh-Hant")); // 新值照筆劃補後面
   return saved.concat(rest);
@@ -4492,7 +4757,14 @@ let fltField = null;
 const FLT_NAME = { area:"區域", cat:"類型", budget:"預算（萬）", rooms:"房數", pType:"車類", pNum:"車數", status:"狀態" };
 function colFilterOn(f){ return f === "budget" ? (fltB.lo != null || fltB.hi != null) : !!(colFilter[f] && colFilter[f].size); }
 function applyColFilters(list){
-  ["area","cat","rooms","pType","pNum","status"].forEach(f => { const st = colFilter[f]; if (st && st.size) list = list.filter(d => st.has(String(d[f]||"").trim() || "__EMPTY__")); });
+  ["area","cat","rooms","pType","pNum","status"].forEach(f => {
+    const st = colFilter[f]; if (!st || !st.size) return;
+    list = list.filter(d => {
+      const vals = MULTI_OPT_FIELDS[f] ? fieldVals(d, f) : [String(d[f]||"").trim()].filter(Boolean);
+      if (!vals.length) return st.has("__EMPTY__");
+      return vals.some(v => st.has(v));
+    });
+  });
   if (fltB.lo != null || fltB.hi != null){
     const flo = fltB.lo != null ? fltB.lo : 0, fhi = fltB.hi != null ? fltB.hi : Infinity;
     list = list.filter(d => { const r = itemBRange(d); return r && r[0] <= fhi && r[1] >= flo; });
@@ -4522,7 +4794,7 @@ function renderFltBody(){
   }
   const f = fltField;
   const vals = orderedFilterVals(f);
-  const hasEmpty = items.some(d => !String(d[f]||"").trim());
+  const hasEmpty = items.some(d => !(MULTI_OPT_FIELDS[f] ? fieldVals(d, f).length : String(d[f]||"").trim()));
   const st = colFilter[f];
   const GRIP = `<span class="fopt-drag" aria-label="拖曳排序" title="拖曳排序"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span>`;
   const row = (v, label, drag) => `<div class="fopt${drag ? " fopt-draggable" : ""}" data-val="${esc(v)}">${drag ? GRIP : `<span class="fopt-drag-sp"></span>`}<label class="fopt-main"><input type="checkbox" value="${esc(v)}"${st && st.has(v) ? " checked" : ""}><span>${esc(label)}</span></label></div>`;
@@ -4634,7 +4906,9 @@ const SEARCH_URL_RE = /https?:\/\/[A-Za-z0-9\-._~:\/?#\[\]@!$&'()*+,;=%]+/gi;   
 function searchHay(d){
   let s = "";
   for (const k of SEARCH_FIELDS){
-    let v = d[k];
+    let v;
+    if (MULTI_OPT_FIELDS[k]) v = fieldVals(d, k).join(" ");
+    else v = d[k];
     v = (v == null) ? "" : String(v);
     if (SEARCH_NEED_KEYS[k]) v = v.replace(SEARCH_URL_RE, " ");   // 需求三段:不比對「連結」背後的網址
     s += v + "\u001F";
@@ -4649,7 +4923,7 @@ function applyFilter(){
   // 例:「A/平面車位/北屯」= 同時含這三個字串的資料。「/」本身只是分隔符,不參與比對;
   // 沒打「/」時行為與原本完全相同(單一關鍵字)。
   const terms = searchEl.value.toLowerCase().split(/[\/／]/).map(t => t.trim()).filter(Boolean);
-  let list = currentCat ? items.filter(d => d.cat === currentCat) : items.slice();
+  let list = currentCat ? items.filter(d => fieldHas(d, "cat", currentCat)) : items.slice();
   if (terms.length) list = list.filter(d => { const hay = searchHay(d); return terms.every(t => hay.includes(t)); });
   list = applyColFilters(list);
   list = sortList(list);
@@ -5045,25 +5319,46 @@ const catSel = document.getElementById("catSel");
 const catSelBtn = document.getElementById("catSelBtn");
 const catSelTxt = document.getElementById("catSelTxt");
 const catSelMenu = document.getElementById("catSelMenu");
-let formCat = "";
+let formCats = [];
 function renderCatOptions(){
-  catSelMenu.innerHTML = cats.map(c => `
-    <button type="button" class="cselect-opt" data-key="${esc(c.key)}" role="option">
+  catSelMenu.innerHTML = cats.map(c => {
+    const on = formCats.includes(c.key);
+    const pri = on && formCats[0] === c.key;
+    return `
+    <button type="button" class="cselect-opt${on?" sel":""}${pri?" is-pri":""}" data-key="${esc(c.key)}" role="option">
       <span class="dot" style="background:${safeColor(c.color)}"></span>
       <span class="nm">${esc(c.key)}</span>
+      ${on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}
       <span class="chk">✓</span>
-    </button>`).join("");
-  catSelMenu.querySelectorAll(".cselect-opt").forEach(o => o.classList.toggle("sel", o.dataset.key === formCat));
+    </button>`;
+  }).join("");
 }
-function setFormCat(key){
-  formCat = key || "";
-  catSelTxt.textContent = formCat || "選擇類別";
-  catSelMenu.querySelectorAll(".cselect-opt").forEach(o => o.classList.toggle("sel", o.dataset.key === formCat));
+function showFormCat(){
+  const p = formCats[0] || "";
+  if (formCats.length){
+    catSelTxt.innerHTML = formCats.length > 1
+      ? `<span class="multi-wrap"><span class="multi-pri">${esc(p)}</span><span class="multi-dot" aria-hidden="true"></span></span>`
+      : esc(p);
+  } else catSelTxt.textContent = "選擇類別";
+  catSelBtn.classList.toggle("is-multi", formCats.length > 1);
+  if (formCats.length > 1){ catSelBtn.setAttribute("data-multifield","cat"); catSelBtn.setAttribute("data-multivals", formCats.join("\u001f")); }
+  else { catSelBtn.removeAttribute("data-multifield"); catSelBtn.removeAttribute("data-multivals"); }
 }
-function openCatSel(){ catSel.classList.add("open"); catSelBtn.setAttribute("aria-expanded","true"); }
+function setFormCat(keyOrArr){
+  formCats = asFieldVals(keyOrArr);
+  showFormCat();
+  renderCatOptions();
+}
+function openCatSel(){ renderCatOptions(); catSel.classList.add("open"); catSelBtn.setAttribute("aria-expanded","true"); }
 function closeCatSel(){ catSel.classList.remove("open"); catSelBtn.setAttribute("aria-expanded","false"); }
 catSelBtn.addEventListener("click", e => { e.stopPropagation(); catSel.classList.contains("open") ? closeCatSel() : openCatSel(); });
-catSelMenu.addEventListener("click", e => { const o = e.target.closest(".cselect-opt"); if (o){ setFormCat(o.dataset.key); closeCatSel(); } });
+catSelMenu.addEventListener("click", e => {
+  const pin = e.target.closest(".pri-pin");
+  if (pin){ e.stopPropagation(); const o = pin.closest(".cselect-opt"); if (o){ setFormCat(toggleFieldVal(formCats, o.dataset.key, true)); } return; }
+  const o = e.target.closest(".cselect-opt"); if (!o) return;
+  if (e.shiftKey || (e.target.closest(".chk") && formCats.includes(o.dataset.key))) setFormCat(toggleFieldVal(formCats, o.dataset.key, true));
+  else setFormCat(toggleFieldVal(formCats, o.dataset.key, false));
+});
 // ---- 建檔日:自製日曆選擇(民國年顯示 + 西元/民國轉換) ----
 (function(){
   const calBg = document.getElementById("calBg");
@@ -5103,6 +5398,7 @@ catSelMenu.addEventListener("click", e => { const o = e.target.closest(".cselect
       if (roc === sel) c += " sel";
       h += '<button type="button" class="' + c + '" data-roc="' + roc + '"><span class="cal-dnum">' + dd + '</span></button>';
     }
+    for (let i=first+days;i<42;i++) h += '<button type="button" class="cal-day empty" tabindex="-1"></button>';   // 補滿 6 行(42格):各月週數不同也維持同高,切月份時箭頭不移位、可連續點
     calGrid.innerHTML = h;
   }
   function openCal(target){
@@ -5180,39 +5476,66 @@ function optList(key){
   }
   return present;
 }
-function makeOptSel(key, emptyLabel){
+function makeOptSel(key, emptyLabel, multi){
   const sel = document.getElementById(key+"Sel"), btn = document.getElementById(key+"Btn"),
         txt = document.getElementById(key+"Txt"), menu = document.getElementById(key+"Menu");
-  let val = "";
+  let vals = [];   // multi:字串陣列;單選也用長度 0/1 的陣列簡化
   function renderMenu(){
-    menu.innerHTML = `<button type="button" class="cselect-opt topt-empty${val===""?" sel":""}" data-v="">－</button>` +
-      optList(key).map(v => `<button type="button" class="cselect-opt opt-line${v===val?" sel":""}" data-v="${esc(v)}"><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span><span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`).join("") +
+    const emptyOn = vals.length === 0;
+    menu.innerHTML = `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>` +
+      optList(key).map(v => {
+        const on = vals.includes(v);
+        const pri = multi && on && vals[0] === v;
+        return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}" data-v="${esc(v)}"><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span>${multi&&on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}${multi?`<span class="chk">✓</span>`:""}<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`;
+      }).join("") +
       `<div class="opt-add"><input placeholder="自訂…"><button type="button">加入</button></div>`;
   }
-  function show(){ if (val){ txt.textContent = val; txt.classList.remove("ph"); } else { txt.textContent = emptyLabel; txt.classList.add("ph"); } }
-  function set(v){ val = (v == null ? "" : String(v)).trim(); show(); }
+  function show(){
+    const p = vals[0] || "";
+    if (vals.length){
+      txt.innerHTML = vals.length > 1
+        ? `<span class="multi-wrap"><span class="multi-pri">${esc(p)}</span><span class="multi-dot" aria-hidden="true"></span></span>`
+        : esc(p);
+      txt.classList.remove("ph");
+    } else { txt.textContent = emptyLabel; txt.classList.add("ph"); }
+    btn.classList.toggle("is-multi", multi && vals.length > 1);
+    if (multi && vals.length > 1){ btn.setAttribute("data-multifield", key); btn.setAttribute("data-multivals", vals.join("\u001f")); }
+    else { btn.removeAttribute("data-multifield"); btn.removeAttribute("data-multivals"); }
+  }
+  function set(v){ vals = asFieldVals(v); if (!multi && vals.length > 1) vals = [vals[0]]; show(); }
+  function get(){ return packFieldVals(vals); }
   btn.addEventListener("click", e => { e.stopPropagation(); const was = sel.classList.contains("open");
     document.querySelectorAll(".opt-sel.open").forEach(x => x.classList.remove("open")); closeCatSel();
     if (!was){ menu.classList.remove("opt-editing"); renderMenu(); sel.classList.add("open"); } });
   menu.addEventListener("click", e => {
     const del = e.target.closest(".opt-del");
     if (del){ e.stopPropagation(); const dv = del.dataset.del;
-      customOpts[key] = customOpts[key].filter(x => String(x) !== dv);              // 自訂清單移除
-      if (DEF_OPTS[key].map(String).includes(dv)){                                   // 預設選項 → 加入隱藏名單
+      customOpts[key] = customOpts[key].filter(x => String(x) !== dv);
+      if (DEF_OPTS[key].map(String).includes(dv)){
         customOpts.hidden[key] = customOpts.hidden[key] || [];
         if (!customOpts.hidden[key].map(String).includes(dv)) customOpts.hidden[key].push(dv);
       }
       saveOpts();
-      if (val === dv) set(""); renderMenu(); return; }
+      vals = vals.filter(x => x !== dv); show(); renderMenu(); return; }
+    const pin = e.target.closest(".pri-pin");
+    if (pin && multi){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row){ set(toggleFieldVal(vals, row.dataset.v, true)); renderMenu(); } return; }
     const add = e.target.closest(".opt-add");
     if (add){ e.stopPropagation();
       if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = inp.value.trim();
-        if (v){ let ch = unhideOpt(key, v);                                          // 先解除隱藏,否則加了也不會顯示
+        if (v){ let ch = unhideOpt(key, v);
           if (!optList(key).includes(v)){ customOpts[key].push(v); ch = true; }
           if (ch) saveOpts();
-          set(v); sel.classList.remove("open"); } }
+          if (multi){ set(toggleFieldVal(vals, v, true)); renderMenu(); inp.value = ""; }
+          else { set(v); sel.classList.remove("open"); }
+        } }
       return; }
-    const o = e.target.closest(".cselect-opt"); if (o){ if (menu.__lp){ menu.__lp = false; return; } set(o.dataset.v); sel.classList.remove("open"); }
+    const o = e.target.closest(".cselect-opt"); if (o){ if (menu.__lp){ menu.__lp = false; return; }
+      if (multi){
+        if (o.dataset.v === "") set("");
+        else set(toggleFieldVal(vals, o.dataset.v, e.shiftKey));
+        renderMenu();
+      } else { set(o.dataset.v); sel.classList.remove("open"); }
+    }
   });
   menu.addEventListener("keydown", e => { if (e.target.matches(".opt-add input") && e.key === "Enter"){ e.preventDefault(); e.target.closest(".opt-add").querySelector("button").click(); } });
   // 長按選項才顯示該列 ✕(觸發後擋掉這次點擊,避免長按完誤選)
@@ -5220,7 +5543,7 @@ function makeOptSel(key, emptyLabel){
   const clearReveal = () => { menu.querySelectorAll(".opt-line.reveal").forEach(x => x.classList.remove("reveal")); };
   menu.addEventListener("pointerdown", e => {
     menu.__lp = false;
-    if (e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag")) return;
+    if (e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag") || e.target.closest(".pri-pin")) return;
     const row = e.target.closest(".opt-line"); if (!row) return;
     _lpRow = row; _lpX = e.clientX; _lpY = e.clientY; clearTimeout(_lpTimer);
     _lpTimer = setTimeout(() => { menu.__lp = true; _lpRow = null; menu.classList.add("opt-editing"); try { navigator.vibrate && navigator.vibrate(12); } catch(_){} }, 400);
@@ -5229,7 +5552,6 @@ function makeOptSel(key, emptyLabel){
   const endLp = () => { clearTimeout(_lpTimer); _lpRow = null; };
   menu.addEventListener("pointerup", endLp);
   menu.addEventListener("pointercancel", endLp);
-  // touch 事件雙保險(部分裝置 pointer 被攔截)
   menu.addEventListener("touchstart", e => {
     menu.__lp = false;
     if (e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag")) return;
@@ -5240,7 +5562,6 @@ function makeOptSel(key, emptyLabel){
   menu.addEventListener("touchmove", e => { if (_lpRow){ const tc = e.touches[0]; if (Math.abs(tc.clientX - _lpX) > 12 || Math.abs(tc.clientY - _lpY) > 12){ clearTimeout(_lpTimer); _lpRow = null; } } }, {passive:true});
   menu.addEventListener("touchend", endLp, {passive:true});
   menu.addEventListener("touchcancel", endLp, {passive:true});
-  // 選項拖曳排序(長按進排序模式後,握把可拖)
   (function(){
     let drag = null;
     menu.addEventListener("pointerdown", e => {
@@ -5284,11 +5605,11 @@ function makeOptSel(key, emptyLabel){
     document.addEventListener("pointercancel", dEnd);
   })();
   set("");
-  return { get: () => val, set };
+  return { get, set };
 }
-const areaPick = makeOptSel("area","選擇區域"), roomsPick = makeOptSel("rooms","選擇房數"),
-      ptypePick = makeOptSel("ptype","選擇車位"), pnumPick = makeOptSel("pnum","數量"),
-      statusPick = makeOptSel("status","選擇狀態");
+const areaPick = makeOptSel("area","選擇區域", true), roomsPick = makeOptSel("rooms","選擇房數", true),
+      ptypePick = makeOptSel("ptype","選擇車位", true), pnumPick = makeOptSel("pnum","數量", true),
+      statusPick = makeOptSel("status","選擇狀態", false);
 document.addEventListener("click", e => { document.querySelectorAll(".opt-sel.open").forEach(el => { if (!el.contains(e.target)) el.classList.remove("open"); }); });
 
 // ---- 預算/車位 結構化 ----
@@ -5380,8 +5701,21 @@ function openDetail(id){
   const IC_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m8.3 12.2 2.5 2.5 4.9-5.2"/></svg>';
   const IC_TEL   = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.53 15.53 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg>';
   const IC_CHEV  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
-  // 格:標籤 + 值(可點複製);空值顯示 —
+  // 格:標籤 + 值(可點複製);空值顯示 —;多選欄只顯示優先項+色點
   const cell = (k, v, ic) => `<div class="dtl-cell">${ic||""}<span class="dtl-k">${esc(k)}</span>${v ? `<span class="dtl-v dtl-copy" data-copy="${esc(v)}">${esc(v)}</span>` : `<span class="dtl-v dtl-empty" aria-hidden="true"></span>`}</div>`;
+  const _pk = parseParking(d.parking || "");
+  const _d = Object.assign({}, d, {
+    pType: fieldVals(d, "pType").length ? d.pType : (_pk.t || ""),
+    pNum: fieldVals(d, "pNum").length ? d.pNum : (_pk.n ? String(_pk.n) : "")
+  });
+  const cellMulti = (k, field, ic) => {
+    const vals = fieldVals(_d, field);
+    if (!vals.length) return cell(k, "", ic);
+    const m = multiInnerHTML(vals);
+    const copy = vals.join("、");
+    const attrs = m.multi ? ` data-multifield="${field}" data-multivals="${esc(vals.join("\u001f"))}"` : "";
+    return `<div class="dtl-cell">${ic||""}<span class="dtl-k">${esc(k)}</span><span class="dtl-v dtl-copy" data-copy="${esc(copy)}"${attrs}>${m.html}</span></div>`;
+  };
   // 客戶資訊(電話/LINE) + 可摺疊的建檔資訊(建檔日/詢問案名)
   const contact = `<div class="dtl-sec">
     <div class="dtl-h">${IC_USER}客戶資訊<button type="button" class="dtl-tg" aria-expanded="false" title="顯示建檔資訊">${IC_CHEV}</button></div>
@@ -5392,13 +5726,9 @@ function openDetail(id){
     </div>
   </div>`;
   // 購屋需求:三排 → 區域/類型、預算/房數、車位/車數(狀態已移到標題,不再入格)
-  // 車位/車數:車位只顯示車類(數量已獨立成「車數」);舊資料若只有合成字串則自動拆解
-  const _pk = parseParking(d.parking || "");
-  const _pT = d.pType || _pk.t;
-  const _pN = d.pNum ? String(d.pNum) : (_pk.n ? String(_pk.n) : "");
   const buy = `<div class="dtl-sec">
     <div class="dtl-h">${IC_HOME}購屋需求</div>
-    <div class="dtl-card">${cell("區域", d.area)}${cell("類型", d.cat)}${cell("預算", d.budget)}${cell("房數", d.rooms)}${cell("車位", _pT)}${cell("車數", _pN)}</div>
+    <div class="dtl-card">${cellMulti("區域","area")}${cellMulti("類型","cat")}${cell("預算", d.budget)}${cellMulti("房數","rooms")}${cellMulti("車位","pType")}${cellMulti("車數","pNum")}</div>
   </div>`;
   // 三段需求(沿用展開內容框)
   const seg = (t, c, ic) => `<div class="dtl-sec"><div class="dtl-h">${ic}${esc(t)}</div><div class="needexp-ed needexp-view">${c ? needToViewHTML(c) : '<span class="tneed-ph">—</span>'}</div></div>`;
@@ -5439,8 +5769,9 @@ document.getElementById("detailBody").addEventListener("click", e => {
 
 
 function buildFormRec(){
+  const pType = ptypePick.get(), pNum = pnumPick.get();
   return {
-    cust: F.cust.value.trim(), cat: formCat,
+    cust: F.cust.value.trim(), cat: packFieldVals(formCats),
     date: F.date.value.trim(),
     area: areaPick.get(),
     status: statusPick.get(),
@@ -5448,8 +5779,8 @@ function buildFormRec(){
     bMin: (function(){ const r = parseBudget(F.budget.value); return (r && isFinite(r[0]) && r[0] > 0) ? r[0] : null; })(),
     bMax: (function(){ const r = parseBudget(F.budget.value); return (r && isFinite(r[1])) ? r[1] : null; })(),
     rooms: roomsPick.get(),
-    parking: fmtParking(ptypePick.get(), pnumPick.get()),
-    pType: ptypePick.get(), pNum: pnumPick.get() || "",
+    parking: fmtParking(asFieldVals(pType)[0] || "", asFieldVals(pNum)[0] || ""),
+    pType, pNum: pNum || "",
     tel: F.tel.value.trim(),
     line: F.line.value.trim(),
     ask: normAsk(F.ask.value.trim()),
@@ -5463,7 +5794,7 @@ function buildFormRec(){
 }
 const FORM_DRAFT_KEY = "customer_app_form_draft_v1";
 function formDraftHasContent(rec){
-  return !!(rec.cust || rec.area || rec.budget || rec.need || rec.need2 || rec.need3 || rec.tel || rec.ask);
+  return !!(rec.cust || asFieldVals(rec.area).length || rec.budget || rec.need || rec.need2 || rec.need3 || rec.tel || rec.ask || asFieldVals(rec.cat).length);
 }
 function saveFormDraft(){
   if (editingId || !modalBg.classList.contains("open")) return;
@@ -6373,7 +6704,12 @@ catListEl.addEventListener("change", e => {
     // 改名要一併更新受影響資料的 updatedAt:先前只改 it.cat 不動時間戳,兩台裝置變成
     // 「同 id、同時間戳、內容不同」,配合舊的偏本機平手裁決 → 互相推翻,改名永遠傳不到另一台。
     const _renameTs = Date.now();
-    items.forEach(it => { if (it.cat === oldKey){ it.cat = newKey; it.updatedAt = _renameTs; } });
+    items.forEach(it => {
+      const vals = fieldVals(it, "cat");
+      if (!vals.includes(oldKey)) return;
+      it.cat = packFieldVals(vals.map(v => v === oldKey ? newKey : v));
+      it.updatedAt = _renameTs;
+    });
     remapColFilterCat(oldKey, newKey);
     if (currentCat === oldKey) currentCat = newKey;
     saveItems();
@@ -6393,7 +6729,12 @@ catListEl.addEventListener("click", e => {
     n > 0 ? `該類別的 ${n} 筆需求會變成未分類，仍可在「全部」中找到。` : "",
     () => {
       const ts = Date.now();
-      items.forEach(it => { if (it.cat === key){ it.cat = ""; it.updatedAt = ts; } });
+      items.forEach(it => {
+        const vals = fieldVals(it, "cat");
+        if (!vals.includes(key)) return;
+        it.cat = packFieldVals(vals.filter(v => v !== key));
+        it.updatedAt = ts;
+      });
       if (colFilter.cat){ colFilter.cat.delete(key); if (!colFilter.cat.size) colFilter.cat = null; }
       saveItems();
       cats = cats.filter(c => c.key !== key);
