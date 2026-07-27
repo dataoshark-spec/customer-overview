@@ -748,7 +748,7 @@
   .tcat-badge .multi-wrap,.tcat-label.multi-wrap{max-width:100%;}
   .topt-label.multi-wrap{display:inline-flex;max-width:100%;}
   .cselect-btn.is-multi .cselect-txt{display:inline-flex;align-items:center;gap:5px;}
-  /* 優先項才顯示「優」;其他已選滑過改顯示「設為優先」(動作,不是狀態) */
+  /* 優先項才顯示「優」;其他已選滑過仍顯示「設為優先」(也可直接點該列設優先) */
   .cselect-opt .pri-pin{flex:none;opacity:0;pointer-events:none;font-size:.65rem;font-weight:700;letter-spacing:.02em;color:var(--accent-deep);border:1px solid transparent;background:transparent;border-radius:5px;padding:1px 6px;line-height:1.25;white-space:nowrap;transition:opacity .12s,background .12s,color .12s;}
   .cselect-opt .pri-pin.is-set{font-size:.68rem;font-weight:600;color:var(--accent);background:transparent;border:none;padding:1px 4px;}
   .cselect-opt.sel:not(.is-pri):hover .pri-pin.is-set{opacity:1;pointer-events:auto;}
@@ -1635,7 +1635,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.27T";
+const APP_VERSION = "2026.07.27U";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2105,6 +2105,19 @@ function toggleFieldVal(cur, v, asPrimary){
   }
   if (asPrimary) a.unshift(s); else a.push(s);
   return packFieldVals(a);
+}
+/** 多選下拉點擊：未選→加入；已選非優先→設優先；已優先→取消；點 ✓→取消 */
+function clickMultiFieldVal(cur, v, opts){
+  if (opts === true || (opts && opts.asPrimary)) return toggleFieldVal(cur, v, true);
+  const s = String(v == null ? "" : v).trim();
+  if (!s) return packFieldVals([]);
+  if (opts && opts.shiftKey) return toggleFieldVal(cur, v, true);
+  const a = asFieldVals(cur);
+  const i = a.indexOf(s);
+  if (opts && opts.chkClick && i >= 0) return toggleFieldVal(cur, v, false);
+  if (i < 0) return toggleFieldVal(cur, v, false);
+  if (a[0] === s) return toggleFieldVal(cur, v, false);
+  return toggleFieldVal(cur, v, true);
 }
 const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","詢問","客戶需求"];
 const T_FIELDS = ["date","status","area","cat","budget","rooms","pType","pNum","cust","tel","line","ask","need"];
@@ -4056,11 +4069,12 @@ function closeOtherOverlays(keep){
   if (typeof hideNeedHover === "function") hideNeedHover();
   if (typeof hideMultiHover === "function") hideMultiHover();
 }
-function applyCatChoice(key, asPrimary){
+function applyCatChoice(key, opts){
   if (!catTrigger) return;
   const it = tFindItem(catTrigger);
   if (it){
-    const next = key === "" ? "" : toggleFieldVal(it.cat, key, !!asPrimary);
+    const forcePri = opts === true || (opts && opts.asPrimary);
+    const next = key === "" ? "" : (forcePri ? toggleFieldVal(it.cat, key, true) : clickMultiFieldVal(it.cat, key, opts));
     if (JSON.stringify(asFieldVals(it.cat)) !== JSON.stringify(asFieldVals(next))){
       it.cat = next; it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
     }
@@ -4105,7 +4119,7 @@ function onCatMenuKey(e){
   if (!opts.length) return;
   if (e.key === "ArrowDown"){ e.preventDefault(); e.stopPropagation(); catMenuIdx = (catMenuIdx + 1) % opts.length; catMenuHighlight(); }
   else if (e.key === "ArrowUp"){ e.preventDefault(); e.stopPropagation(); catMenuIdx = (catMenuIdx - 1 + opts.length) % opts.length; catMenuHighlight(); }
-  else if (e.key === "Enter" || e.key === " "){ e.preventDefault(); e.stopPropagation(); const opt = opts[catMenuIdx]; if (opt) applyCatChoice(opt.dataset.key, e.shiftKey); }
+  else if (e.key === "Enter" || e.key === " "){ e.preventDefault(); e.stopPropagation(); const opt = opts[catMenuIdx]; if (opt) applyCatChoice(opt.dataset.key, { shiftKey: e.shiftKey }); }
   else if (e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); const trig = catTrigger; closeCatMenu(); if (trig) trig.focus(); }
   else if (e.key === "Tab"){ closeCatMenu(); }
 }
@@ -4133,9 +4147,8 @@ function catMenuOutside(e){ if (e.target.closest("#catmenu") || e.target.closest
 function closeCatMenu(){ document.removeEventListener("click", catMenuOutside); catmenu.classList.remove("show"); catTrigger = null; if (window.refreshLed) window.refreshLed(); }
 catmenu.addEventListener("click", e=>{
   const opt = e.target.closest(".catmenu-opt"); if (!opt || !catTrigger) return;
-  // 點已選項的「✓」或 Shift+點 → 設為優先;一般點 → 切換勾選(選單保持開啟)
-  if ((e.target.closest(".chk") && opt.classList.contains("sel")) || e.shiftKey) applyCatChoice(opt.dataset.key, true);
-  else applyCatChoice(opt.dataset.key, false);
+  const chkClick = !!(e.target.closest(".chk") && opt.classList.contains("sel"));
+  applyCatChoice(opt.dataset.key, { shiftKey: e.shiftKey, chkClick });
 });
 // ---- 表格選項欄浮動選單(區域/房數/車類/車數,共用卡片表單的選項清單) ----
 const toptmenu = document.getElementById("toptmenu");
@@ -4169,7 +4182,7 @@ function onToptMenuKey(e){
   else if (e.key === "Enter" || e.key === " "){
     e.preventDefault(); e.stopPropagation();
     const opt = opts[toptMenuIdx]; if (!opt) return;
-    if (toptIsMulti()){ setOptValue(opt.dataset.v, e.shiftKey); }
+    if (toptIsMulti()){ setOptValue(opt.dataset.v, { shiftKey: e.shiftKey }); }
     else { setOptValue(opt.dataset.v); const trig = toptTrigger; closeOptMenu(); if (trig && trig.isConnected) trig.focus(); }
   }
   else if (e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); const trig = toptTrigger; closeOptMenu(); if (trig) trig.focus(); }
@@ -4250,11 +4263,12 @@ function openTableCal(trigger){
     }
   });
 }
-function setOptValue(v, asPrimary){
+function setOptValue(v, opts){
   const it = tFindItem(toptTrigger); if (!it) return;
   const multi = toptIsMulti();
+  const forcePri = opts === true || (opts && opts.asPrimary);
   if (multi){
-    const next = (v === "" || v == null) ? "" : toggleFieldVal(it[toptField], v, !!asPrimary);
+    const next = (v === "" || v == null) ? "" : (forcePri ? toggleFieldVal(it[toptField], v, true) : clickMultiFieldVal(it[toptField], v, opts));
     it[toptField] = next;
     if (toptField === "pNum" || toptField === "pType") it.parking = fmtParking(fieldPrimary(it, "pType"), fieldPrimary(it, "pNum"));
   } else {
@@ -4303,7 +4317,15 @@ toptmenu.addEventListener("click", e => {
   const o = e.target.closest(".cselect-opt"); if (o){
     if (toptIsMulti()){
       if (o.dataset.v === ""){ setOptValue(""); }
-      else setOptValue(o.dataset.v, e.shiftKey);
+      else {
+        const chkClick = !!(e.target.closest(".chk") && o.classList.contains("sel"));
+        const before = fieldVals(tFindItem(toptTrigger), toptField);
+        setOptValue(o.dataset.v, { shiftKey: e.shiftKey, chkClick });
+        // #region agent log
+        const after = fieldVals(tFindItem(toptTrigger), toptField);
+        fetch('http://127.0.0.1:7608/ingest/c425ddf4-6e8e-407f-b115-7ebe0cb8c7b0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3cef11'},body:JSON.stringify({sessionId:'3cef11',runId:'pri-click',hypothesisId:'B',location:'toptmenu.click',message:'multi opt click',data:{v:o.dataset.v,chkClick,wasSel:before.includes(o.dataset.v),wasPri:before[0]===o.dataset.v,after,pri:after[0]||''},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+      }
     } else { setOptValue(o.dataset.v); closeOptMenu(); }
   }
 });
@@ -5349,8 +5371,8 @@ catSelMenu.addEventListener("click", e => {
   const pin = e.target.closest(".pri-pin");
   if (pin){ e.stopPropagation(); const o = pin.closest(".cselect-opt"); if (o){ setFormCat(toggleFieldVal(formCats, o.dataset.key, true)); } return; }
   const o = e.target.closest(".cselect-opt"); if (!o) return;
-  if (e.shiftKey || (e.target.closest(".chk") && formCats.includes(o.dataset.key))) setFormCat(toggleFieldVal(formCats, o.dataset.key, true));
-  else setFormCat(toggleFieldVal(formCats, o.dataset.key, false));
+  const chkClick = !!(e.target.closest(".chk") && formCats.includes(o.dataset.key));
+  setFormCat(clickMultiFieldVal(formCats, o.dataset.key, { shiftKey: e.shiftKey, chkClick }));
 });
 // ---- 建檔日:自製日曆選擇(民國年顯示 + 西元/民國轉換) ----
 (function(){
@@ -5540,7 +5562,10 @@ function makeOptSel(key, emptyLabel, multi){
     const o = e.target.closest(".cselect-opt"); if (o){ if (menu.__lp){ menu.__lp = false; return; }
       if (multi){
         if (o.dataset.v === "") set("");
-        else set(toggleFieldVal(vals, o.dataset.v, e.shiftKey));
+        else {
+          const chkClick = !!(e.target.closest(".chk") && vals.includes(o.dataset.v));
+          set(clickMultiFieldVal(vals, o.dataset.v, { shiftKey: e.shiftKey, chkClick }));
+        }
         renderMenu();
       } else { set(o.dataset.v); sel.classList.remove("open"); }
     }
