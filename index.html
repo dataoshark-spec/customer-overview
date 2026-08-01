@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -1639,7 +1639,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.07.28A";
+const APP_VERSION = "2026.08.01B";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -6970,10 +6970,15 @@ let syncConnected = false, syncEmail = null;
   const SCOPES = "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email";
   const MAIN_NAME = "customer-sync-main.json";
   const POLL_MS = 10000;
+  const FETCH_MS = 15000;
+  const TOKEN_MS = 30000;
+  const SYNC_WATCHDOG_MS = 40000;
+  const SYNC_FAIL_MAX = 3;
 
   let tokenClient = null, accessToken = null, tokenExpiry = 0;
   let fileId = null, lastVersion = null;
   let inFlight = false, needReauth = false, pollTimer = null;
+  let syncAbort = null, syncFailCount = 0, bootSyncPending = false;
 
   // ---- persistence for auth flag + change timestamps ----
   function saveTs(kind, v){ if (storageOK){ try { localStorage.setItem("customer_app_"+kind+"_ts_v1", String(v)); } catch(e){} } }
@@ -7008,20 +7013,23 @@ let syncConnected = false, syncEmail = null;
   function requestToken(interactive){
     return new Promise(function(resolve, reject){
       if (!tokenClient){ reject(new Error("gis")); return; }
+      let done = false;
+      const finish = function(fn, v){ if (done) return; done = true; clearTimeout(tmr); fn(v); };
+      const tmr = setTimeout(function(){ finish(reject, new Error("token_timeout")); }, TOKEN_MS);
       tokenClient.callback = function(resp){
-        if (resp && resp.error){ reject(resp); return; }
+        if (resp && resp.error){ finish(reject, resp); return; }
         accessToken = resp.access_token;
         tokenExpiry = Date.now() + ((resp.expires_in || 3600) - 90) * 1000;
         needReauth = false;
         saveGToken();
-        resolve(accessToken);
+        finish(resolve, accessToken);
       };
       try {
         const cfg = { prompt: interactive ? "consent" : "" };
         if (syncEmail && syncEmail.indexOf("@") >= 0) cfg.hint = syncEmail;   // 指定已連結的帳號,避免每次重開都跳「選擇帳戶」
         tokenClient.requestAccessToken(cfg);
       }
-      catch (e){ reject(e); }
+      catch (e){ finish(reject, e); }
     });
   }
   async function ensureToken(){
@@ -7031,8 +7039,13 @@ let syncConnected = false, syncEmail = null;
 
   // ---- Drive REST helpers ----
   function tfetch(url, opts, ms){
-    ms = ms || 15000;
+    ms = ms || FETCH_MS;
     const ac = new AbortController();
+    const parent = syncAbort;
+    if (parent){
+      if (parent.signal.aborted) ac.abort();
+      else parent.signal.addEventListener("abort", function(){ ac.abort(); }, { once: true });
+    }
     const timer = setTimeout(function(){ ac.abort(); }, ms);
     const o = Object.assign({}, opts, { signal: ac.signal });
     return fetch(url, o).finally(function(){ clearTimeout(timer); });
@@ -7354,6 +7367,37 @@ let syncConnected = false, syncEmail = null;
   };
 
   let syncGen = 0;
+  function isSyncAuthError(e){ return e && (e.error === "access_denied" || e.error === "interaction_required" || e.error === "login_required"); }
+  function isAbortError(e){ return e && (e.name === "AbortError" || e.message === "AbortError" || e.message === "token_timeout"); }
+  function markNeedReauth(){
+    needReauth = true; syncFailCount = 0;
+    clearTimeout(pushTimer); pushTimer = null;
+    setStatus("需要重新連結", "warn"); window.renderSyncCard();
+  }
+  function resetSyncSuccess(){
+    syncFailCount = 0; retryMs = 5000;
+  }
+  function bumpSyncFail(){
+    syncFailCount++;
+    if (syncFailCount >= SYNC_FAIL_MAX){ markNeedReauth(); return true; }
+    return false;
+  }
+  function scheduleSyncRetry(){
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
+    retryMs = Math.min(retryMs * 2, 60000);
+  }
+  function maybeBootSync(){
+    if (!syncConnected || needReauth) return;
+    if (!navigator.onLine){
+      bootSyncPending = true;
+      setStatus("目前離線，連上網路後會自動同步", "offline");
+      if (window.refreshLed) window.refreshLed();
+      return;
+    }
+    bootSyncPending = false;
+    syncNow().then(function(){ if (!needReauth) startPolling(); });
+  }
   function waitSyncIdle(ms){
     const deadline = Date.now() + (ms || 45000);
     return new Promise(function(resolve){
@@ -7367,6 +7411,10 @@ let syncConnected = false, syncEmail = null;
   // ---- core two-way sync ----
   async function syncNow(force){
     if (!syncConnected) return { ok: false, reason: "not_connected" };
+    if (!navigator.onLine && !force){
+      if (window.refreshLed) window.refreshLed();
+      return { ok: false, reason: "offline" };
+    }
     if (inFlight){
       if (force){
         const idle = await waitSyncIdle(45000);
@@ -7382,8 +7430,10 @@ let syncConnected = false, syncEmail = null;
     // 應盡力把變更推上雲端(背景重繪看不到、也不會丟資料),否則「編輯沒點掉就切背景」換裝置會拿到舊資料。
     if (!force && window.isTableBusy && window.isTableBusy()){ clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 2000); return { ok: false, reason: "busy" }; }
     const thisRun = ++syncGen;
+    syncAbort = new AbortController();
+    const runAbort = syncAbort;
     inFlight = true; setStatus("同步中…", "busy");
-    let __wd = setTimeout(function(){ if (inFlight && thisRun === syncGen){ inFlight = false; setStatus("同步逾時，稍後重試", "warn"); if (window.refreshLed) window.refreshLed(); } }, 40000);
+    let __wd = setTimeout(function(){ if (inFlight && thisRun === syncGen){ runAbort.abort(); inFlight = false; setStatus("同步逾時，稍後重試", "warn"); if (window.refreshLed) window.refreshLed(); } }, SYNC_WATCHDOG_MS);
     let syncComplete = false;
     try {
       await ensureToken();
@@ -7419,13 +7469,10 @@ let syncConnected = false, syncEmail = null;
       }
       if (!syncComplete){
         dirty = true;
-        setStatus("同步未完成，稍後重試", "warn");
-        clearTimeout(pushTimer);
-        pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
-        retryMs = Math.min(retryMs * 2, 60000);
+        if (!bumpSyncFail()){ setStatus("同步未完成，稍後重試", "warn"); scheduleSyncRetry(); }
       } else {
         if (pushed) maybeSnapshot(pushed);
-        retryMs = 5000;   // 成功:重試退避歸位
+        resetSyncSuccess();
         needReauth = false;   // 同步成功=授權有效:清掉可能殘留的「需要重新連結」(離線誤設,或 token 未過期沒走 requestToken 的情況)
         setStatus("已同步", "ok");
         try { localStorage.setItem("customer_app_lastsync_v1", String(Date.now())); } catch(e){}
@@ -7433,20 +7480,21 @@ let syncConnected = false, syncEmail = null;
       }
     } catch (e){
       dirty = dirty || wasDirty;   // 這輪沒完成:把進場時的未推狀態還原(中途的新編輯本來就會自己標 true)
-      if (e && (e.error === "access_denied" || e.error === "interaction_required" || e.error === "login_required")){
-        needReauth = true; setStatus("需要重新連結", "warn"); window.renderSyncCard();
-        clearTimeout(pushTimer); pushTimer = null;
-        // 真正的授權問題(token 失效且無法 silent 刷新)才不自動重試:等使用者重新連結。
-        // 注意:GIS 元件沒載入(離線常見)的 Error("gis") 已排除在外,改走下面的「稍後重試」,回到有網路會自動再試。
+      if (isSyncAuthError(e)){
+        markNeedReauth();
+      } else if (isAbortError(e)){
+        if (!bumpSyncFail()){ setStatus("同步逾時，稍後重試", "warn"); scheduleSyncRetry(); }
       } else {
-        setStatus("同步失敗，稍後重試", "warn");
-        // 先前這句「稍後重試」只是顯示文字,程式並沒有排任何重試 → 離線期間的編輯會一直留在本機。
-        // 現在真的排:指數退避(5s→10s→…→上限 60s),成功後歸位。
-        clearTimeout(pushTimer);
-        pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
-        retryMs = Math.min(retryMs * 2, 60000);
+        if (!bumpSyncFail()){ setStatus("同步失敗，稍後重試", "warn"); scheduleSyncRetry(); }
       }
-    } finally { if (thisRun === syncGen){ clearTimeout(__wd); inFlight = false; if (window.refreshLed) window.refreshLed(); } }
+    } finally {
+      if (thisRun === syncGen){
+        clearTimeout(__wd);
+        if (syncAbort === runAbort) syncAbort = null;
+        inFlight = false;
+        if (window.refreshLed) window.refreshLed();
+      }
+    }
     return { ok: syncComplete && !dirty && !needReauth, reason: syncComplete ? undefined : (needReauth ? "reauth" : "failed") };
   }
   window.__syncNow = syncNow;
@@ -7470,6 +7518,7 @@ let syncConnected = false, syncEmail = null;
       const res = await dfetch("https://www.googleapis.com/oauth2/v2/userinfo");
       const info = await res.json();
       syncEmail = info.email || "已連結"; syncConnected = true; needReauth = false;
+      resetSyncSuccess(); bootSyncPending = false;
       saveAuth(); saveGToken(); window.renderSyncCard();
       await syncNow();
       startPolling();
@@ -7529,6 +7578,11 @@ let syncConnected = false, syncEmail = null;
     if (window.refreshLed) window.refreshLed();   // 先把燈從離線灰更新過來
     if (!syncConnected) return;
     retryMs = 5000; clearTimeout(pushTimer); pushTimer = null;
+    if (bootSyncPending){
+      bootSyncPending = false;
+      syncNow().then(function(){ if (!needReauth) startPolling(); });
+      return;
+    }
     syncNow();
   });
   window.addEventListener("offline", function(){ if (window.refreshLed) window.refreshLed(); });   // 斷網:燈轉離線灰
@@ -7551,7 +7605,7 @@ let syncConnected = false, syncEmail = null;
         accessToken = gt.t; tokenExpiry = gt.exp;
       }
       window.renderSyncCard();
-      syncNow().then(function(){ if (!needReauth) startPolling(); });
+      maybeBootSync();
     } else {
       window.renderSyncCard();
     }
