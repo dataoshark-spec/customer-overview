@@ -1222,7 +1222,13 @@
     color:var(--ink);cursor:pointer;transition:background .13s;overflow:hidden;}
   .tcat-trigger:hover{background:var(--surface-2);}
   @media (hover:hover){ .exp-open .tcat-trigger:hover,.exp-open .segcell .seg:hover{background:transparent;} }
-  .tcat-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* 編輯模式的 .tcat-trigger 內多包了一層 .tcat-label,正常模式的 .tcat-badge 沒有。
+     .tcat-label 原本是 block,會自成一個行盒(line box):裡面的 .multi-wrap 是 inline-flex + vertical-align:middle,
+     行盒被撐成 17.047px(比內容本身的 16.609px 多 0.438px),垂直置中後文字比正常模式低 0.219px
+     —— 這就是切換模式時「類型」文字上下跳動的原因(盒子沒動,只有字在動)。
+     改成 flex 容器後,.multi-wrap／空值佔位「—」都直接當 flex item 排版,與 .tcat-badge 完全同構,兩模式像素一致。
+     省略號交給內部的 .multi-pri(本來就有 min-width:0 + overflow + ellipsis),與正常模式的作法相同。 */
+  .tcat-label{display:flex;align-items:center;justify-content:center;min-width:0;white-space:nowrap;overflow:hidden;}
   .tcat-trigger,.tcat-badge{line-height:1.35;height:28px;}
   .tcat-badge{display:inline-flex;align-items:center;justify-content:center;max-width:100%;border:1.7px solid var(--line);
     border-radius:7px;padding:4px 8px;font-size:.77rem;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -1639,7 +1645,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.08.28A";
+const APP_VERSION = "2026.08.28B";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
