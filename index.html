@@ -6,7 +6,7 @@
 <title>客戶總覽</title>
 <link rel="icon" type="image/png" href="icon-192.png?v=6">
 <link rel="apple-touch-icon" href="icon-180.png?v=6">
-<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjogIuWuouaItue4veimvSIsICJzaG9ydF9uYW1lIjogIuWuouaItue4veimvSIsICJzdGFydF91cmwiOiAiLi8iLCAic2NvcGUiOiAiLi8iLCAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwgImJhY2tncm91bmRfY29sb3IiOiAiI0VCRUZGMSIsICJ0aGVtZV9jb2xvciI6ICIjMkI1Q0E4IiwgImljb25zIjogW3sic3JjIjogImljb24tMTkyLnBuZz92PTYiLCAic2l6ZXMiOiAiMTkyeDE5MiIsICJ0eXBlIjogImltYWdlL3BuZyIsICJwdXJwb3NlIjogImFueSJ9LCB7InNyYyI6ICJpY29uLTUxMi5wbmc/dj02IiwgInNpemVzIjogIjUxMng1MTIiLCAidHlwZSI6ICJpbWFnZS9wbmciLCAicHVycG9zZSI6ICJhbnkifV19">
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoi5a6i5oi257i96Ka9Iiwic2hvcnRfbmFtZSI6IuWuouaItue4veimvSIsInN0YXJ0X3VybCI6Ii4vIiwic2NvcGUiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwib3JpZW50YXRpb24iOiJwb3J0cmFpdCIsImJhY2tncm91bmRfY29sb3IiOiIjRUJFRkYxIiwidGhlbWVfY29sb3IiOiIjMkI1Q0E4IiwiaWNvbnMiOlt7InNyYyI6Imljb24tMTkyLnBuZz92PTYiLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwicHVycG9zZSI6ImFueSJ9LHsic3JjIjoiaWNvbi01MTIucG5nP3Y9NiIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55In1dfQ==">
 <meta name="theme-color" content="#2B5CA8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -26,6 +26,52 @@
   }
   /* 開頁前先套用主題(預設淺色),避免閃一下 */
   try { var _t = localStorage.getItem("customer_app_theme_v1"); document.documentElement.setAttribute("data-theme", _t === "dark" ? "dark" : "light"); } catch (e) {}
+
+  /* 鎖定直向:manifest 的 "orientation":"portrait" 是主力,這裡補一道 API,
+     給「Android 安裝檔還在用舊 manifest」「iOS 根本不讀 manifest orientation」的情況救援。
+     在 <head> 解析當下呼叫 lock() 常會被拒絕(文件尚未就緒),所以載入後再鎖,回到前景時補鎖。只鎖手機。
+     橫向遮罩(#rotateGate)的開關也由這裡負責 —— 一律用 screen.orientation.type(實體螢幕方向)判斷,
+     絕不用視窗長寬比:手機直向打字時鍵盤會壓扁 viewport,長寬比會誤判成橫向,遮罩就會蓋住輸入中的畫面。 */
+  (function () {
+    function isPhone() {
+      try {
+        if (!window.matchMedia || !matchMedia("(pointer:coarse)").matches) return false;
+        var s = window.screen || {};
+        var shortSide = Math.min(s.width || 0, s.height || 0);
+        return shortSide > 0 && shortSide <= 500;
+      } catch (e) { return false; }
+    }
+    function lockPortrait() {
+      if (!isPhone()) return;
+      try {
+        var so = window.screen && window.screen.orientation;
+        if (!so || !so.lock) return;                    // iOS Safari 沒有 lock,直接跳過,交給遮罩層
+        var r = so.lock("portrait");
+        if (r && r["catch"]) r["catch"](function () {}); // 非全螢幕/未安裝時會 reject,吞掉即可
+      } catch (e) {}
+    }
+    function isLandscape() {
+      try {
+        var t = (window.screen && window.screen.orientation && window.screen.orientation.type) || "";
+        if (t) return t.indexOf("landscape") === 0;
+        if (typeof window.orientation === "number") return Math.abs(window.orientation) === 90;
+      } catch (e) {}
+      return window.innerWidth > window.innerHeight;    // 最後才退回長寬比(僅限完全沒有方向 API 的老瀏覽器)
+    }
+    function sync() {
+      try { document.documentElement.classList.toggle("rot-block", isPhone() && isLandscape()); } catch (e) {}
+    }
+    function apply() { lockPortrait(); sync(); }
+    apply();                                            // 在 <head> 就先定案,遮罩被解析時 class 已就位,不會閃
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", apply);
+    window.addEventListener("load", apply);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) apply(); });
+    window.addEventListener("orientationchange", function () { setTimeout(apply, 60); });
+    try {
+      var so = window.screen && window.screen.orientation;
+      if (so && so.addEventListener) so.addEventListener("change", sync);
+    } catch (e) {}
+  })();
 </script>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="客戶總覽">
@@ -1325,6 +1371,22 @@
   .cover-search:hover{background:var(--surface-2);}
   .cover-search svg{width:19px;height:19px;flex:none;}
   .cover-search span{flex:1;}
+  /* ===== 橫向提示遮罩 ===== */
+  /* 只用 html.rot-block 這一個開關,由上面的 JS 依「實體螢幕方向」控制。
+     刻意不加 @media (orientation:landscape) 這類規則:那是看 viewport 長寬比,
+     手機直向打字時鍵盤壓扁視窗就會誤判成橫向,而且 CSS 條件 JS 關不掉,
+     使用者會被鎖在遮罩後面連輸入框都碰不到。實測 iPhone SE 375x367、
+     Android 360x320 / 412x400 三種「直向+鍵盤」情境全部會誤觸發,故不採用。 */
+  #rotateGate{display:none;place-items:center;position:fixed;inset:0;z-index:9999;
+    background:var(--paper,#EBEFF1);color:var(--ink,#16222A);touch-action:none;overscroll-behavior:none;
+    padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));}
+  #rotateGate .rg-in{display:grid;gap:12px;justify-items:center;text-align:center;}
+  #rotateGate svg{width:46px;height:46px;stroke:var(--accent,#2B5CA8);fill:none;
+    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+  #rotateGate .rg-t{font-size:1.02rem;font-weight:700;letter-spacing:.03em;}
+  #rotateGate .rg-s{font-size:.84rem;color:var(--ink-soft,#5C6E76);}
+  html.rot-block #rotateGate{display:grid;}
+  html.rot-block body{overflow:hidden;}   /* 遮罩期間底層不可捲動 */
 </style>
 </head>
 <body>
@@ -1645,7 +1707,7 @@
 </div>
 
 <script>
-const APP_VERSION = "2026.08.28B";
+const APP_VERSION = "2026.08.28C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -7649,5 +7711,12 @@ let syncConnected = false, syncEmail = null;
   });
 })();
 </script>
+<div id="rotateGate" role="alertdialog" aria-live="polite" aria-label="請轉回直向使用">
+  <div class="rg-in">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><line x1="10.6" y1="19" x2="13.4" y2="19"/><path d="M3.2 9.6a9 9 0 0 1 2-3.1"/><path d="m2.4 7.2.8 2.6 2.6-.8"/><path d="M20.8 14.4a9 9 0 0 1-2 3.1"/><path d="m21.6 16.8-.8-2.6-2.6.8"/></svg>
+    <div class="rg-t">請轉回直向使用</div>
+    <div class="rg-s">客戶總覽為手機直向設計</div>
+  </div>
+</div>
 </body>
 </html>
