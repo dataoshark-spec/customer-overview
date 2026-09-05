@@ -1490,7 +1490,7 @@
 
       <div class="set-card" id="syncCard">
         <div class="set-card-title">Google 雲端同步</div>
-        <p class="set-card-desc">連結 Google 帳號後，已儲存的客戶資料可在使用新版的裝置間同步。同欄不同版本會保留供你選擇；請定期匯出備份。</p>
+        <p class="set-card-desc">連結 Google 帳號後，已儲存的客戶資料可在使用新版的裝置間同步。同一欄位自動採用較新的修改，取代前會保留備份。</p>
         <div id="syncBoxOff" style="display:none">
           <div class="set-actions"><button class="s-btn s-btn-primary" id="gConnect">連結 Google 帳號</button></div>
         </div>
@@ -1506,11 +1506,10 @@
       </div>
 
       <div class="set-card">
-        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。請將同一帳號使用的裝置更新至 2026.09.05F 或更新版本。</p>
+        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。請將同一帳號使用的裝置更新至 2026.09.05G 或更新版本。</p>
         <p class="set-card-desc">變更會自動儲存在此瀏覽器。建議定期備份，或匯入先前的備份檔。</p>
         <div class="set-actions">
           <button class="s-btn" id="historyBtn">依日期還原備份</button>
-          <button class="s-btn" id="conflictsBtn">檢查不同版本</button>
           <button class="s-btn" id="exportBtn">匯出備份檔</button>
           <button class="s-btn" id="importBtn">匯入備份檔</button>
           <button class="s-btn" id="cloudBtn">備份到 Google 雲端</button>
@@ -1720,98 +1719,7 @@
   <div class="lp-hint">貼上後按 Enter 或「完成」即儲存</div>
 </div>
 
-<script id="customer-conflict-display">
-/* 中文差異顯示：只產生文字，不修改任何設定值。 */
-(function(root, factory) {
-  const api = factory();
-  if (typeof module === "object" && module.exports) module.exports = api;
-  else root.CustomerConflictDisplay = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function() {
-  "use strict";
-  const names = {
-    cats: "類別設定", density: "畫面間距", sort: "客戶排列方式", colw: "表格欄寬",
-    theme: "畫面主題", opts: "自訂與隱藏選項", fltorder: "篩選選項順序",
-    expfocus: "展開需求時聚焦", optorder: "編輯選項順序", colFilter: "欄位篩選", fltB: "預算篩選"
-  };
-  const columns = {
-    date: "建檔日", status: "狀態", area: "區域", cat: "類型", budget: "預算", rooms: "房數",
-    pType: "車類", ptype: "車類", pNum: "車數", pnum: "車數", cust: "客戶", tel: "電話",
-    line: "LINE", ask: "詢問", need: "需求", need2: "想看", need3: "安排／看過"
-  };
-  const order = ["date","status","area","cat","budget","rooms","pType","ptype","pNum","pnum","cust","tel","line","ask","need","need2","need3"];
-  const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-  const plain = x => !!x && typeof x === "object" && !Array.isArray(x);
-  const keyOf = field => String(field || "").replace(/^setting:/, "");
-  const label = field => own(names, keyOf(field)) ? names[keyOf(field)] : "其他設定";
-  const column = key => own(columns, key) ? columns[key] : "其他欄位";
-  function scalar(value) {
-    if (value === null || value === undefined || value === "") return "未設定";
-    if (typeof value === "boolean") return value ? "開啟" : "關閉";
-    return typeof value === "object" ? describe(value) : String(value);
-  }
-  function entries(value) {
-    if (!plain(value)) return [];
-    return Object.entries(value).sort(([a], [b]) => {
-      const ai = order.indexOf(a), bi = order.indexOf(b);
-      return (ai < 0 ? order.length : ai) - (bi < 0 ? order.length : bi);
-    });
-  }
-  function describe(value) {
-    if (Array.isArray(value)) return value.length ? value.map(scalar).join("、") : "尚未自訂（使用預設）";
-    if (plain(value)) {
-      const rows = entries(value).map(([k,v]) => column(k) + "：" + scalar(v));
-      return rows.length ? rows.join("\n") : "尚未自訂（使用預設）";
-    }
-    return scalar(value);
-  }
-  function listRows(value, separator) {
-    return entries(value).filter(([,v]) => Array.isArray(v) && v.length)
-      .map(([k,v]) => column(k) + "：" + v.map(scalar).join(separator));
-  }
-  function format(field, value) {
-    const key = keyOf(field);
-    if (key === "cats") {
-      if (!Array.isArray(value) || !value.length) return "尚未設定類別";
-      return value.map((c, i) => {
-        if (!plain(c)) return (i + 1) + ". " + scalar(c);
-        return (i + 1) + ". 名稱：" + scalar(c.label) + "\n   類型：" + scalar(c.key) + "　顏色：" + scalar(c.color);
-      }).join("\n\n");
-    }
-    if (key === "density") return value === "compact" ? "緊湊間距" : value === "normal" ? "標準間距" : scalar(value);
-    if (key === "sort") {
-      const sorts = {default:"預設順序", date_desc:"建檔日：新 → 舊", date_asc:"建檔日：舊 → 新"};
-      return own(sorts, value) ? sorts[value] : "其他排列方式：" + scalar(value);
-    }
-    if (key === "theme") return value === "dark" ? "深色主題" : value === "light" ? "淺色主題" : scalar(value);
-    if (key === "expfocus") return value === true ? "開啟：展開需求時，其他列變淡" : value === false ? "關閉：其他列維持原樣" : scalar(value);
-    if (key === "colw") {
-      const rows = entries(value).map(([k,v]) => column(k) + "：" + scalar(v) + " 像素");
-      return rows.length ? rows.join("\n") : "尚未自訂（使用預設欄寬）";
-    }
-    if (key === "opts") {
-      const custom = listRows(value, "、"), hidden = listRows(plain(value) ? value.hidden : null, "、");
-      return "自訂選項\n" + (custom.length ? custom.join("\n") : "尚未自訂（使用預設選項）")
-        + "\n\n隱藏選項\n" + (hidden.length ? hidden.join("\n") : "沒有隱藏選項");
-    }
-    if (key === "optorder" || key === "fltorder") {
-      const rows = listRows(value, " → ");
-      return rows.length ? rows.join("\n") : "尚未自訂（使用預設順序）";
-    }
-    if (key === "colFilter") {
-      const rows = listRows(value, "、");
-      return rows.length ? rows.join("\n") : "未限制欄位（顯示全部）";
-    }
-    if (key === "fltB") {
-      const v = plain(value) ? value : {};
-      return v.lo == null && v.hi == null ? "不限預算" : "下限：" + (v.lo == null ? "不限" : scalar(v.lo) + " 萬")
-        + "\n上限：" + (v.hi == null ? "不限" : scalar(v.hi) + " 萬");
-    }
-    return describe(value);
-  }
-  return {label, format};
-});
 
-</script>
 <script id="customer-data-core">
 /* 客戶總覽資料核心 v6。純函式；瀏覽器與離線測試共用。 */
 (function(root, factory) {
@@ -1931,7 +1839,40 @@ if(p.syncState){
   }
   function fromLegacy(p){if(!p||!p.data||!Array.isArray(p.data.properties))fail("舊版雲端資料格式不正確");const b=normalizeBackup({app:"customer",items:p.data.properties,cats:p.cats?.list||[],settings:p.settings||{},deleted:p.deleted||{}});return fromView({...b,catsAt:p.cats?._updatedAt,settingsAt:p.settings?._updatedAt});}
   function epochCmp(a,b){return a.generation-b.generation || a.id.localeCompare(b.id,"en",{numeric:true});}
+  // Timestamp-qualified legacy dots distinguish repeated values from separate old saves.
+  function normalizeLegacy(state){
+    if(!state)return state;
+    const s=clone(state);
+    const legacy=(v,key)=>v.n===1&&v.actor==="legacy-"+hash(key+":"+stable(v.value));
+    const convert=(c,key,inferred=0)=>{
+      c.choices=c.choices.map(v=>{
+        const actual=typeof key==="function"?key(v):key;
+        if(!legacy(v,actual))return v;
+        const at=v.value===true&&v.at===0?inferred:v.at;
+        const actor="legacy-v7-"+hash(v.actor+":"+at);
+        c.clock[actor]=Math.max(c.clock[actor]||0,1);
+        return {...v,actor,at};
+      });
+    };
+    for(const [id,fs] of Object.entries(s.records)){
+      let at=0;
+      for(const [k,c] of Object.entries(fs))if(k!=="$alive")for(const v of c.choices)if(legacy(v,id+":"+k))at=Math.max(at,v.at);
+      for(const [k,c] of Object.entries(fs))convert(c,k==="$alive"?v=>id+(v.value?":alive":":deleted"):id+":"+k,k==="$alive"?at:0);
+    }
+    for(const [k,c] of Object.entries(s.prefs))convert(c,k);
+    return s;
+  }
+  function latestChoice(c,key){
+    const cmp=(a,b)=>a.at-b.at||(key==="$alive"?Number(a.value===false)-Number(b.value===false):0)||(stable(a.value)<stable(b.value)?-1:stable(a.value)>stable(b.value)?1:0)||(a.actor<b.actor?-1:a.actor>b.actor?1:0)||a.n-b.n;
+    return [...c.choices].sort(cmp).pop();
+  }
+  function autoLatest(state){
+    const s=normalizeLegacy(state);
+    for(const fs of [...Object.values(s.records),s.prefs])for(const [k,c] of Object.entries(fs))c.choices=[latestChoice(c,k)];
+    return s;
+  }
   function merge(a,b) {
+    a=normalizeLegacy(a);b=normalizeLegacy(b);
     if(!a)return clone(b);if(!b)return clone(a);
     const cmp=epochCmp(a.epoch,b.epoch);if(cmp)return clone(cmp>0?a:b);
     const out=empty(a.epoch);
@@ -1947,7 +1888,7 @@ if(p.syncState){
     const v={items:[],deleted:{},cats:chosen(s.prefs.cats)||[],settings:{}};
     for(const [id,fs] of Object.entries(s.records)){
       const life=fs["$alive"];
-      // Concurrent delete/edit stays visible until the user resolves it.
+      // Preserve the F backup projection; live states pass through autoLatest first.
       if(!life?.choices.some(c=>c.value===true)){v.deleted[id]=Math.max(0,...(life?.choices||[]).map(c=>c.at));continue;}
       const r={id,needFontSizes:{},updatedAt:0};
       for(const [k,c] of Object.entries(fs)){r.updatedAt=Math.max(r.updatedAt,...c.choices.map(x=>x.at));if(k==="$alive")continue;const val=chosen(c);if(val===null&&!["bMin","bMax"].includes(k))continue;if(k.startsWith("font:"))r.needFontSizes[k.slice(5)]=val;else r[k]=val;}
@@ -1958,7 +1899,10 @@ if(p.syncState){
     return v;
   }
   function capture(state,view,actor,at=Date.now(),previousPrefs) {
-    const s=clone(state), prev=project(state), old=new Map(prev.items.map(r=>[r.id,r])), now=new Map(view.items.map(r=>[r.id,r]));
+    const s=clone(state), normalized=normalizeLegacy(state);
+    let observed=0;for(const fs of [...Object.values(normalized.records),normalized.prefs])for(const c of Object.values(fs))for(const v of c.choices)observed=Math.max(observed,v.at);
+    at=Math.max(at,observed+1);
+    const prev=project(state), old=new Map(prev.items.map(r=>[r.id,r])), now=new Map(view.items.map(r=>[r.id,r]));
     for(const r of view.items){
       const before=old.has(r.id)?flat(old.get(r.id)):{},after=flat(r);let changed=false; s.records[r.id]||={};
       for(const k of new Set([...Object.keys(before),...Object.keys(after)]))if(!equal(before[k],after[k])){s.records[r.id][k]=write(s.records[r.id][k],after[k]??null,actor,at);changed=true;}
@@ -1981,50 +1925,17 @@ if(p.syncState){
     return out;
   }
   function resolve(s,c,value,actor){const out=clone(s),fs=c.scope==="record"?out.records[c.id]:out.prefs;fs[c.field]=write(fs[c.field],value,actor,Date.now());return out;}
-  // Only undo unedited, automatically injected legacy samples with observed deletion.
-  // Exact baseline cells (including timestamps/clocks) exclude edits, imports and explicit restores.
-  function planSeedDeletionRepair(state, seeds) {
-    if(state.epoch.generation!==0 || state.epoch.id!=="initial")return [];
-    const originals=fromView({items:seeds}).records, plan=[];
-    for(const [id,expected] of Object.entries(originals)){
-      if(!/^seed\d+$/.test(id))continue;
-      const fields=state.records[id],life=fields?.["$alive"];
-      if(!life || !equal(Object.keys(fields).sort(),Object.keys(expected).sort()))continue;
-      if(Object.keys(expected).some(k=>k!=="$alive"&&!equal(fields[k],expected[k])))continue;
-      const originalTrue=expected["$alive"].choices[0];
-      const keeps=life.choices.filter(c=>c.value===true),deletes=life.choices.filter(c=>c.value===false);
-      if(keeps.length!==1 || !equal(keeps[0],originalTrue) || !deletes.length)continue;
-      // Extra historical keep clocks are ambiguous; leave these for the user's choice.
-      if(Object.entries(life.clock).some(([actor,n])=>!life.choices.some(c=>c.actor===actor&&c.n===n)))continue;
-      plan.push({scope:"record",id,field:"$alive"});
-    }
-    return plan;
-  }
-  // Authorized migration of original personal preferences over untouched initialization defaults.
-  // This does not implement latest-wins for user edits; ambiguous history remains a conflict.
-  function planLegacyPreferenceRepair(state,defaults){
-    if(state.epoch.generation!==0 || state.epoch.id!=="initial")return [];
-    const original=fromView(defaults).prefs, plan=[];
-    const allowed=new Set(["cats","setting:density","setting:colw","setting:opts","setting:expfocus","setting:optorder"]);
-    for(const c of conflicts(state)){
-      if(c.scope!=="pref"||!allowed.has(c.field)||!original[c.field])continue;
-      const cell=state.prefs[c.field],defaultValue=original[c.field].choices[0].value;
-      if(cell.choices.some(v=>v.n!==1||v.actor!==baseline(v.value,c.field,v.at).choices[0].actor))continue;
-      if(Object.entries(cell.clock).some(([actor,n])=>n!==1||!cell.choices.some(v=>v.actor===actor)))continue;
-      const initial=cell.choices.filter(v=>v.at===0),personal=cell.choices.filter(v=>v.at>0);
-      if(!initial.length||!personal.length||initial.length+personal.length!==cell.choices.length)continue;
-      if(initial.some(v=>!preferenceEqual(c.field,v.value,defaultValue)))continue;
-      if(personal.some(v=>!preferenceEqual(c.field,v.value,personal[0].value)))continue;
-      if(preferenceEqual(c.field,personal[0].value,defaultValue))continue;
-      plan.push({...c,value:clone(personal[0].value)});
-    }
-    return plan;
-  }
   function restore(current,view,uuid){const s=fromView(view);s.epoch={generation:current.epoch.generation+1,id:uuid};return s;}
   function importMerge(current,view,uuid) {
     const base=fromView({items:view.items,cats:undefined,settings:{},deleted:{}});
-    // Imports are concurrent proposals, so existing same-field values remain recoverable.
-    for(const [id,fs] of Object.entries(base.records))for(const [k,c] of Object.entries(fs))fs[k]=cell(chosen(c),"import-"+uuid,Date.now());
+    // An older backup remains older when merged; explicit full restore uses a new epoch.
+    const source=normalizeLegacy(view.syncState||base);
+    for(const [id,fs] of Object.entries(base.records))for(const [k,c] of Object.entries(fs)){
+      const original=source.records[id]?.[k];
+      const matching=original?.choices.filter(v=>equal(v.value,chosen(c)))||[];
+      const at=matching.length?Math.max(...matching.map(v=>v.at)):Math.max(0,...c.choices.map(v=>v.at));
+      fs[k]=cell(chosen(c),"import-"+uuid,at);
+    }
     base.epoch=clone(current.epoch);
     const out=merge(current,base);
     const existing=project(out).cats,keys=new Set(existing.map(c=>c.key));
@@ -2047,7 +1958,7 @@ if(p.syncState){
     return s;
   }
   const newId=()=>globalThis.crypto?.randomUUID?.() || ("id-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
-  return {newId,clone,stable,equal,preferenceEqual,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,conflicts,resolve,planSeedDeletionRepair,planLegacyPreferenceRepair,restore,importMerge,validateState,epochCmp};
+  return {newId,clone,stable,equal,preferenceEqual,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,autoLatest,conflicts,resolve,restore,importMerge,validateState,epochCmp};
 });
 
 </script>
@@ -2200,7 +2111,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.09.05F";
+const APP_VERSION = "2026.09.05G";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -7123,7 +7034,8 @@ async function applyBackup(parsed,mode="replace"){
   if(typeof closeNeedExp==="function")closeNeedExp();
   if(typeof hideNeedHover==="function")hideNeedHover();
   if(!window._storageCorrupt&&!storeCurrentState())throw new Error("本機修改尚未安全保存，請先匯出備份後再匯入");
-  const before=DataCore.clone(dataState);
+  const before=DataCore.clone(dataState),stored=localStorage.getItem(DATA_V6_KEY),localBefore=DataCore.clone(captureLocalState());
+  const unchanged=()=>DataCore.equal(before,dataState)&&stored===localStorage.getItem(DATA_V6_KEY)&&DataCore.equal(localBefore,captureLocalState());
   let restoreBase=before, repair=null;
   if(mode==="replace"&&syncConnected&&window.prepareCloudRestore){
     repair=await window.prepareCloudRestore();
@@ -7131,25 +7043,26 @@ async function applyBackup(parsed,mode="replace"){
     if(remote&&DataCore.epochCmp(remote.epoch,restoreBase.epoch)>0)restoreBase=remote;
   }
   await CustomerRecovery.put(mode==="replace"?"完整還原前":"合併匯入前",backupData());
-  if(!DataCore.equal(before,dataState))throw new Error("資料剛有更新，請重新選擇匯入");
+  if(mode==="merge")await CustomerRecovery.put("合併匯入的來源備份",parsed);
+  if(!unchanged())throw new Error("資料剛有更新，請重新選擇匯入");
   const v={...normalized,cats:normalized.cats??cats,settings:{...collectSettings(),...normalized.settings}};
   let next;
   if(mode==="merge")next=DataCore.importMerge(dataState,v,DataCore.newId());
   else{
-    next=normalized.syncState?DataCore.clone(normalized.syncState):DataCore.fromView(v);
+    next=DataCore.fromView(v);
     next.epoch={generation:restoreBase.epoch.generation+1,id:DataCore.newId()};
   }
 
   if(repair?.damaged.length){
     await CustomerRecovery.put("雲端損壞檔案原始副本",{app:"customer-rescue",raw:repair.damaged});
-    if(!DataCore.equal(before,dataState))throw new Error("資料剛有更新，請重新選擇匯入");
+    if(!unchanged())throw new Error("資料剛有更新，請重新選擇匯入");
     localStorage.setItem("customer_app_repair_v6",JSON.stringify({email:syncEmail,epoch:next.epoch,files:repair.damaged.map(f=>({id:f.id,name:f.name}))}));
   }
-  paintDataState(next);
-  window._pendingMerge=null;window._corruptRaw=null;
+  paintDataState(DataCore.autoLatest(next));
+  window._pendingMerge=null;window._corruptRaw=null;window._autoApplyError=false;updateDataNotice();
   document.querySelectorAll("dialog.data-dialog").forEach(d=>d.close());
   onLocalChange("data");
-  toast(mode==="merge"?"已合併匯入；不同內容已保留供選擇":"已完整還原，還原前資料可由備份記錄找回");
+  toast(mode==="merge"?"已合併匯入，自動採用較新的修改；取代前備份已保留":"已完整還原，還原前資料可由備份記錄找回");
 }
 function confirmApplyBackup(parsed){
   let normalized;
@@ -7157,7 +7070,7 @@ function confirmApplyBackup(parsed){
     toast(e.message==="wrong_app"?"這不是客戶總覽的備份檔":e.message==="too_many"?"備份超過 5000 筆上限":"匯入失敗："+e.message);return;
   }
   const {body,dialog}=dataDialog("如何匯入 "+normalized.items.length+" 筆客戶資料？");
-  const p=document.createElement("p");p.textContent="合併匯入會保留目前客戶，內容不同時提供選擇。完整還原會以備份取代目前資料。執行前會先建立可找回的安全副本。";
+  const p=document.createElement("p");p.textContent="合併匯入會保留目前客戶，同欄內容自動採用較新的修改。完整還原會以備份取代目前資料。執行前會先建立可找回的安全副本。";
   const note=document.createElement("p");note.textContent=syncConnected?"完整還原會同步到使用新版的其他裝置；必須連上網路才能執行。":"";
   const actions=document.createElement("div");actions.className="data-import-actions";
   for(const [mode,label] of [["merge","合併匯入"],["replace","完整還原"]]){
@@ -7660,77 +7573,56 @@ function paintDataState(next){
     renderCover();renderTabs();renderCatOptions();applyFilter();updateDataNotice();
   }finally{applyingDataState=false;}
 }
-// Sample repair is a narrow migration; general conflict merging is unchanged.
-const originalSeedRows=SEED.map((d,i)=>({...d,id:"seed"+i,updatedAt:BASE_TS}));
-let seedRepairTimer=null;
-const seedRepairBusy=()=>window.isTableBusy()||detailBg.classList.contains("open");
+// Apply one deterministic latest value per field, only after durable recovery copies.
+let autoApplyTimer=null,autoApplyBusy=false;
+const autoApplyEditing=()=>window.isTableBusy()||detailBg.classList.contains("open");
 function queueMergedState(incoming){
-  window._pendingMerge=window._pendingMerge?DataCore.merge(window._pendingMerge,incoming):incoming;
+  window._pendingMerge=window._pendingMerge?DataCore.merge(window._pendingMerge,incoming):DataCore.clone(incoming);
 }
-function scheduleSeedDeletionRepair(){
-  clearTimeout(seedRepairTimer);
-  seedRepairTimer=setTimeout(()=>runSeedDeletionRepair(),2000);
+function scheduleAutoLatest(){
+  clearTimeout(autoApplyTimer);autoApplyTimer=setTimeout(()=>runAutoLatest(),2000);
 }
-async function prepareSeedDeletionRepair(candidate){
-  const plan=DataCore.planSeedDeletionRepair(candidate,originalSeedRows);
-  const preferencePlan=DataCore.planLegacyPreferenceRepair(candidate,defaultPreferenceView());
-  if(!plan.length&&!preferencePlan.length)return {state:candidate,count:0,preferenceCount:0,deferred:false};
-  if(seedRepairBusy())return {state:candidate,count:0,deferred:true};
-  const before=DataCore.clone(dataState),stored=localStorage.getItem(DATA_V6_KEY);
-  const copy={version:6,app:"customer",exportedAt:new Date().toISOString(),deviceId,
-    ...DataCore.project(candidate),syncState:DataCore.clone(candidate)};
-  // Await durable IndexedDB commit, including incoming data that is not yet on screen.
-  await CustomerRecovery.put(preferencePlan.length?"沿用原有個人設定前":"清理舊版預設客戶衝突前",copy);
-  if(seedRepairBusy() || stored!==localStorage.getItem(DATA_V6_KEY) ||
-     !DataCore.equal(before,dataState) || !DataCore.equal(before,captureLocalState()))
-    return {state:candidate,count:0,deferred:true};
-  let next=candidate;
-  for(const conflict of plan)next=DataCore.resolve(next,conflict,false,editActor);
-  for(const conflict of preferencePlan)next=DataCore.resolve(next,conflict,conflict.value,editActor);
-  return {state:next,count:plan.length,preferenceCount:preferencePlan.length,deferred:false};
-}
-async function acceptMergedState(incoming){
+function stateBackup(state){return {version:6,app:"customer",exportedAt:new Date().toISOString(),deviceId,...DataCore.project(state),syncState:DataCore.clone(state)};}
+async function acceptMergedState(incoming,guard=()=>{}){
   if(window._storageCorrupt)return false;
-  if(seedRepairBusy()){queueMergedState(incoming);scheduleSeedDeletionRepair();return false;}
-  if(!storeCurrentState())return false;
-  const before=DataCore.clone(dataState),next=DataCore.merge(before,incoming);
-  if(DataCore.epochCmp(next.epoch,before.epoch)>0){
-    await CustomerRecovery.put("雲端完整還原前的本機副本",backupData());
-    if(!storeCurrentState())return false;
-    if(seedRepairBusy()||!DataCore.equal(before,dataState)){queueMergedState(incoming);scheduleSeedDeletionRepair();return false;}
-  }
-  const prepared=await prepareSeedDeletionRepair(next);
-  if(prepared.deferred||!DataCore.equal(before,dataState)){
-    queueMergedState(incoming);scheduleSeedDeletionRepair();return false;
-  }
-  if(!DataCore.equal(prepared.state,dataState))paintDataState(prepared.state);
-  if(window._pendingMerge&&DataCore.equal(DataCore.merge(dataState,window._pendingMerge),dataState))window._pendingMerge=null;
-  window._seedRepairError=false;
-  updateDataNotice();
-  if(prepared.count||prepared.preferenceCount){
-    toast(prepared.preferenceCount?"已保留 "+prepared.preferenceCount+" 項原有個人設定；修復前備份已保留":"已清理 "+prepared.count+" 筆未修改的預設客戶衝突；修復前備份已保留");
-    window.onLocalChange?.("data");
-  }
-  return true;
+  if(autoApplyBusy||autoApplyEditing()){queueMergedState(incoming);scheduleAutoLatest();return false;}
+  autoApplyBusy=true;
+  try{
+    if(!storeCurrentState())throw new Error("本機修改尚未安全保存");
+    const before=DataCore.clone(dataState),stored=localStorage.getItem(DATA_V6_KEY);
+    const next=DataCore.autoLatest(DataCore.merge(before,incoming));
+    if(!DataCore.equal(next,before)){
+      await CustomerRecovery.put("自動採用較新修改前：本機資料",stateBackup(before));
+      if(!DataCore.equal(before,incoming))await CustomerRecovery.put("自動採用較新修改前：收到的資料",stateBackup(incoming));
+      guard();
+      if(autoApplyEditing()||stored!==localStorage.getItem(DATA_V6_KEY)||!DataCore.equal(before,dataState)||!DataCore.equal(before,captureLocalState())){
+        queueMergedState(incoming);scheduleAutoLatest();return false;
+      }
+      paintDataState(next);
+      window.onLocalChange?.("data");
+    }
+    if(window._pendingMerge&&DataCore.equal(DataCore.autoLatest(DataCore.merge(dataState,window._pendingMerge)),dataState))window._pendingMerge=null;
+    window._autoApplyError=false;updateDataNotice();return true;
+  }catch(e){queueMergedState(incoming);window._autoApplyError=true;updateDataNotice();throw e;}
+  finally{autoApplyBusy=false;}
 }
-async function runSeedDeletionRepair(){
-  clearTimeout(seedRepairTimer);seedRepairTimer=null;
+async function runAutoLatest(){
+  clearTimeout(autoApplyTimer);autoApplyTimer=null;
   if(window._storageCorrupt)return false;
   const candidate=window._pendingMerge?DataCore.merge(dataState,window._pendingMerge):dataState;
-  if(!window._pendingMerge&&!DataCore.planSeedDeletionRepair(candidate,originalSeedRows).length&&!DataCore.planLegacyPreferenceRepair(candidate,defaultPreferenceView()).length)return true;
+  if(!window._pendingMerge&&DataCore.equal(DataCore.autoLatest(candidate),dataState))return true;
   try{return await acceptMergedState(candidate);}
-  catch(e){window._seedRepairError=true;updateDataNotice();toast("資料整理未完成，原資料已保留，可稍後重試");return false;}
+  catch(e){toast("自動整理未完成，原資料已保留，可稍後重試");return false;}
 }
-// Wait until all UI and sync handlers have initialized; the callback also works offline.
-setTimeout(()=>runSeedDeletionRepair(),0);
-window.__applyMerged = m => acceptMergedState(m).catch(e=>{queueMergedState(m);toast("套用同步資料失敗："+e.message);});
+setTimeout(()=>runAutoLatest(),0);
+window.__applyMerged=m=>acceptMergedState(m).catch(e=>{toast("套用同步資料失敗："+e.message);return false;});
 window.addEventListener("storage",e=>{
   if(e.key!==DATA_V6_KEY||!e.newValue||window._storageCorrupt)return;
   try{
     const remote=DataCore.validateState(JSON.parse(e.newValue));
-    if(DataCore.equal(DataCore.merge(dataState,remote),dataState))return;
-    window._pendingMerge=window._pendingMerge?DataCore.merge(window._pendingMerge,remote):remote;
-    if(!window.isTableBusy()&&!detailBg.classList.contains("open"))applyPendingMergeIfAny();
+    if(DataCore.equal(DataCore.autoLatest(DataCore.merge(dataState,remote)),dataState))return;
+    queueMergedState(remote);scheduleAutoLatest();
+    if(!autoApplyEditing())applyPendingMergeIfAny();
   }catch(err){toast("另一個視窗的資料無法讀取，請保留目前畫面並匯出備份");}
 });
 function dataDialog(title){
@@ -7744,45 +7636,14 @@ function dataDialog(title){
 }
 function updateDataNotice(){
   const el=document.getElementById("dataNotice");if(!el)return;
-  const differences=DataCore.conflicts(dataState),n=differences.length,preferenceCount=differences.filter(c=>c.scope==="pref").length;
-  const differenceSummary=[n-preferenceCount?"客戶內容 "+(n-preferenceCount)+" 項":"",preferenceCount?"畫面設定 "+preferenceCount+" 項":""].filter(Boolean).join("、");
-  el.hidden=!window._storageCorrupt&&!window._saveError&&!window._seedRepairError&&!n;
+  el.hidden=!window._storageCorrupt&&!window._saveError&&!window._autoApplyError;
   if(window._storageCorrupt)el.innerHTML='本機資料無法讀取，已停止改寫與同步。<button class="s-btn" data-rescue>匯出原始資料</button><button class="s-btn" data-import>匯入備份還原</button>';
   else if(window._saveError)el.innerHTML='本機儲存失敗，修改尚未安全保存。請先匯出備份。<button class="s-btn" data-rescue>匯出備份</button>';
-  else if(window._seedRepairError)el.innerHTML='資料整理尚未完成，原資料皆已保留。<button class="s-btn" data-seed-retry>重試整理</button><button class="s-btn" data-conflicts>檢視不同版本</button>';
-  else el.innerHTML='有 '+differenceSummary+'需要選擇，內容皆已保留。<button class="s-btn" data-conflicts>檢視並選擇</button>';
+  else if(window._autoApplyError)el.innerHTML='自動整理尚未完成，原資料皆已保留。<button class="s-btn" data-auto-retry>重試整理</button><button class="s-btn" data-rescue>匯出備份</button>';
+  else el.textContent="";
   el.querySelector("[data-rescue]")?.addEventListener("click",downloadBackup);
   el.querySelector("[data-import]")?.addEventListener("click",()=>importFile.click());
-  el.querySelector("[data-conflicts]")?.addEventListener("click",showDataConflicts);
-  el.querySelector("[data-seed-retry]")?.addEventListener("click",runSeedDeletionRepair);
-  const b=document.getElementById("conflictsBtn");if(b)b.textContent="檢查不同版本"+(n?"（"+n+"）":"");
-}
-async function showDataConflicts(){
-  const {body}=dataDialog("選擇要保留的內容");
-  const cs=DataCore.conflicts(dataState);
-  if(!cs.length){body.textContent="目前沒有需要選擇的不同版本。";return;}
-  const labels={need:"需求",need2:"想看",need3:"安排／看過",t1:"第一欄標題",t2:"第二欄標題",t3:"第三欄標題","font:need":"需求字級","font:need2":"想看字級","font:need3":"第三欄字級",cust:"客戶稱呼",tel:"電話",line:"LINE",ask:"詢問",cat:"類型",area:"區域",status:"狀態",rooms:"房數",budget:"預算","$alive":"保留或刪除客戶",cats:"類別設定"};
-  for(const c of cs){
-    const box=document.createElement("section");box.className="data-choice";
-    const name=c.scope==="record"?(items.find(x=>x.id===c.id)?.cust||"已刪除客戶"):"偏好設定";
-    const h=document.createElement("h3");h.textContent=name+" · "+(c.scope==="pref"?CustomerConflictDisplay.label(c.field):(labels[c.field]||c.field));box.append(h);
-    for(const choice of c.choices.filter((v,i,a)=>a.findIndex(w=>c.scope==="pref"?DataCore.preferenceEqual(c.field,w.value,v.value):DataCore.equal(w.value,v.value))===i)){
-      const pre=document.createElement("pre");
-      pre.textContent=c.scope==="pref"?CustomerConflictDisplay.format(c.field,choice.value):c.field==="$alive"?(choice.value?"保留客戶":"刪除客戶"):typeof choice.value==="string"?choice.value:JSON.stringify(choice.value,null,2);
-      const b=document.createElement("button");b.className="s-btn";b.textContent=c.scope==="pref"?"採用此設定":"採用此內容";
-      b.onclick=async()=>{b.disabled=true;try{
-        if(!storeCurrentState())throw new Error("本機修改尚未安全保存，請先匯出備份");
-        const current=c.scope==="record"?dataState.records[c.id]?.[c.field]:dataState.prefs[c.field];
-        if(!current||!DataCore.equal(current.choices,c.choices))throw new Error("內容剛有更新，請關閉後重新檢視");
-        const before=DataCore.clone(dataState);
-        await CustomerRecovery.put("選擇不同版本前",backupData());
-        if(!storeCurrentState()||!DataCore.equal(before,dataState))throw new Error("內容剛有更新或尚未儲存，請重新檢視");
-        paintDataState(DataCore.resolve(dataState,c,choice.value,editActor));onLocalChange("data");showDataConflicts();
-      }catch(e){toast("未變更："+e.message);b.disabled=false;}};
-      box.append(pre,b);
-    }
-    body.append(box);
-  }
+  el.querySelector("[data-auto-retry]")?.addEventListener("click",runAutoLatest);
 }
 async function showBackupHistory(){
   const {body}=dataDialog("依日期還原備份");body.textContent="讀取備份記錄…";
@@ -7813,7 +7674,6 @@ function downloadJSON(value,name){
   const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
 document.getElementById("historyBtn").addEventListener("click",showBackupHistory);
-document.getElementById("conflictsBtn").addEventListener("click",showDataConflicts);
 document.addEventListener("click",e=>{
   if(!window._storageCorrupt)return;
   if(e.target.closest("#dataNotice,dialog.data-dialog,#exportBtn,#importBtn,#cloudImportBtn,#historyBtn,#importFile"))return;
@@ -7823,7 +7683,7 @@ updateDataNotice();
 
 let syncConnected = false, syncEmail = null;
 /* =========================================================================
-   Google 雲端同步 v6：不可覆寫的完整檢查點、逐欄合併、衝突保留及每日快照
+   Google 雲端同步 v6：不可覆寫的完整檢查點、逐欄採用較新修改、取代前備份及每日快照
    ========================================================================= */
 (function(){
   const CLIENT_ID = "970345889249-9btcuh0j6gvofgg0segcgb3q68kt17ok.apps.googleusercontent.com";
@@ -8067,7 +7927,7 @@ let syncConnected = false, syncEmail = null;
     if (inFlight) cls = "busy";
     else if (window.isTableBusy && window.isTableBusy()) cls = "pending";   // 編輯中、變更尚未落地
     else if (syncConnected && !navigator.onLine) cls = "offline";           // 已連結但目前沒網路:離線(灰),畫面是上次同步的資料
-    else if (syncConnected && !needReauth && syncHasSucceeded && !dirty && !syncError && !snapshotError && !window._saveError && !window._storageCorrupt && !DataCore.conflicts(dataState).length) cls = "ok";
+    else if (syncConnected && !needReauth && syncHasSucceeded && !dirty && !syncError && !snapshotError && !window._saveError && !window._storageCorrupt && !window._autoApplyError) cls = "ok";
     else if (syncConnected && !syncError && !needReauth && !window._storageCorrupt) cls = "pending";
     else cls = "warn";
     setLed(cls);
@@ -8146,23 +8006,23 @@ let syncConnected = false, syncEmail = null;
       const pulled=await drive.pull(repair?repair.files.map(f=>f.id):[]);guard();
       if(!storeCurrentState())throw new Error("本機儲存失敗");
       let merged=pulled.state?DataCore.merge(dataState,pulled.state):DataCore.clone(dataState);
-      if(DataCore.epochCmp(merged.epoch,dataState.epoch)>0||DataCore.planSeedDeletionRepair(merged,originalSeedRows).length||DataCore.planLegacyPreferenceRepair(merged,defaultPreferenceView()).length){
-        // Do not discard edits made while a replacement is arriving.
-        if(window.isTableBusy()||detailBg.classList.contains("open")){window._pendingMerge=merged;return {ok:false,reason:"editing"};}
-        if(!await acceptMergedState(merged)){scheduleSyncRetry();return {ok:false,reason:"local_change"};}
-        guard();merged=DataCore.clone(dataState);
-      }
+      if(!await acceptMergedState(merged,guard)){scheduleSyncRetry();return {ok:false,reason:"local_change"};}
+      guard();merged=DataCore.clone(dataState);
       let published=null;
       if(repair||!pulled.loaded.length||!pulled.state||!DataCore.equal(merged,pulled.state)){
+        // Preserve individual cloud sources before compaction can remove them.
+        for(const source of pulled.loaded)if(!DataCore.equal(source.state,merged)){
+          await CustomerRecovery.put("同步取代前：雲端來源",stateBackup(source.state));guard();
+        }
+        if(autoApplyEditing()||!DataCore.equal(dataState,captureLocalState())){scheduleSyncRetry();return {ok:false,reason:"editing"};}
         published=await drive.publish(merged);guard();
       }
       // A verified upload contains exactly this checkpoint. New local changes remain dirty.
-      const latest=DataCore.merge(dataState,merged);
+      const latest=DataCore.autoLatest(DataCore.merge(dataState,merged));
       if(!DataCore.equal(latest,dataState)){
-        if(window.isTableBusy()||detailBg.classList.contains("open"))window._pendingMerge=window._pendingMerge?DataCore.merge(window._pendingMerge,latest):latest;
-        else paintDataState(latest);
+        queueMergedState(latest);scheduleAutoLatest();
       }
-      dirty=!DataCore.equal(DataCore.merge(dataState,merged),merged);
+      dirty=!DataCore.equal(latest,merged)||!!window._pendingMerge;
 
       if(published)await drive.compact(pulled.loaded,published,merged);
       if(repair&&published){
@@ -8177,9 +8037,8 @@ let syncConnected = false, syncEmail = null;
       }catch(e){snapshotError=true;}
       guard();
       complete=true;syncError=false;syncHasSucceeded=true;needReauth=false;resetSyncSuccess();
-      dirty=dirty||!DataCore.equal(DataCore.merge(dataState,merged),merged);
-      const n=DataCore.conflicts(merged).length;
-      setStatus(dirty?"新修改等待同步":snapshotError?"資料已同步，每日備份未完成，稍後重試":n?"已同步，有不同版本待選擇":"已同步",dirty||snapshotError||n?"pending":"ok");
+      dirty=dirty||!DataCore.equal(DataCore.autoLatest(DataCore.merge(dataState,merged)),merged);
+      setStatus(dirty?"新修改等待同步":snapshotError?"資料已同步，每日備份未完成，稍後重試":"已同步",dirty||snapshotError?"pending":"ok");
       localStorage.setItem("customer_app_lastsync_v1",String(Date.now()));window.renderLastSync();
       if(dirty||snapshotError)scheduleSyncRetry();
     }catch(e){
