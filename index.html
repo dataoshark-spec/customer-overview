@@ -1524,7 +1524,7 @@
       </div>
 
       <div class="set-card">
-        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。請將同一帳號使用的裝置更新至 2026.09.05I 或更新版本。</p>
+        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。請將同一帳號使用的裝置更新至 2026.09.05J 或更新版本。</p>
         <p class="set-card-desc">變更會自動儲存在此瀏覽器。建議定期備份，或匯入先前的備份檔。</p>
         <div class="set-actions">
           <button class="s-btn" id="historyBtn">依日期還原備份</button>
@@ -2132,7 +2132,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.09.05I";
+const APP_VERSION = "2026.09.05J";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -4560,6 +4560,33 @@ tableWrap.addEventListener("keydown", e => {
   }
 }, true);
 tableWrap.addEventListener("click", e=>{
+  // 垃圾桶優先於展開列收合；只在確認且保存成功後移除該客戶。
+  const delBtn = e.target.closest("[data-act='del']");
+  if (delBtn){
+    e.stopPropagation();
+    const it = tFindItem(delBtn); if (!it) return;
+    const tr = delBtn.closest("tr");
+    closeNeedOrderUI(); hideNeedHover();
+    const expanded = tableWrap.querySelector("tr.needexp");
+    if (expanded) commitAllSegs(expanded);
+    askConfirm(`刪除「${it.cust || "這筆"}」？`, "將刪除此客戶及三欄需求內容。", ()=>{
+      const currentExp = tableWrap.querySelector("tr.needexp");
+      if (currentExp) commitAllSegs(currentExp);
+      const previousItems=items,previousDeleted=deleted;
+      items=items.filter(x=>x.id!==it.id);
+      deleted={...deleted,[it.id]:Date.now()};
+      if(saveItems()===false){
+        items=previousItems;deleted=previousDeleted;
+        toast("刪除尚未儲存，原客戶已保留，請稍後重試");
+        return;
+      }
+      saveDeleted();
+      if(openNeedId===it.id)closeNeedExp();
+      onLocalChange("data");
+      tr.classList.add("trow-removing");setTimeout(()=>applyFilter(),220);
+    });
+    return;
+  }
   // 點「已展開的那一列」任一處 = 先收合(正常/編輯皆同);收合後才恢復編輯、下拉、複製、連結
   const openTr = e.target.closest("tr.exp-open");
   if (openTr){ e.stopPropagation(); hideNeedHover(); closeNeedExp(); return; }
@@ -4614,18 +4641,7 @@ tableWrap.addEventListener("click", e=>{
     const cell = e.target.closest(".tcell");
     if (cell){ copyCellText(cell); return; }
   }
-  // 刪除列
-  const delBtn = e.target.closest("[data-act='del']");
-  if (delBtn){
-    const it = tFindItem(delBtn); if (!it) return;
-    const tr = delBtn.closest("tr");
-    askConfirm(`刪除「${it.cust || "這筆"}」？`, "刪除後將無法復原。", ()=>{
-      deleted[it.id] = Date.now(); saveDeleted();
-      items = items.filter(x => x.id !== it.id); saveItems(); onLocalChange("data");
-      tr.classList.add("trow-removing"); setTimeout(()=>applyFilter(), 220);
-    });
-    return;
-  }
+
 });
 
 // ---- 客戶需求:滑鼠懸浮直接預覽三段(僅有滑鼠的裝置;手機仍點擊展開) ----
