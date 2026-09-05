@@ -1398,6 +1398,24 @@
 .data-choice h3{margin:0 0 10px;font-size:16px}.data-choice pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;padding:10px;background:#8881;max-height:260px;overflow:auto}
 .data-history-row{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line,#ddd)}
 .data-history-row span{overflow-wrap:anywhere;min-width:0}.data-history-row button{flex-shrink:0}.data-import-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+/* 每位客戶的三欄交換：只加入小把手，保留原標題及工具列。 */
+.need-order-title{display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:100%}
+.fneed-head .need-order-title{flex:1}
+.need-order-title .nseg-t{min-width:0;overflow-wrap:anywhere}
+.need-order-handle{display:inline-flex;align-items:center;justify-content:center;flex:none;width:24px;height:26px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--text-faint);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.need-order-handle:hover,.need-order-handle:focus-visible{color:var(--accent-deep);background:var(--surface-2);outline:2px solid var(--accent);outline-offset:1px}
+.need-order-handle:active{cursor:grabbing}
+.need-order-source{opacity:.62}
+.need-order-target{outline:2px dashed var(--accent);outline-offset:4px;border-radius:10px}
+.need-order-menu{position:fixed;z-index:20000;min-width:172px;max-width:calc(100vw - 16px);padding:5px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px #0002}
+.need-order-menu button{display:block;width:100%;border:0;background:transparent;color:inherit;text-align:left;font:inherit;font-size:.85rem;line-height:1.5;padding:10px 12px;border-radius:6px;cursor:pointer}
+.need-order-menu button:hover,.need-order-menu button:focus-visible{background:var(--surface-2);outline:2px solid var(--accent)}
+
+
+/* 交換選單：標示目前顯示位置，順序與實際標題各自加粗。 */
+.need-order-menu strong{font-weight:700}
+.need-order-position{white-space:nowrap}
+.need-order-label{color:var(--accent-deep);overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -1506,7 +1524,7 @@
       </div>
 
       <div class="set-card">
-        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。請將同一帳號使用的裝置更新至 2026.09.05H 或更新版本。</p>
+        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。請將同一帳號使用的裝置更新至 2026.09.05I 或更新版本。</p>
         <p class="set-card-desc">變更會自動儲存在此瀏覽器。建議定期備份，或匯入先前的備份檔。</p>
         <div class="set-actions">
           <button class="s-btn" id="historyBtn">依日期還原備份</button>
@@ -1757,6 +1775,8 @@
   const multiFields = new Set(["cat","area","status","rooms","pType","pNum"]);
   function str(x,max=300000){ if(typeof x!=="string" || x.length>max) fail("文字欄位格式不正確"); }
   function strings(x){ if(!Array.isArray(x)||x.length>500) fail("選項必須是文字清單"); x.forEach(v=>str(v,2000)); }
+  const validNeedOrder = value => Array.isArray(value) && value.length===3 && [1,2,3].every(n=>value.includes(n));
+  function needOrder(value){return validNeedOrder(value)?value.slice():[1,2,3];}
   function record(r, allowMissingId=false) {
     if(!object(r)) fail("客戶資料必須是物件");
     if(r.id == null && allowMissingId) {} else if(!idOK(r.id)) fail("客戶識別碼不正確");
@@ -1766,6 +1786,7 @@
       else if(multiFields.has(k)){ if(Array.isArray(v)) strings(v); else if(k==="pNum" && typeof v==="number" && Number.isFinite(v)) {} else str(v,2000); }
       else if(["updatedAt","createdAt","bMin","bMax"].includes(k)){ if(v!==null && (typeof v!=="number"||!Number.isFinite(v)||v<0)) fail("數值欄位不正確"); }
       else if(k==="needFontSizes"){ if(!object(v)) fail("字級格式不正確"); for(const f of Object.keys(v)) if(!["need","need2","need3"].includes(f)||typeof v[f]!=="number"||v[f]<70||v[f]>180) fail("字級須介於 70% 與 180%"); }
+      else if(k==="needOrder"){ if(!validNeedOrder(v)) fail("需求欄位順序必須包含 1、2、3，且不可重複"); }
       else if(k!=="id") fail("不支援的客戶欄位：" + k);
     }
   }
@@ -1958,7 +1979,7 @@ if(p.syncState){
     return s;
   }
   const newId=()=>globalThis.crypto?.randomUUID?.() || ("id-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
-  return {newId,clone,stable,equal,preferenceEqual,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,autoLatest,conflicts,resolve,restore,importMerge,validateState,epochCmp};
+  return {newId,clone,stable,equal,preferenceEqual,needOrder,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,autoLatest,conflicts,resolve,restore,importMerge,validateState,epochCmp};
 });
 
 </script>
@@ -2111,7 +2132,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.09.05H";
+const APP_VERSION = "2026.09.05I";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2470,6 +2491,8 @@ function loadEditMode(){
 }
 function saveEditMode(){ if (storageOK){ try { localStorage.setItem("customer_app_editmode_v1", editMode ? "1" : "0"); } catch(e){} } }
 let editMode = loadEditMode();
+let needOrderBusy=false;
+let closeNeedOrderUI=()=>{};
 
 const ICON_EDIT  = '<svg class="tmi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 const ICON_EYE   = '<svg class="tmi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -2698,6 +2721,7 @@ function trowHTML(d){
   `</tr>`;
 }
 function renderTable(list){
+  closeNeedOrderUI();
   const oldScroll = tableWrap.querySelector(".tbody-wrap");
   const sTop = oldScroll ? oldScroll.scrollTop : 0, sLeft = oldScroll ? oldScroll.scrollLeft : 0;
   const T = T_COLS.concat("");
@@ -2790,6 +2814,7 @@ function isNeedExpEditing(){
 // 注意:唯讀詳情(detailBg)不算忙碌——雲端合併已走 _pendingMerge,關詳情再套用;
 // 若把 detail 算 busy,瀏覽卡片時燈會一直橘黃閃(pending)、同步也被卡住。
 window.isTableBusy = function(){
+  if(needOrderBusy)return true;
   if(document.querySelector("dialog.data-dialog[open]"))return true;
   if (modalBg.classList.contains("open")) return true;   // 編輯/新增表單才算忙碌
   if (tselMode) return true;             // 批次刪除選取中:暫停同步重繪,選取狀態不被洗掉
@@ -3027,6 +3052,150 @@ function needTitle(it, sg){
   if (sg===1 && t === "客戶需求") return "需求";   // 舊資料存的舊預設 → 顯示新預設
   return t;
 }
+// 每位客戶只保存欄位身分的順序；內容、標題、字級不改名、不互相覆寫。
+function needOrder(it){return CustomerDataCore.needOrder(it&&it.needOrder)}
+function swappedNeedOrder(order,source,target){
+ const next=CustomerDataCore.needOrder(order),a=next.indexOf(source),b=next.indexOf(target);
+ if(a<0||b<0)return next;
+ [next[a],next[b]]=[next[b],next[a]];return next;
+}
+function commitNeedOrder(id,order){
+ const it=items.find(x=>x.id===id);if(!it)return false;
+ const next=CustomerDataCore.needOrder(order);
+ if(JSON.stringify(needOrder(it))===JSON.stringify(next))return true;
+ const previous=it.needOrder,previousTime=it.updatedAt;
+ it.needOrder=next;it.updatedAt=Date.now();
+ if(saveItems()===false){
+  if(previous===undefined)delete it.needOrder;else it.needOrder=previous;
+  if(previousTime===undefined)delete it.updatedAt;else it.updatedAt=previousTime;
+  return false;
+ }
+ onLocalChange("data");return true;
+}
+function initNeedOrderControls(scope,readRecord,writeOrder){
+ if(!scope)return;
+ const segments=Array.from(scope.children).filter(el=>el.dataset.needFontSeg);
+ if(segments.length!==3)return;
+ const handles=new Map();
+ const instruction="拖曳到另一欄交換；點一下選擇欄位；方向鍵可交換相鄰欄";
+ let drag=null,menu=null,suppressClick=false,escapeHandler=null,outsideHandler=null;
+ function refresh(){
+  const it=readRecord();if(!it)return;
+  const order=needOrder(it);
+  if(segments.some((seg,i)=>+scope.children[i].dataset.needFontSeg!==order[i])){
+   const positions=[];for(let node=scope.parentElement;node;node=node.parentElement)positions.push([node,node.scrollTop,node.scrollLeft]);
+   for(const sg of order)scope.appendChild(segments.find(el=>+el.dataset.needFontSeg===sg));
+   for(const [node,top,left] of positions){node.scrollTop=top;node.scrollLeft=left;}
+  }
+  for(const [sg,btn] of handles){
+   const label="移動"+needTitle(it,sg)+"欄位";
+   btn.setAttribute("aria-label",label);btn.title=label+"："+instruction;
+  }
+ }
+ function cleanup(){
+  const active=drag;drag=null;
+  if(active&&active.btn.hasPointerCapture(active.id))active.btn.releasePointerCapture(active.id);
+  segments.forEach(el=>el.classList.remove("need-order-source","need-order-target"));
+  if(menu){menu.remove();menu=null;}
+  for(const btn of handles.values())btn.setAttribute("aria-expanded","false");
+  if(escapeHandler)document.removeEventListener("keydown",escapeHandler,true);
+  if(outsideHandler)document.removeEventListener("pointerdown",outsideHandler,true);
+  escapeHandler=outsideHandler=null;needOrderBusy=false;
+  if(closeNeedOrderUI===cleanup)closeNeedOrderUI=()=>{};
+ }
+ function begin(btn){
+  closeNeedOrderUI();needOrderBusy=true;closeNeedOrderUI=cleanup;
+  escapeHandler=e=>{
+   if(e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();suppressClick=!!drag;cleanup();btn.focus({preventScroll:true});}
+  };
+  document.addEventListener("keydown",escapeHandler,true);
+ }
+ function swap(source,target){
+  const it=readRecord();if(!it||source===target)return;
+  const next=swappedNeedOrder(needOrder(it),source,target);
+  const saved=writeOrder(next);refresh();
+  if(saved===false)return;
+  handles.get(source).focus({preventScroll:true});
+ }
+ function openMenu(sg,btn){
+  if(menu){cleanup();return;}
+  begin(btn);menu=document.createElement("div");menu.className="need-order-menu";
+  menu.setAttribute("role","menu");menu.setAttribute("aria-label","選擇交換欄位");
+  const current=readRecord(),order=needOrder(current);
+  for(const target of order.filter(x=>x!==sg)){
+   const option=document.createElement("button");option.type="button";option.setAttribute("role","menuitem");
+   const position=document.createElement("strong");position.className="need-order-position";
+   position.textContent="順序 "+(order.indexOf(target)+1);
+   const title=document.createElement("strong");
+   const titleText=document.createElement("span");titleText.className="need-order-label";
+   const liveTitle=segments.find(el=>+el.dataset.needFontSeg===target).querySelector('.nseg-t[contenteditable="true"],.fneed-t');
+   const targetTitle=liveTitle?((liveTitle.value??liveTitle.textContent??"").replace(/\n/g," ").trim()||needDefTitle(target)):needTitle(current,target);
+   titleText.textContent=targetTitle;
+   title.append("「",titleText,"」");
+   option.append("與 ",position," ",title," 交換");
+   option.onclick=e=>{e.stopPropagation();cleanup();swap(sg,target);};
+   option.onkeydown=e=>{
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+     e.preventDefault();const choices=Array.from(menu.children),i=choices.indexOf(option);
+     choices[(i+1)%choices.length].focus();
+   }else if(e.key==="Tab"){e.preventDefault();e.stopPropagation();cleanup();btn.focus({preventScroll:true});}
+   };
+   menu.appendChild(option);
+  }
+  document.body.appendChild(menu);btn.setAttribute("aria-expanded","true");
+  const r=btn.getBoundingClientRect(),mr=menu.getBoundingClientRect();
+  menu.style.left=Math.max(8,Math.min(r.left,window.innerWidth-mr.width-8))+"px";
+  menu.style.top=Math.max(8,Math.min(r.bottom+4,window.innerHeight-mr.height-8))+"px";
+  outsideHandler=e=>{if(menu&&!menu.contains(e.target)&&e.target!==btn&&!btn.contains(e.target))cleanup();};
+  document.addEventListener("pointerdown",outsideHandler,true);
+  menu.firstElementChild.focus({preventScroll:true});
+ }
+ for(const seg of segments){
+  const sg=+seg.dataset.needFontSeg,head=seg.querySelector(".nseg-head,.dtl-need-head");
+  let btn=head.querySelector(".need-order-handle");
+  if(!btn){
+   const label=head.firstElementChild,group=document.createElement("span");group.className="need-order-title";
+   btn=document.createElement("button");btn.type="button";btn.className="need-order-handle";
+   btn.innerHTML='<svg width="12" height="16" viewBox="0 0 12 16" aria-hidden="true" fill="currentColor"><circle cx="3" cy="3" r="1.3"/><circle cx="9" cy="3" r="1.3"/><circle cx="3" cy="8" r="1.3"/><circle cx="9" cy="8" r="1.3"/><circle cx="3" cy="13" r="1.3"/><circle cx="9" cy="13" r="1.3"/></svg>';
+   head.insertBefore(group,label);group.append(btn,label);
+  }
+  btn.dataset.orderSeg=sg;btn.setAttribute("aria-haspopup","menu");btn.setAttribute("aria-expanded","false");
+  handles.set(sg,btn);
+  btn.onclick=e=>{e.stopPropagation();if(suppressClick){suppressClick=false;return;}openMenu(sg,btn);};
+  btn.onkeydown=e=>{
+   const delta=({ArrowLeft:-1,ArrowUp:-1,ArrowRight:1,ArrowDown:1})[e.key];
+   if(!delta)return;
+   e.preventDefault();e.stopPropagation();cleanup();
+   const order=needOrder(readRecord()),target=order[order.indexOf(sg)+delta];
+   if(target)swap(sg,target);
+  };
+  btn.onpointerdown=e=>{
+   if(e.button!==0||!e.isPrimary)return;
+   e.preventDefault();e.stopPropagation();suppressClick=false;begin(btn);
+   drag={id:e.pointerId,btn,sg,x:e.clientX,y:e.clientY,moved:false,target:null};
+   btn.setPointerCapture(e.pointerId);
+  };
+  btn.onpointermove=e=>{
+   if(!drag||drag.id!==e.pointerId)return;
+   if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;
+   drag.moved=true;e.preventDefault();seg.classList.add("need-order-source");
+   const hit=document.elementFromPoint(e.clientX,e.clientY);
+   const target=hit&&hit.closest("[data-need-font-seg]");
+   drag.target=segments.includes(target)&&target!==seg?+target.dataset.needFontSeg:null;
+   segments.forEach(el=>el.classList.toggle("need-order-target",+el.dataset.needFontSeg===drag.target));
+  };
+  btn.onpointerup=e=>{
+   if(!drag||drag.id!==e.pointerId)return;
+   const {moved,target}=drag;suppressClick=moved;cleanup();
+   if(moved&&target)swap(sg,target);
+   // preventDefault(pointerdown) 不阻止 click；由 click 開啟替代選單。
+  };
+  btn.onpointercancel=()=>{suppressClick=true;cleanup();};
+  btn.onlostpointercapture=()=>{if(drag){suppressClick=true;cleanup();}};
+ }
+ refresh();
+}
+
 // 字級隨每位客戶的三段資料保存；只改容器樣式，不改寫文字、連結或選取範圍。
 function needFontKey(sg){ return sg === 2 ? "need2" : sg === 3 ? "need3" : "need"; }
 function needFontPercent(it, sg){
@@ -3110,6 +3279,7 @@ let openNeedId = null;
 // 這條初始化路徑會踩 TDZ(Cannot access 'tselMode' before initialization),整份腳本載入即斷。
 let tselMode = false;
 function openNeedExp(tr, doFocus){
+  closeNeedOrderUI();
   if (!tr) return;
   closeOtherOverlays("exp");   // 只留展開,關掉類別/下拉/篩選/懸浮
   const id = tr.dataset.id;
@@ -3135,9 +3305,10 @@ function openNeedExp(tr, doFocus){
     ? `<div class="needexp-ed nseg-ed" contenteditable="true" data-seg="${sg}" spellcheck="false"></div>`
     : `<div class="needexp-ed needexp-view nseg-ed" data-seg="${sg}"></div>`;
   const seg = (sg) => `<div class="nseg" data-need-font-seg="${sg}">${head(sg)}${body(sg)}</div>`;
-  exp.innerHTML = `<td colspan="${nCols}"><div class="needexp-wrap"><div class="nseg-grid">${seg(1)}${seg(2)}${seg(3)}</div></div></td>`;
+  exp.innerHTML = `<td colspan="${nCols}"><div class="needexp-wrap"><div class="nseg-grid">${needOrder(it).map(seg).join("")}</div></div></td>`;
   tr.after(exp); tr.classList.add("exp-open"); tr.classList.toggle("exp-editing", editMode); openNeedId = id;
   initNeedFontControls(exp, () => items.find(x => x.id === id), (sg, size) => commitNeedFontSize(id, sg, size));
+  initNeedOrderControls(exp.querySelector(".nseg-grid"),()=>items.find(x=>x.id===id),order=>{commitAllSegs(exp);return commitNeedOrder(id,order);});
   if (typeof hideNeedHover === "function") hideNeedHover();   // 展開時收掉可能還開著的懸浮預覽
   // 建立當下就同步設定寬度,避免「先錯誤寬度排版、下一影格才跳正」的一影格閃動;rAF 保留作保險
   { const bw0 = tableWrap.querySelector(".tbody-wrap");
@@ -3643,6 +3814,7 @@ function toggleNeedHeading(exp){
 }
 // 收合目前展開的客戶需求(供 ESC 使用):先提交編輯,再移除展開列並清狀態
 function closeNeedExp(){
+  closeNeedOrderUI();
   const ex = tableWrap.querySelector("tr.needexp");
   if (!ex){ openNeedId = null; return; }
   const tr = tableWrap.querySelector(`tr[data-id="${ex.dataset.for}"]`);
@@ -3653,6 +3825,7 @@ function closeNeedExp(){
   if (window.refreshLed) window.refreshLed();
 }
 function toggleNeedExp(tr){
+  closeNeedOrderUI();
   if (!tr) return;
   const id = tr.dataset.id;
   const nx = tr.nextElementSibling;
@@ -4465,7 +4638,7 @@ function showNeedHover(cell, it){
     const bd = content ? needToViewHTML(content) : '<span class="nh-empty">（無內容）</span>';
     return `<div class="nh-seg"><div class="nh-tt">${esc(title)}</div><div class="nh-bd">${bd}</div></div>`;
   };
-  needHover.innerHTML = seg(1,"需求") + seg(2,"想看") + seg(3,"看過");
+  needHover.innerHTML = needOrder(it).map(sg=>seg(sg,needDefTitle(sg))).join("");
   needHover.style.visibility = "hidden";
   needHover.classList.add("show");
   // 位置:永遠貼該列正下方(跟展開一致)。內容再高也不翻到列上方,避免遮住觸發列／表頭
@@ -4598,6 +4771,7 @@ function copyFieldText(el){
 
 // ---- 編輯 / 正常 模式切換(卡片與表格共用單一狀態) ----
 function setEditMode(on){
+  closeNeedOrderUI();
   editMode = !!on; saveEditMode();
   if (!editMode) exitSelectMode();       // 離開編輯模式時取消卡片多選
   closeCatMenu(); closeLinkPop(); tableWrap.classList.remove("gen-open");        // 收合表格的類別/連結浮層
@@ -6221,8 +6395,11 @@ function parseParking(str){ str = String(str||"").trim(); if (!str) return {t:""
 renderCatOptions();
 let editingId = null;
 let formNeedFontSizes = needFontPrefs(null);
+let formNeedOrder=[1,2,3];
 let formBaseRec=null;
 function setupFormNeedFonts(d){
+  closeNeedOrderUI();
+  formNeedOrder=needOrder(d);
   formNeedFontSizes = needFontPrefs(d);
   modalBg.querySelectorAll(".fneed-seg[data-need-font-seg]").forEach(seg => {
     seg.querySelector(".nseg-btns").innerHTML = needFontButtons(+seg.dataset.needFontSeg);
@@ -6233,6 +6410,9 @@ function setupFormNeedFonts(d){
       formNeedFontSizes = { ...formNeedFontSizes, [needFontKey(sg)]: size };
       saveFormDraft();
     });
+  initNeedOrderControls(modalBg.querySelector(".f-need3"),
+    ()=>({needOrder:formNeedOrder,t1:F.t1.value,t2:F.t2.value,t3:F.t3.value}),
+    order=>{formNeedOrder=order;saveFormDraft();return true;});
 }
 
 function normAsk(s){
@@ -6247,6 +6427,7 @@ function normAsk(s){
   return out;
 }
 function openForm(id){
+  closeNeedOrderUI();
   editingId = id || null;
   const d = id ? items.find(x => x.id === id) : null;
   document.getElementById("modalTitle").textContent = d ? "編輯客戶" : "新增客戶";
@@ -6291,6 +6472,7 @@ function applyPendingMergeIfAny(){
   }
 }
 function closeForm(){
+  closeNeedOrderUI();
   clearFormDraft();
   modalBg.classList.remove("open"); editingId = null; formBaseRec=null;
   unlockOverlay();
@@ -6300,6 +6482,7 @@ function closeForm(){
 // ---- 唯讀詳情:正常模式點卡片本體開啟,沿用展開三段框樣式 ----
 const detailBg = document.getElementById("detailBg");
 function openDetail(id){
+  closeNeedOrderUI();
   const d = items.find(x => x.id === id); if (!d) return;
   const _stPill = d.status ? `<span class="dtl-status">${esc(d.status)}</span>` : "";   // 狀態小標放在名字前;無狀態則不顯示
   document.getElementById("detailTitle").innerHTML = _stPill + `<span class="dtl-name">${esc(d.cust || "（未填稱呼）")}</span>`;
@@ -6342,13 +6525,16 @@ function openDetail(id){
   </div>`;
   // 三段需求(沿用展開內容框)
   const seg = (sg, ic) => `<div class="dtl-sec" data-need-font-seg="${sg}"><div class="dtl-need-head"><div class="dtl-h">${ic}${esc(needTitle(d,sg))}</div><span class="nseg-btns">${needFontButtons(sg)}</span></div><div class="needexp-ed needexp-view">${needSeg(d,sg) ? needToViewHTML(needSeg(d,sg)) : '<span class="tneed-ph">—</span>'}</div></div>`;
-  const segHTML = seg(1, IC_DOC) + seg(2, IC_EYE) + seg(3, IC_CHECK);
-  document.getElementById("detailBody").innerHTML = contact + buy + segHTML;
+  const icons={1:IC_DOC,2:IC_EYE,3:IC_CHECK};
+  const segHTML = needOrder(d).map(sg=>seg(sg,icons[sg])).join("");
+  document.getElementById("detailBody").innerHTML = contact + buy + '<div class="dtl-notes">'+segHTML+'</div>';
   initNeedFontControls(document.getElementById("detailBody"), () => items.find(x => x.id === id), (sg, size) => commitNeedFontSize(id, sg, size));
+  initNeedOrderControls(document.querySelector("#detailBody .dtl-notes"),()=>items.find(x=>x.id===id),order=>commitNeedOrder(id,order));
   detailBg.classList.add("open");
   lockOverlay();
 }
 function closeDetail(){
+  closeNeedOrderUI();
   detailBg.classList.remove("open");
   unlockOverlay();
   applyPendingMergeIfAny();
@@ -6359,6 +6545,7 @@ document.getElementById("detailClose").addEventListener("click", closeDetail);
 (function(){
   let sx = 0, sy = 0, st = 0, tracking = false;
   detailBg.addEventListener("touchstart", e => {
+    if(e.target.closest(".need-order-handle,.need-order-menu")||needOrderBusy){tracking=false;return;}
     if (e.touches && e.touches.length === 1){ sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); tracking = true; }
     else tracking = false;
   }, { passive: true });
@@ -6402,11 +6589,12 @@ function buildFormRec(){
     t2: F.t2.value.trim() || "想看",
     t3: F.t3.value.trim() || "看過",
     needFontSizes: { ...formNeedFontSizes },
+    needOrder: formNeedOrder.slice(),
   };
 }
 const FORM_DRAFT_KEY = "customer_app_form_draft_v1";
 function formDraftHasContent(rec){
-  return !!(rec.cust || asFieldVals(rec.area).length || rec.budget || rec.need || rec.need2 || rec.need3 || rec.tel || rec.ask || asFieldVals(rec.cat).length || [1,2,3].some(sg => needFontPercent(rec, sg) !== 100));
+  return !!(rec.cust || asFieldVals(rec.area).length || rec.budget || rec.need || rec.need2 || rec.need3 || rec.tel || rec.ask || asFieldVals(rec.cat).length || !CustomerDataCore.equal(needOrder(rec),[1,2,3]) || [1,2,3].some(sg => needFontPercent(rec, sg) !== 100));
 }
 
 function saveFormDraft(){
@@ -6913,6 +7101,7 @@ modalBg.addEventListener("click", e => { if (e.target === modalBg && _mbDownOnBg
 /* TAB 切換「正常 / 編輯」模式:只在列表頁(卡片或表格)且沒有任何浮層/對話框時作用;
    其餘情況(封面、設定頁、表單、日曆、選單…)與 Shift+TAB 一律維持原本的欄位切換 */
 function tabModeToggleAllowed(){
+  if(needOrderBusy)return false;
   const on = (id, cls) => { const el = document.getElementById(id); return !!(el && el.classList.contains(cls)); };
   if (!listView || !listView.classList.contains("active")) return false;   // 只在列表頁
   if (on("settings", "active")) return false;
@@ -6926,6 +7115,7 @@ function tabModeToggleAllowed(){
 }
 document.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
+  if(needOrderBusy&&e.target.closest(".need-order-menu"))return;
   if (!e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && tabModeToggleAllowed()){
     e.preventDefault();
     flushEditing();                       // 正在編輯的格先落地,避免重繪時漏存
@@ -7477,6 +7667,7 @@ document.addEventListener("pointercancel", endCatDrag);
   }
 
   document.addEventListener("touchstart", function(e){
+    if(e.target.closest(".need-order-handle,.need-order-menu")||needOrderBusy){track=false;return;}
     if (e.touches.length !== 1){ track = false; return; }
     const t = e.touches[0];
     sx = t.clientX; sy = t.clientY; st = Date.now(); track = true;
