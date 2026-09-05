@@ -1506,7 +1506,7 @@
       </div>
 
       <div class="set-card">
-        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝不再加入範例客戶。請將同一帳號使用的裝置更新至 2026.09.05E 或更新版本。</p>
+        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。請將同一帳號使用的裝置更新至 2026.09.05F 或更新版本。</p>
         <p class="set-card-desc">變更會自動儲存在此瀏覽器。建議定期備份，或匯入先前的備份檔。</p>
         <div class="set-actions">
           <button class="s-btn" id="historyBtn">依日期還原備份</button>
@@ -1720,6 +1720,98 @@
   <div class="lp-hint">貼上後按 Enter 或「完成」即儲存</div>
 </div>
 
+<script id="customer-conflict-display">
+/* 中文差異顯示：只產生文字，不修改任何設定值。 */
+(function(root, factory) {
+  const api = factory();
+  if (typeof module === "object" && module.exports) module.exports = api;
+  else root.CustomerConflictDisplay = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function() {
+  "use strict";
+  const names = {
+    cats: "類別設定", density: "畫面間距", sort: "客戶排列方式", colw: "表格欄寬",
+    theme: "畫面主題", opts: "自訂與隱藏選項", fltorder: "篩選選項順序",
+    expfocus: "展開需求時聚焦", optorder: "編輯選項順序", colFilter: "欄位篩選", fltB: "預算篩選"
+  };
+  const columns = {
+    date: "建檔日", status: "狀態", area: "區域", cat: "類型", budget: "預算", rooms: "房數",
+    pType: "車類", ptype: "車類", pNum: "車數", pnum: "車數", cust: "客戶", tel: "電話",
+    line: "LINE", ask: "詢問", need: "需求", need2: "想看", need3: "安排／看過"
+  };
+  const order = ["date","status","area","cat","budget","rooms","pType","ptype","pNum","pnum","cust","tel","line","ask","need","need2","need3"];
+  const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const plain = x => !!x && typeof x === "object" && !Array.isArray(x);
+  const keyOf = field => String(field || "").replace(/^setting:/, "");
+  const label = field => own(names, keyOf(field)) ? names[keyOf(field)] : "其他設定";
+  const column = key => own(columns, key) ? columns[key] : "其他欄位";
+  function scalar(value) {
+    if (value === null || value === undefined || value === "") return "未設定";
+    if (typeof value === "boolean") return value ? "開啟" : "關閉";
+    return typeof value === "object" ? describe(value) : String(value);
+  }
+  function entries(value) {
+    if (!plain(value)) return [];
+    return Object.entries(value).sort(([a], [b]) => {
+      const ai = order.indexOf(a), bi = order.indexOf(b);
+      return (ai < 0 ? order.length : ai) - (bi < 0 ? order.length : bi);
+    });
+  }
+  function describe(value) {
+    if (Array.isArray(value)) return value.length ? value.map(scalar).join("、") : "尚未自訂（使用預設）";
+    if (plain(value)) {
+      const rows = entries(value).map(([k,v]) => column(k) + "：" + scalar(v));
+      return rows.length ? rows.join("\n") : "尚未自訂（使用預設）";
+    }
+    return scalar(value);
+  }
+  function listRows(value, separator) {
+    return entries(value).filter(([,v]) => Array.isArray(v) && v.length)
+      .map(([k,v]) => column(k) + "：" + v.map(scalar).join(separator));
+  }
+  function format(field, value) {
+    const key = keyOf(field);
+    if (key === "cats") {
+      if (!Array.isArray(value) || !value.length) return "尚未設定類別";
+      return value.map((c, i) => {
+        if (!plain(c)) return (i + 1) + ". " + scalar(c);
+        return (i + 1) + ". 名稱：" + scalar(c.label) + "\n   類型：" + scalar(c.key) + "　顏色：" + scalar(c.color);
+      }).join("\n\n");
+    }
+    if (key === "density") return value === "compact" ? "緊湊間距" : value === "normal" ? "標準間距" : scalar(value);
+    if (key === "sort") {
+      const sorts = {default:"預設順序", date_desc:"建檔日：新 → 舊", date_asc:"建檔日：舊 → 新"};
+      return own(sorts, value) ? sorts[value] : "其他排列方式：" + scalar(value);
+    }
+    if (key === "theme") return value === "dark" ? "深色主題" : value === "light" ? "淺色主題" : scalar(value);
+    if (key === "expfocus") return value === true ? "開啟：展開需求時，其他列變淡" : value === false ? "關閉：其他列維持原樣" : scalar(value);
+    if (key === "colw") {
+      const rows = entries(value).map(([k,v]) => column(k) + "：" + scalar(v) + " 像素");
+      return rows.length ? rows.join("\n") : "尚未自訂（使用預設欄寬）";
+    }
+    if (key === "opts") {
+      const custom = listRows(value, "、"), hidden = listRows(plain(value) ? value.hidden : null, "、");
+      return "自訂選項\n" + (custom.length ? custom.join("\n") : "尚未自訂（使用預設選項）")
+        + "\n\n隱藏選項\n" + (hidden.length ? hidden.join("\n") : "沒有隱藏選項");
+    }
+    if (key === "optorder" || key === "fltorder") {
+      const rows = listRows(value, " → ");
+      return rows.length ? rows.join("\n") : "尚未自訂（使用預設順序）";
+    }
+    if (key === "colFilter") {
+      const rows = listRows(value, "、");
+      return rows.length ? rows.join("\n") : "未限制欄位（顯示全部）";
+    }
+    if (key === "fltB") {
+      const v = plain(value) ? value : {};
+      return v.lo == null && v.hi == null ? "不限預算" : "下限：" + (v.lo == null ? "不限" : scalar(v.lo) + " 萬")
+        + "\n上限：" + (v.hi == null ? "不限" : scalar(v.hi) + " 萬");
+    }
+    return describe(value);
+  }
+  return {label, format};
+});
+
+</script>
 <script id="customer-data-core">
 /* 客戶總覽資料核心 v6。純函式；瀏覽器與離線測試共用。 */
 (function(root, factory) {
@@ -1748,6 +1840,10 @@
     return JSON.stringify(x);
   }
   const equal = (a,b) => stable(a) === stable(b);
+  function preferenceEqual(key,a,b){
+    const normalize=x=>key==="cats"&&Array.isArray(x)?x.map(c=>({...c,color:typeof c.color==="string"?c.color.toLowerCase():c.color})):x;
+    return equal(normalize(a),normalize(b));
+  }
   function hash(s) { let a=2166136261,b=5381; for(let i=0;i<s.length;i++){a=Math.imul(a^s.charCodeAt(i),16777619); b=Math.imul(b,33)^s.charCodeAt(i);} return (a>>>0).toString(36)+(b>>>0).toString(36); }
   const textFields = new Set(["cust","date","budget","parking","tel","line","ask","need","need2","need3","t1","t2","t3","url591","urlLeju","urlI"]);
   const multiFields = new Set(["cat","area","status","rooms","pType","pNum"]);
@@ -1861,7 +1957,7 @@ if(p.syncState){
     for(const [k,c] of Object.entries(s.prefs))if(k.startsWith("setting:"))v.settings[k.slice(8)]=chosen(c);
     return v;
   }
-  function capture(state,view,actor,at=Date.now()) {
+  function capture(state,view,actor,at=Date.now(),previousPrefs) {
     const s=clone(state), prev=project(state), old=new Map(prev.items.map(r=>[r.id,r])), now=new Map(view.items.map(r=>[r.id,r]));
     for(const r of view.items){
       const before=old.has(r.id)?flat(old.get(r.id)):{},after=flat(r);let changed=false; s.records[r.id]||={};
@@ -1870,12 +1966,16 @@ if(p.syncState){
     }
     for(const id of old.keys())if(!now.has(id))s.records[id]["$alive"]=write(s.records[id]["$alive"],false,actor,at);
     const prefs={cats:view.cats,...Object.fromEntries(Object.entries(view.settings||{}).map(([k,v])=>["setting:"+k,v]))};
-    for(const [k,v] of Object.entries(prefs))if(v!==undefined&&!equal(chosen(s.prefs[k]),v))s.prefs[k]=write(s.prefs[k],v,actor,at);
+    const previous=previousPrefs?{cats:previousPrefs.cats,...Object.fromEntries(Object.entries(previousPrefs.settings||{}).map(([k,v])=>["setting:"+k,v]))}:null;
+    for(const [k,v] of Object.entries(prefs)){
+      if(v===undefined || (previous&&preferenceEqual(k,previous[k],v)))continue;
+      if(!preferenceEqual(k,chosen(s.prefs[k]),v))s.prefs[k]=write(s.prefs[k],v,actor,at);
+    }
     return s;
   }
   function conflicts(s){
     const out=[];
-    const scan=(scope,id,k,c)=>{const vs=new Set(c.choices.map(x=>stable(x.value)));if(vs.size>1)out.push({scope,id,field:k,choices:clone(c.choices)});};
+    const scan=(scope,id,k,c)=>{const vs=c.choices.filter((x,i,a)=>a.findIndex(y=>scope==="pref"?preferenceEqual(k,y.value,x.value):equal(y.value,x.value))===i);if(vs.length>1)out.push({scope,id,field:k,choices:clone(c.choices)});};
     for(const [id,fs] of Object.entries(s.records))for(const [k,c] of Object.entries(fs))scan("record",id,k,c);
     for(const [k,c] of Object.entries(s.prefs))scan("pref","",k,c);
     return out;
@@ -1897,6 +1997,26 @@ if(p.syncState){
       // Extra historical keep clocks are ambiguous; leave these for the user's choice.
       if(Object.entries(life.clock).some(([actor,n])=>!life.choices.some(c=>c.actor===actor&&c.n===n)))continue;
       plan.push({scope:"record",id,field:"$alive"});
+    }
+    return plan;
+  }
+  // Authorized migration of original personal preferences over untouched initialization defaults.
+  // This does not implement latest-wins for user edits; ambiguous history remains a conflict.
+  function planLegacyPreferenceRepair(state,defaults){
+    if(state.epoch.generation!==0 || state.epoch.id!=="initial")return [];
+    const original=fromView(defaults).prefs, plan=[];
+    const allowed=new Set(["cats","setting:density","setting:colw","setting:opts","setting:expfocus","setting:optorder"]);
+    for(const c of conflicts(state)){
+      if(c.scope!=="pref"||!allowed.has(c.field)||!original[c.field])continue;
+      const cell=state.prefs[c.field],defaultValue=original[c.field].choices[0].value;
+      if(cell.choices.some(v=>v.n!==1||v.actor!==baseline(v.value,c.field,v.at).choices[0].actor))continue;
+      if(Object.entries(cell.clock).some(([actor,n])=>n!==1||!cell.choices.some(v=>v.actor===actor)))continue;
+      const initial=cell.choices.filter(v=>v.at===0),personal=cell.choices.filter(v=>v.at>0);
+      if(!initial.length||!personal.length||initial.length+personal.length!==cell.choices.length)continue;
+      if(initial.some(v=>!preferenceEqual(c.field,v.value,defaultValue)))continue;
+      if(personal.some(v=>!preferenceEqual(c.field,v.value,personal[0].value)))continue;
+      if(preferenceEqual(c.field,personal[0].value,defaultValue))continue;
+      plan.push({...c,value:clone(personal[0].value)});
     }
     return plan;
   }
@@ -1927,7 +2047,7 @@ if(p.syncState){
     return s;
   }
   const newId=()=>globalThis.crypto?.randomUUID?.() || ("id-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
-  return {newId,clone,stable,equal,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,conflicts,resolve,planSeedDeletionRepair,restore,importMerge,validateState,epochCmp};
+  return {newId,clone,stable,equal,preferenceEqual,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,conflicts,resolve,planSeedDeletionRepair,planLegacyPreferenceRepair,restore,importMerge,validateState,epochCmp};
 });
 
 </script>
@@ -2080,7 +2200,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.09.05E";
+const APP_VERSION = "2026.09.05F";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2218,6 +2338,9 @@ function cardHTML(d){
 }
 
 // ---- Storage (auto-saves on your own device; degrades to memory in preview) ----
+// Snapshot legacy preference presence before UI initialization writes fallback mirrors.
+const PREFERENCE_STORAGE_KEYS={cats:"customer_app_cats_v4",density:"customer_app_density_v1",sort:"customer_app_sort_v1",colw:"customer_app_colw_v1",theme:"customer_app_theme_v1",opts:"customer_app_opts_v1",fltorder:"customer_app_fltorder_v1",expfocus:"customer_app_expfocus_v1",optorder:"customer_app_optorder_v1",colFilter:"customer_app_filters_v1",fltB:"customer_app_filters_v1"};
+const bootPreferenceStorage=(()=>{const raw={};for(const [k,key] of Object.entries({...PREFERENCE_STORAGE_KEYS,catsAt:"customer_app_cats_ts_v1",settingsAt:"customer_app_settings_ts_v1"})){try{raw[k]=localStorage.getItem(key);}catch(e){raw[k]=null;}}return raw;})();
 const STORE_KEY = "customer_app_data_v4";
 const DELETED_KEY = "customer_app_deleted_v1";
 const DEVICE_KEY = "customer_app_deviceid_v1";
@@ -2315,7 +2438,7 @@ const CAT_PALETTE = ["#2B5CA8","#2C68A6","#C2790B","#7A4F9E","#B4472E","#0E8A8A"
 const CATS_KEY = "customer_app_cats_v4";
 
 function loadCats(){
-  if(window._bootState)return CustomerDataCore.project(window._bootState).cats;
+  if(window._bootState)return window._bootState.prefs.cats?CustomerDataCore.project(window._bootState).cats:DEFAULT_CATS.map(c=>({...c}));
   let raw=null;try{raw=localStorage.getItem(CATS_KEY);if(raw!==null){const c=JSON.parse(raw);CustomerDataCore.categories(c);return c;}}
   catch(e){markCorruptStore(CATS_KEY,raw);}
   return DEFAULT_CATS.map(c=>({...c}));
@@ -6953,7 +7076,8 @@ function applySettings(s){
 function backupData(){
   if(window._storageCorrupt)return rescueData();
   storeCurrentState();
-  return {version:6,app:"customer",exportedAt:new Date().toISOString(),deviceId,cats,items,deleted,settings:collectSettings(),syncState:DataCore.clone(dataState)};
+  const snapshot=captureLocalState();
+  return {version:6,app:"customer",exportedAt:new Date().toISOString(),deviceId,...DataCore.project(snapshot),syncState:snapshot};
 }
 
 function backupFileName(){
@@ -6998,7 +7122,7 @@ async function applyBackup(parsed,mode="replace"){
   if(window._storageCorrupt&&mode!=="replace")throw new Error("本機資料損壞時，請使用完整還原");
   if(typeof closeNeedExp==="function")closeNeedExp();
   if(typeof hideNeedHover==="function")hideNeedHover();
-  if(!window._storageCorrupt)storeCurrentState();
+  if(!window._storageCorrupt&&!storeCurrentState())throw new Error("本機修改尚未安全保存，請先匯出備份後再匯入");
   const before=DataCore.clone(dataState);
   let restoreBase=before, repair=null;
   if(mode==="replace"&&syncConnected&&window.prepareCloudRestore){
@@ -7086,7 +7210,7 @@ function closeSettings(){
 }
 document.getElementById("coverGear").addEventListener("click", e => { e.stopPropagation(); openSettings(); });
 document.getElementById("setBack").addEventListener("click", closeSettings);
-(function(){ const v = document.getElementById("verLine"); if (v) v.textContent = "客戶總覽 · Cursor 更新日 " + APP_VERSION; })();
+(function(){ const v = document.getElementById("verLine"); if (v) v.textContent = "客戶總覽 · 更新日 " + APP_VERSION; })();
 
 // 開機還原上次畫面:上次在列表 → 直接回到該分類的列表(分類已被刪除則回「全部」);上次在封面 → 維持預設
 (function(){
@@ -7497,31 +7621,42 @@ const DATA_V6_KEY = "customer_app_state_v6";
 const DataCore = CustomerDataCore;
 const editActor = deviceId + "-" + DataCore.newId();
 let applyingDataState = false;
-let dataState = window._bootState || DataCore.fromView({items,cats,deleted,settings:collectSettings()});
-if(window._bootState && !window._storageCorrupt) applySettings(DataCore.project(dataState).settings);
+function defaultPreferenceView(){return {cats:DataCore.clone(DEFAULT_CATS),settings:{density:"normal",sort:"default",colw:{...DEFAULT_COLW},theme:"light",opts:normOpts(null),fltorder:{},expfocus:false,optorder:{},colFilter:{area:null,cat:null,rooms:null,pType:null,pNum:null,status:null},fltB:{lo:null,hi:null}}};}
+function legacyPreferenceView(){
+  const all=collectSettings(),settings={};
+  for(const key of Object.keys(all))if(bootPreferenceStorage[key]!==null)settings[key]=all[key];
+  const timestamp=key=>{const n=Number(bootPreferenceStorage[key]);return Number.isFinite(n)&&n>=0?n:0;};
+  return {items,deleted,cats:bootPreferenceStorage.cats!==null?cats:undefined,settings,catsAt:timestamp("catsAt"),settingsAt:timestamp("settingsAt")};
+}
+let dataState = window._bootState || DataCore.fromView(legacyPreferenceView());
+if(window._bootState && !window._storageCorrupt)applySettings({...defaultPreferenceView().settings,...DataCore.project(dataState).settings});
+let savedPreferenceView=DataCore.clone({cats,settings:collectSettings()});
 function dataView(){return {items,cats,deleted,settings:collectSettings()};}
+function captureLocalState(){return DataCore.capture(dataState,dataView(),editActor,Date.now(),savedPreferenceView);}
 function storeCurrentState(){
   if(applyingDataState)return true;
   if(window._storageCorrupt)return false;
-  const next=DataCore.capture(dataState,dataView(),editActor);
-  dataState=next;
+  const next=captureLocalState(),nextPrefs=DataCore.clone({cats,settings:collectSettings()});
   try{
     if(!storageOK)throw new Error("本機儲存不可用");
     localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));
+    dataState=next;savedPreferenceView=nextPrefs;
     window._saveError=false;updateDataNotice();return true;
   }catch(e){window._saveError=true;updateDataNotice();return false;}
 }
 window._persistData = storeCurrentState;
+// Persist even an empty first-install envelope so fallback mirrors cannot become legacy edits on reload.
+if(!window._bootState&&!window._storageCorrupt)storeCurrentState();
 function paintDataState(next){
   DataCore.validateState(next);
-  // This single durable write commits the entire data set, before any projection is replaced.
   localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));
   applyingDataState=true;
   try{
     dataState=DataCore.clone(next);const v=DataCore.project(next);
-    items=v.items;cats=v.cats;deleted=v.deleted;
+    items=v.items;cats=next.prefs.cats?v.cats:DataCore.clone(DEFAULT_CATS);deleted=v.deleted;
     window._storageCorrupt=false;window._saveError=false;
-    saveItems();saveCats();saveDeleted();applySettings(v.settings);
+    saveItems();saveCats();saveDeleted();applySettings({...defaultPreferenceView().settings,...v.settings});
+    savedPreferenceView=DataCore.clone({cats,settings:collectSettings()});
     renderCover();renderTabs();renderCatOptions();applyFilter();updateDataNotice();
   }finally{applyingDataState=false;}
 }
@@ -7538,19 +7673,21 @@ function scheduleSeedDeletionRepair(){
 }
 async function prepareSeedDeletionRepair(candidate){
   const plan=DataCore.planSeedDeletionRepair(candidate,originalSeedRows);
-  if(!plan.length)return {state:candidate,count:0,deferred:false};
+  const preferencePlan=DataCore.planLegacyPreferenceRepair(candidate,defaultPreferenceView());
+  if(!plan.length&&!preferencePlan.length)return {state:candidate,count:0,preferenceCount:0,deferred:false};
   if(seedRepairBusy())return {state:candidate,count:0,deferred:true};
   const before=DataCore.clone(dataState),stored=localStorage.getItem(DATA_V6_KEY);
   const copy={version:6,app:"customer",exportedAt:new Date().toISOString(),deviceId,
     ...DataCore.project(candidate),syncState:DataCore.clone(candidate)};
   // Await durable IndexedDB commit, including incoming data that is not yet on screen.
-  await CustomerRecovery.put("清理舊版預設客戶衝突前",copy);
+  await CustomerRecovery.put(preferencePlan.length?"沿用原有個人設定前":"清理舊版預設客戶衝突前",copy);
   if(seedRepairBusy() || stored!==localStorage.getItem(DATA_V6_KEY) ||
-     !DataCore.equal(before,dataState) || !DataCore.equal(before,DataCore.capture(dataState,dataView(),editActor)))
+     !DataCore.equal(before,dataState) || !DataCore.equal(before,captureLocalState()))
     return {state:candidate,count:0,deferred:true};
   let next=candidate;
   for(const conflict of plan)next=DataCore.resolve(next,conflict,false,editActor);
-  return {state:next,count:plan.length,deferred:false};
+  for(const conflict of preferencePlan)next=DataCore.resolve(next,conflict,conflict.value,editActor);
+  return {state:next,count:plan.length,preferenceCount:preferencePlan.length,deferred:false};
 }
 async function acceptMergedState(incoming){
   if(window._storageCorrupt)return false;
@@ -7570,8 +7707,8 @@ async function acceptMergedState(incoming){
   if(window._pendingMerge&&DataCore.equal(DataCore.merge(dataState,window._pendingMerge),dataState))window._pendingMerge=null;
   window._seedRepairError=false;
   updateDataNotice();
-  if(prepared.count){
-    toast("已清理 "+prepared.count+" 筆未修改的預設客戶衝突；修復前備份已保留");
+  if(prepared.count||prepared.preferenceCount){
+    toast(prepared.preferenceCount?"已保留 "+prepared.preferenceCount+" 項原有個人設定；修復前備份已保留":"已清理 "+prepared.count+" 筆未修改的預設客戶衝突；修復前備份已保留");
     window.onLocalChange?.("data");
   }
   return true;
@@ -7580,9 +7717,9 @@ async function runSeedDeletionRepair(){
   clearTimeout(seedRepairTimer);seedRepairTimer=null;
   if(window._storageCorrupt)return false;
   const candidate=window._pendingMerge?DataCore.merge(dataState,window._pendingMerge):dataState;
-  if(!window._pendingMerge&&!DataCore.planSeedDeletionRepair(candidate,originalSeedRows).length)return true;
+  if(!window._pendingMerge&&!DataCore.planSeedDeletionRepair(candidate,originalSeedRows).length&&!DataCore.planLegacyPreferenceRepair(candidate,defaultPreferenceView()).length)return true;
   try{return await acceptMergedState(candidate);}
-  catch(e){window._seedRepairError=true;updateDataNotice();toast("預設客戶整理未完成，原資料已保留，可稍後重試");return false;}
+  catch(e){window._seedRepairError=true;updateDataNotice();toast("資料整理未完成，原資料已保留，可稍後重試");return false;}
 }
 // Wait until all UI and sync handlers have initialized; the callback also works offline.
 setTimeout(()=>runSeedDeletionRepair(),0);
@@ -7607,12 +7744,13 @@ function dataDialog(title){
 }
 function updateDataNotice(){
   const el=document.getElementById("dataNotice");if(!el)return;
-  const n=DataCore.conflicts(dataState).length;
+  const differences=DataCore.conflicts(dataState),n=differences.length,preferenceCount=differences.filter(c=>c.scope==="pref").length;
+  const differenceSummary=[n-preferenceCount?"客戶內容 "+(n-preferenceCount)+" 項":"",preferenceCount?"畫面設定 "+preferenceCount+" 項":""].filter(Boolean).join("、");
   el.hidden=!window._storageCorrupt&&!window._saveError&&!window._seedRepairError&&!n;
   if(window._storageCorrupt)el.innerHTML='本機資料無法讀取，已停止改寫與同步。<button class="s-btn" data-rescue>匯出原始資料</button><button class="s-btn" data-import>匯入備份還原</button>';
   else if(window._saveError)el.innerHTML='本機儲存失敗，修改尚未安全保存。請先匯出備份。<button class="s-btn" data-rescue>匯出備份</button>';
-  else if(window._seedRepairError)el.innerHTML='預設客戶整理尚未完成，原資料皆已保留。<button class="s-btn" data-seed-retry>重試整理</button><button class="s-btn" data-conflicts>檢視不同版本</button>';
-  else el.innerHTML='有 '+n+' 個欄位包含不同版本，兩份內容皆已保留。<button class="s-btn" data-conflicts>檢視並選擇</button>';
+  else if(window._seedRepairError)el.innerHTML='資料整理尚未完成，原資料皆已保留。<button class="s-btn" data-seed-retry>重試整理</button><button class="s-btn" data-conflicts>檢視不同版本</button>';
+  else el.innerHTML='有 '+differenceSummary+'需要選擇，內容皆已保留。<button class="s-btn" data-conflicts>檢視並選擇</button>';
   el.querySelector("[data-rescue]")?.addEventListener("click",downloadBackup);
   el.querySelector("[data-import]")?.addEventListener("click",()=>importFile.click());
   el.querySelector("[data-conflicts]")?.addEventListener("click",showDataConflicts);
@@ -7627,12 +7765,20 @@ async function showDataConflicts(){
   for(const c of cs){
     const box=document.createElement("section");box.className="data-choice";
     const name=c.scope==="record"?(items.find(x=>x.id===c.id)?.cust||"已刪除客戶"):"偏好設定";
-    const h=document.createElement("h3");h.textContent=name+" · "+(labels[c.field]||c.field.replace("setting:",""));box.append(h);
-    for(const choice of c.choices.filter((v,i,a)=>a.findIndex(w=>DataCore.equal(w.value,v.value))===i)){
+    const h=document.createElement("h3");h.textContent=name+" · "+(c.scope==="pref"?CustomerConflictDisplay.label(c.field):(labels[c.field]||c.field));box.append(h);
+    for(const choice of c.choices.filter((v,i,a)=>a.findIndex(w=>c.scope==="pref"?DataCore.preferenceEqual(c.field,w.value,v.value):DataCore.equal(w.value,v.value))===i)){
       const pre=document.createElement("pre");
-      pre.textContent=c.field==="$alive"?(choice.value?"保留客戶":"刪除客戶"):typeof choice.value==="string"?choice.value:JSON.stringify(choice.value,null,2);
-      const b=document.createElement("button");b.className="s-btn";b.textContent="採用此內容";
-      b.onclick=async()=>{b.disabled=true;try{await CustomerRecovery.put("選擇不同版本前",backupData());paintDataState(DataCore.resolve(dataState,c,choice.value,editActor));onLocalChange("data");showDataConflicts();}catch(e){toast("未變更："+e.message);b.disabled=false;}};
+      pre.textContent=c.scope==="pref"?CustomerConflictDisplay.format(c.field,choice.value):c.field==="$alive"?(choice.value?"保留客戶":"刪除客戶"):typeof choice.value==="string"?choice.value:JSON.stringify(choice.value,null,2);
+      const b=document.createElement("button");b.className="s-btn";b.textContent=c.scope==="pref"?"採用此設定":"採用此內容";
+      b.onclick=async()=>{b.disabled=true;try{
+        if(!storeCurrentState())throw new Error("本機修改尚未安全保存，請先匯出備份");
+        const current=c.scope==="record"?dataState.records[c.id]?.[c.field]:dataState.prefs[c.field];
+        if(!current||!DataCore.equal(current.choices,c.choices))throw new Error("內容剛有更新，請關閉後重新檢視");
+        const before=DataCore.clone(dataState);
+        await CustomerRecovery.put("選擇不同版本前",backupData());
+        if(!storeCurrentState()||!DataCore.equal(before,dataState))throw new Error("內容剛有更新或尚未儲存，請重新檢視");
+        paintDataState(DataCore.resolve(dataState,c,choice.value,editActor));onLocalChange("data");showDataConflicts();
+      }catch(e){toast("未變更："+e.message);b.disabled=false;}};
       box.append(pre,b);
     }
     body.append(box);
@@ -8000,7 +8146,7 @@ let syncConnected = false, syncEmail = null;
       const pulled=await drive.pull(repair?repair.files.map(f=>f.id):[]);guard();
       if(!storeCurrentState())throw new Error("本機儲存失敗");
       let merged=pulled.state?DataCore.merge(dataState,pulled.state):DataCore.clone(dataState);
-      if(DataCore.epochCmp(merged.epoch,dataState.epoch)>0||DataCore.planSeedDeletionRepair(merged,originalSeedRows).length){
+      if(DataCore.epochCmp(merged.epoch,dataState.epoch)>0||DataCore.planSeedDeletionRepair(merged,originalSeedRows).length||DataCore.planLegacyPreferenceRepair(merged,defaultPreferenceView()).length){
         // Do not discard edits made while a replacement is arriving.
         if(window.isTableBusy()||detailBg.classList.contains("open")){window._pendingMerge=merged;return {ok:false,reason:"editing"};}
         if(!await acceptMergedState(merged)){scheduleSyncRetry();return {ok:false,reason:"local_change"};}
