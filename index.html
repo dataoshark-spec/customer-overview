@@ -1720,11 +1720,348 @@
   <div class="lp-hint">貼上後按 Enter 或「完成」即儲存</div>
 </div>
 
-<script src="data-core.js"></script>
-<script src="sync-drive.js"></script>
-<script src="recovery-store.js"></script>
+<script id="customer-data-core">
+/* 客戶總覽資料核心 v6。純函式；瀏覽器與離線測試共用。 */
+(function(root, factory) {
+  const api = factory();
+  if (typeof module === "object" && module.exports) module.exports = api;
+  else root.CustomerDataCore = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function() {
+  "use strict";
+  const clone = x => JSON.parse(JSON.stringify(x));
+  const object = x => !!x && typeof x === "object" && !Array.isArray(x);
+  const own = (x,k) => Object.prototype.hasOwnProperty.call(x,k);
+  const badKeys = new Set(["__proto__","prototype","constructor"]);
+  const idOK = x => typeof x === "string" && /^[A-Za-z0-9_-]{1,160}$/.test(x) && !badKeys.has(x);
+  function fail(message) { throw new Error(message || "資料格式不正確"); }
+  function safeTree(x, depth=0) {
+    if (depth > 24) fail("資料層級過深");
+    if (typeof x === "number" && !Number.isFinite(x)) fail();
+    if (x && typeof x === "object") for (const k of Object.keys(x)) {
+      if (badKeys.has(k)) fail("資料含有不允許的欄位");
+      safeTree(x[k], depth+1);
+    }
+  }
+  function stable(x) {
+    if (Array.isArray(x)) return "[" + x.map(stable).join(",") + "]";
+    if (object(x)) return "{" + Object.keys(x).sort().map(k => JSON.stringify(k)+":"+stable(x[k])).join(",") + "}";
+    return JSON.stringify(x);
+  }
+  const equal = (a,b) => stable(a) === stable(b);
+  function hash(s) { let a=2166136261,b=5381; for(let i=0;i<s.length;i++){a=Math.imul(a^s.charCodeAt(i),16777619); b=Math.imul(b,33)^s.charCodeAt(i);} return (a>>>0).toString(36)+(b>>>0).toString(36); }
+  const textFields = new Set(["cust","date","budget","parking","tel","line","ask","need","need2","need3","t1","t2","t3","url591","urlLeju","urlI"]);
+  const multiFields = new Set(["cat","area","status","rooms","pType","pNum"]);
+  function str(x,max=300000){ if(typeof x!=="string" || x.length>max) fail("文字欄位格式不正確"); }
+  function strings(x){ if(!Array.isArray(x)||x.length>500) fail("選項必須是文字清單"); x.forEach(v=>str(v,2000)); }
+  function record(r, allowMissingId=false) {
+    if(!object(r)) fail("客戶資料必須是物件");
+    if(r.id == null && allowMissingId) {} else if(!idOK(r.id)) fail("客戶識別碼不正確");
+    for(const k of Object.keys(r)){
+      const v=r[k];
+      if(textFields.has(k)) str(v);
+      else if(multiFields.has(k)){ if(Array.isArray(v)) strings(v); else if(k==="pNum" && typeof v==="number" && Number.isFinite(v)) {} else str(v,2000); }
+      else if(["updatedAt","createdAt","bMin","bMax"].includes(k)){ if(v!==null && (typeof v!=="number"||!Number.isFinite(v)||v<0)) fail("數值欄位不正確"); }
+      else if(k==="needFontSizes"){ if(!object(v)) fail("字級格式不正確"); for(const f of Object.keys(v)) if(!["need","need2","need3"].includes(f)||typeof v[f]!=="number"||v[f]<70||v[f]>180) fail("字級須介於 70% 與 180%"); }
+      else if(k!=="id") fail("不支援的客戶欄位：" + k);
+    }
+  }
+  function categories(cs) {
+    if(!Array.isArray(cs)||cs.length>200) fail("類別格式不正確");
+    const keys=new Set();
+    cs.forEach(c=>{if(!object(c)) fail("類別格式不正確"); str(c.key,100); str(c.label,100); if(!c.key||keys.has(c.key)) fail("類別名稱重複或空白"); keys.add(c.key); if(typeof c.color!=="string"||!/^#[0-9a-f]{6}$/i.test(c.color)) fail("類別顏色不正確");});
+  }
+  function arrayMap(x){ if(!object(x)) fail("選項設定格式不正確"); Object.values(x).forEach(strings); }
+  function settings(s) {
+    if(!object(s)) fail("設定格式不正確");
+    for(const [k,v] of Object.entries(s)) {
+      if(k==="density"&&!["compact","normal"].includes(v)) fail("密度設定不正確");
+      if(k==="theme"&&!["light","dark"].includes(v)) fail("主題設定不正確");
+      if(k==="sort") str(v,100);
+      if(k==="expfocus"&&typeof v!=="boolean") fail();
+      if(k==="colw"){if(!object(v))fail();Object.values(v).forEach(n=>{if(typeof n!=="number"||!Number.isFinite(n)||n<20||n>4000)fail("欄寬設定不正確");});}
+      if(["fltorder","optorder"].includes(k)) arrayMap(v);
+      if(k==="colFilter"){if(!object(v))fail();Object.values(v).forEach(x=>{if(x!==null)strings(x);});}
+      if(k==="opts"){if(!object(v))fail(); for(const [f,values] of Object.entries(v)){if(f==="hidden")arrayMap(values);else strings(values);}}
+      if(k==="fltB"){if(!object(v))fail(); for(const f of ["lo","hi"])if(v[f]!=null&&(typeof v[f]!=="number"||!Number.isFinite(v[f])||v[f]<0))fail("預算篩選不正確");}
+    }
+  }
+  function normalizeBackup(input, makeId) {
+    safeTree(input);
+    const p=Array.isArray(input)?{items:input}:input;
+    if(!object(p)||!Array.isArray(p.items)) fail("備份缺少客戶清單");
+    if(own(p,"app")&&p.app!=="customer") fail("wrong_app");
+    if(p.items.length>5000) fail("too_many");
+    if(!own(p,"app")&&p.items.length && !p.items.every(r=>object(r)&&own(r,"cust"))) fail("wrong_app");
+    const out={app:"customer",version:6,items:clone(p.items),deleted:{}}, ids=new Set();
+    out.items.forEach((r,i)=>{ record(r,true); if(r.id==null) r.id=makeId?makeId():("import-"+i+"-"+hash(stable(r))); if(ids.has(r.id))fail("客戶識別碼重複"); ids.add(r.id); });
+    if(own(p,"cats")){categories(p.cats);out.cats=clone(p.cats);}
+    if(own(p,"deleted")){if(!object(p.deleted))fail("刪除記錄不正確");for(const [id,t] of Object.entries(p.deleted)){if(!idOK(id)||typeof t!=="number"||!Number.isFinite(t)||t<0)fail("刪除記錄不正確");out.deleted[id]=t;}}
+    const s=p.settings || Object.fromEntries(["colw","theme","opts"].filter(k=>own(p,k)).map(k=>[k,p[k]]));
+    settings(s);out.settings=clone(s);
+    
+if(p.syncState){
+  validateState(p.syncState);
+  const projected=project(p.syncState), sortRows=xs=>xs.map(r=>({id:r.id,...flat(r)})).sort((a,b)=>a.id.localeCompare(b.id));
+  if(!equal(sortRows(out.items),sortRows(projected.items)) || (out.cats&&!equal(out.cats,projected.cats)) || Object.entries(out.settings).some(([k,v])=>!equal(v,projected.settings[k])))fail("備份內容與同步記錄不一致");
+  out.syncState=clone(p.syncState);
+}
+    return out;
+  }
+  function empty(epoch) {return {version:6,app:"customer-state",epoch:clone(epoch||{generation:0,id:"initial"}),records:{},prefs:{}};}
+  function cell(value,actor,at=0) {return {clock:{[actor]:1},choices:[{actor,n:1,at,value:clone(value)}]};}
+  function chosen(c){if(!c||!c.choices.length)return undefined;return [...c.choices].sort((a,b)=>a.at-b.at||(a.actor<b.actor?-1:a.actor>b.actor?1:0)||a.n-b.n).pop().value;}
+  function mergeCell(a,b) {
+    if(!a)return clone(b);if(!b)return clone(a);
+    const clock={...a.clock}; for(const [k,v] of Object.entries(b.clock)) clock[k]=Math.max(clock[k]||0,v);
+    const choices=new Map();
+    const keep=(c,other)=>c.choices.forEach(v=>{if(other.choices.some(w=>w.actor===v.actor&&w.n===v.n)||(other.clock[v.actor]||0)<v.n){const key=v.actor+":"+v.n,old=choices.get(key);if(!old||v.at>old.at||(v.at===old.at&&stable(v)>stable(old)))choices.set(key,v);}});
+    keep(a,b);keep(b,a);
+    return {clock,choices:[...choices.values()].sort((a,b)=>a.actor<b.actor?-1:a.actor>b.actor?1:a.n-b.n).map(clone)};
+  }
+  function write(c,value,actor,at) {const clock={...(c?c.clock:{})}; const n=(clock[actor]||0)+1;clock[actor]=n; return {clock,choices:[{actor,n,at,value:clone(value)}]};}
+  function flat(r) {
+    const o={}; for(const [k,v] of Object.entries(r))if(!["id","updatedAt","needFontSizes"].includes(k))o[k]=v;
+    for(const f of ["need","need2","need3"])o["font:"+f]=r.needFontSizes?.[f]??100;
+    return o;
+  }
+  function baseline(value,key,at) {return cell(value,"legacy-"+hash(key+":"+stable(value)),at||0);}
+  function fromView(v) {
+    const s=empty();
+    for(const r of v.items||[]){const fs={"$alive":baseline(true,r.id+":alive",0)};for(const [k,val] of Object.entries(flat(r)))fs[k]=baseline(val,r.id+":"+k,r.updatedAt); s.records[r.id]=fs;}
+    for(const [id,t] of Object.entries(v.deleted||{})){const r=(v.items||[]).find(r=>r.id===id); if(!r||t>=(r.updatedAt||0)){s.records[id]||={};s.records[id]["$alive"]=baseline(false,id+":deleted",t);}}
+    if(v.cats)s.prefs.cats=baseline(v.cats,"cats",v.catsAt);
+    for(const [k,val] of Object.entries(v.settings||{}))if(k!=="_updatedAt")s.prefs["setting:"+k]=baseline(val,"setting:"+k,v.settingsAt);
+    return s;
+  }
+  function fromLegacy(p){if(!p||!p.data||!Array.isArray(p.data.properties))fail("舊版雲端資料格式不正確");const b=normalizeBackup({app:"customer",items:p.data.properties,cats:p.cats?.list||[],settings:p.settings||{},deleted:p.deleted||{}});return fromView({...b,catsAt:p.cats?._updatedAt,settingsAt:p.settings?._updatedAt});}
+  function epochCmp(a,b){return a.generation-b.generation || a.id.localeCompare(b.id,"en",{numeric:true});}
+  function merge(a,b) {
+    if(!a)return clone(b);if(!b)return clone(a);
+    const cmp=epochCmp(a.epoch,b.epoch);if(cmp)return clone(cmp>0?a:b);
+    const out=empty(a.epoch);
+    for(const id of new Set([...Object.keys(a.records),...Object.keys(b.records)])){
+      const x=a.records[id]||{},y=b.records[id]||{},r={};
+      for(const k of new Set([...Object.keys(x),...Object.keys(y)]))r[k]=mergeCell(x[k],y[k]);
+      out.records[id]=r;
+    }
+    for(const k of new Set([...Object.keys(a.prefs),...Object.keys(b.prefs)]))out.prefs[k]=mergeCell(a.prefs[k],b.prefs[k]);
+    return out;
+  }
+  function project(s) {
+    const v={items:[],deleted:{},cats:chosen(s.prefs.cats)||[],settings:{}};
+    for(const [id,fs] of Object.entries(s.records)){
+      const life=fs["$alive"];
+      // Concurrent delete/edit stays visible until the user resolves it.
+      if(!life?.choices.some(c=>c.value===true)){v.deleted[id]=Math.max(0,...(life?.choices||[]).map(c=>c.at));continue;}
+      const r={id,needFontSizes:{},updatedAt:0};
+      for(const [k,c] of Object.entries(fs)){r.updatedAt=Math.max(r.updatedAt,...c.choices.map(x=>x.at));if(k==="$alive")continue;const val=chosen(c);if(val===null&&!["bMin","bMax"].includes(k))continue;if(k.startsWith("font:"))r.needFontSizes[k.slice(5)]=val;else r[k]=val;}
+      v.items.push(r);
+    }
+    v.items.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)||(a.id<b.id?-1:a.id>b.id?1:0));
+    for(const [k,c] of Object.entries(s.prefs))if(k.startsWith("setting:"))v.settings[k.slice(8)]=chosen(c);
+    return v;
+  }
+  function capture(state,view,actor,at=Date.now()) {
+    const s=clone(state), prev=project(state), old=new Map(prev.items.map(r=>[r.id,r])), now=new Map(view.items.map(r=>[r.id,r]));
+    for(const r of view.items){
+      const before=old.has(r.id)?flat(old.get(r.id)):{},after=flat(r);let changed=false; s.records[r.id]||={};
+      for(const k of new Set([...Object.keys(before),...Object.keys(after)]))if(!equal(before[k],after[k])){s.records[r.id][k]=write(s.records[r.id][k],after[k]??null,actor,at);changed=true;}
+      if(changed||!old.has(r.id))s.records[r.id]["$alive"]=write(s.records[r.id]["$alive"],true,actor,at);
+    }
+    for(const id of old.keys())if(!now.has(id))s.records[id]["$alive"]=write(s.records[id]["$alive"],false,actor,at);
+    const prefs={cats:view.cats,...Object.fromEntries(Object.entries(view.settings||{}).map(([k,v])=>["setting:"+k,v]))};
+    for(const [k,v] of Object.entries(prefs))if(v!==undefined&&!equal(chosen(s.prefs[k]),v))s.prefs[k]=write(s.prefs[k],v,actor,at);
+    return s;
+  }
+  function conflicts(s){
+    const out=[];
+    const scan=(scope,id,k,c)=>{const vs=new Set(c.choices.map(x=>stable(x.value)));if(vs.size>1)out.push({scope,id,field:k,choices:clone(c.choices)});};
+    for(const [id,fs] of Object.entries(s.records))for(const [k,c] of Object.entries(fs))scan("record",id,k,c);
+    for(const [k,c] of Object.entries(s.prefs))scan("pref","",k,c);
+    return out;
+  }
+  function resolve(s,c,value,actor){const out=clone(s),fs=c.scope==="record"?out.records[c.id]:out.prefs;fs[c.field]=write(fs[c.field],value,actor,Date.now());return out;}
+  function restore(current,view,uuid){const s=fromView(view);s.epoch={generation:current.epoch.generation+1,id:uuid};return s;}
+  function importMerge(current,view,uuid) {
+    const base=fromView({items:view.items,cats:undefined,settings:{},deleted:{}});
+    // Imports are concurrent proposals, so existing same-field values remain recoverable.
+    for(const [id,fs] of Object.entries(base.records))for(const [k,c] of Object.entries(fs))fs[k]=cell(chosen(c),"import-"+uuid,Date.now());
+    base.epoch=clone(current.epoch);
+    const out=merge(current,base);
+    const existing=project(out).cats,keys=new Set(existing.map(c=>c.key));
+    const extra=(view.cats||[]).filter(c=>!keys.has(c.key));
+    if(extra.length)out.prefs.cats=write(out.prefs.cats,existing.concat(extra),"import-"+uuid,Date.now());
+    return out;
+  }
+  function validateCell(c){
+    if(!object(c)||!object(c.clock)||!Array.isArray(c.choices)||!c.choices.length)fail("同步欄位格式不正確");
+    for(const [a,n] of Object.entries(c.clock))if(!idOK(a)||!Number.isSafeInteger(n)||n<1)fail("同步版本格式不正確");
+    const seen=new Set();
+    for(const v of c.choices){if(!object(v)||!idOK(v.actor)||!Number.isSafeInteger(v.n)||v.n<1||c.clock[v.actor]!==v.n||typeof v.at!=="number"||!Number.isFinite(v.at)||!own(v,"value")||seen.has(v.actor))fail("同步內容格式不正確");seen.add(v.actor);}
+  }
+  function validateState(s) {
+    safeTree(s);
+    if(!object(s)||s.app!=="customer-state"||s.version!==6||!object(s.records)||!object(s.prefs)||!object(s.epoch)||!Number.isSafeInteger(s.epoch.generation)||s.epoch.generation<0||!idOK(s.epoch.id))fail("同步檔案格式不正確");
+    if(Object.keys(s.records).length>50000)fail("同步資料超過上限");
+    for(const [id,fs] of Object.entries(s.records)){if(!idOK(id)||!object(fs)||!fs["$alive"])fail("同步客戶識別碼不正確");for(const [k,c] of Object.entries(fs)){validateCell(c);for(const v of c.choices){if(k==="$alive"){if(typeof v.value!=="boolean")fail();}else if(v.value!==null){const r={id};if(k.startsWith("font:"))r.needFontSizes={[k.slice(5)]:v.value};else r[k]=v.value;record(r);}}}}
+    for(const [k,c] of Object.entries(s.prefs)){validateCell(c);for(const v of c.choices){if(k==="cats")categories(v.value);else if(k.startsWith("setting:"))settings({[k.slice(8)]:v.value});else fail("同步設定格式不正確");}}
+    return s;
+  }
+  const newId=()=>globalThis.crypto?.randomUUID?.() || ("id-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
+  return {newId,clone,stable,equal,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,conflicts,resolve,restore,importMerge,validateState,epochCmp};
+});
+
+</script>
+<script id="customer-sync-drive">
+/* Google Drive transport. Checkpoints are immutable; a failed read never authorizes a write. */
+(function(root,factory){const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;else root.CustomerDrive=api;})(typeof globalThis!=="undefined"?globalThis:this,function(){
+"use strict";
+const API="https://www.googleapis.com/drive/v3/files";
+const UPLOAD="https://www.googleapis.com/upload/drive/v3/files";
+const PREFIX="customer-state-v6-";
+function create(fetcher,core,uuid){
+  const memo=new Map();
+  async function checked(url,opts){const r=await fetcher(url,opts);if(!r.ok){const e=new Error("Google 雲端讀寫失敗（"+r.status+"）");e.status=r.status;throw e;}return r;}
+  async function list(q){
+    const all=[];let token="";const seen=new Set();
+    do{
+      const params=new URLSearchParams({q:q+" and trashed=false",spaces:"appDataFolder",fields:"nextPageToken,files(id,name,createdTime,size)",pageSize:"1000"});
+      if(token)params.set("pageToken",token);
+      const data=await(await checked(API+"?"+params)).json();
+      if(!Array.isArray(data.files))throw new Error("Google 雲端清單不完整");
+      for(const f of data.files){if(!f.id||!f.name)throw new Error("Google 雲端清單格式不正確");all.push(f);}
+      token=data.nextPageToken||"";if(token&&seen.has(token))throw new Error("Google 雲端分頁重複");seen.add(token);
+    }while(token);
+    return all;
+  }
+  async function read(id){
+    const r=await checked(API+"/"+encodeURIComponent(id)+"?alt=media");
+    const raw=await r.text();
+    if(!raw.trim())throw Object.assign(new Error("雲端檔案沒有內容"),{code:"invalid_content"});
+    try{return JSON.parse(raw);}catch(e){throw Object.assign(new Error("雲端檔案內容損壞"),{code:"invalid_content"});}
+  }
+  async function put(name,obj){
+    const body=JSON.stringify(obj);
+    if(new Blob([body]).size>20*1024*1024)throw new Error("同步資料超過 20 MB，請先匯出備份並聯絡支援");
+    const boundary="customer_"+uuid();
+    const payload="--"+boundary+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"+JSON.stringify({name,parents:["appDataFolder"],mimeType:"application/json"})+"\r\n--"+boundary+"\r\nContent-Type: application/json\r\n\r\n"+body+"\r\n--"+boundary+"--";
+    const data=await(await checked(UPLOAD+"?uploadType=multipart&fields=id,name",{
+      method:"POST",headers:{"Content-Type":"multipart/related; boundary="+boundary},body:payload
+    })).json();
+    if(!data.id)throw new Error("Google 雲端未回傳檔案識別碼");
+    const verified=await read(data.id);
+    if(!core.equal(verified,obj))throw new Error("雲端回讀驗證失敗");
+    return {id:data.id,name};
+  }
+  async function pull(ignoreIds=[]){
+    for(let attempt=0;attempt<3;attempt++){
+      try{
+        const files=(await list("name contains '"+PREFIX+"'")).filter(f=>f.name.startsWith(PREFIX)&&f.name.endsWith(".json")&&!ignoreIds.includes(f.id));
+        let state=null;const loaded=[];
+        for(const f of files){
+          const s=memo.get(f.id)||core.validateState(await read(f.id));
+          memo.set(f.id,s);state=state?core.merge(state,s):core.clone(s);loaded.push({file:f,state:s});
+        }
+        if(!files.length){
+          for(const f of (await list("name='customer-sync-main.json'")).filter(f=>!ignoreIds.includes(f.id))){
+            const legacy=core.fromLegacy(await read(f.id));
+            state=state?core.merge(state,legacy):legacy;
+          }
+        }
+        return {state,loaded};
+      }catch(e){if(e.status===404&&attempt<2)continue;throw e;}
+    }
+  }
+
+  async function prepareRestore(){
+    const files=(await list("name contains '"+PREFIX+"'")).filter(f=>f.name.startsWith(PREFIX)&&f.name.endsWith(".json"));
+    const candidates=files.length?files:await list("name='customer-sync-main.json'");
+    let state=null;const damaged=[];
+    for(const f of candidates){
+      // Network failures stop preparation. Only successfully read, invalid contents may be quarantined.
+      const res=await checked(API+"/"+encodeURIComponent(f.id)+"?alt=media"),raw=await res.text();
+      try{
+        const obj=JSON.parse(raw),s=files.length?core.validateState(obj):core.fromLegacy(obj);
+        state=state?core.merge(state,s):s;
+      }catch(e){damaged.push({id:f.id,name:f.name,raw});}
+    }
+    return {state,damaged};
+  }
+  async function removeDamaged(ids){
+    for(const id of ids){try{await checked(API+"/"+encodeURIComponent(id),{method:"DELETE"});}catch(e){if(e.status!==404)throw e;}}
+  }
+  async function publish(state){
+    core.validateState(state);
+    const f=await put(PREFIX+uuid()+".json",state);memo.set(f.id,core.clone(state));return f;
+  }
+  async function compact(loaded,published,state){
+    // Delete only checkpoints already read and fully included in the verified new checkpoint.
+    // Never touch legacy files, snapshots, unknown apps, or a concurrent writer's new files.
+    for(const {file,state:old} of loaded){
+      if(file.id===published.id||core.epochCmp(old.epoch,state.epoch)!==0||!core.equal(core.merge(old,state),state))continue;
+      try{await checked(API+"/"+encodeURIComponent(file.id),{method:"DELETE"});memo.delete(file.id);}catch(e){/* Extra immutable copies are safe; retry on a later successful publication. */}
+    }
+  }
+  async function snapshots(){
+    const a=await list("name contains 'customer-sync-backup-'");
+    return a.filter(f=>/^customer-sync-backup-\d{4}-\d{2}-\d{2}(?:-[A-Za-z0-9_-]+)?\.json$/.test(f.name)).sort((a,b)=>b.name.localeCompare(a.name));
+  }
+  function snapshotView(p){
+    if(p?.app==="customer-state")return {...core.project(core.validateState(p)),app:"customer",version:6,syncState:p};
+    if(p?.data?.properties)return {...core.project(core.fromLegacy(p)),app:"customer",version:6};
+    return core.normalizeBackup(p);
+  }
+  let checkedDay="";
+  async function daily(state,day){
+    if(checkedDay===day)return;
+    const files=await snapshots();
+    for(const f of files.filter(f=>f.name.startsWith("customer-sync-backup-"+day))){
+      let p;
+      try{p=await read(f.id);}catch(e){if(e.status!==404&&e.code!=="invalid_content")throw e;continue;}
+      try{snapshotView(p);checkedDay=day;return;}catch(e){/* Incomplete or corrupt old snapshots do not count as a completed backup. */}
+    }
+    const view={...core.project(state),app:"customer",version:6,exportedAt:new Date().toISOString(),syncState:state};
+    await put("customer-sync-backup-"+day+"-"+uuid()+".json",view);
+    checkedDay=day;
+    // Retention only after a new snapshot was uploaded and verified.
+    const cutoff=new Date(day+"T12:00:00");cutoff.setDate(cutoff.getDate()-30);
+    const stamp=cutoff.getFullYear()+"-"+String(cutoff.getMonth()+1).padStart(2,"0")+"-"+String(cutoff.getDate()).padStart(2,"0");
+    for(const f of files)if(f.name.slice(21,31)<stamp){try{await checked(API+"/"+encodeURIComponent(f.id),{method:"DELETE"});}catch(e){}}
+  }
+  return {list,read,put,pull,publish,compact,snapshots,snapshotView,daily,prepareRestore,removeDamaged};
+}
+return {create};
+});
+
+</script>
+<script id="customer-recovery-store">
+/* 本機安全副本：交易完成後才允許還原取代現有資料。 */
+(function(){
+  let dbPromise;
+  function db(){
+    if(!dbPromise) dbPromise=new Promise((resolve,reject)=>{
+      const r=indexedDB.open("customer_recovery_v1",1);
+      r.onupgradeneeded=()=>r.result.createObjectStore("copies",{keyPath:"id"});
+      r.onsuccess=()=>resolve(r.result);r.onerror=()=>{dbPromise=null;reject(r.error);};
+      r.onblocked=()=>{dbPromise=null;reject(new Error("備份空間被另一個視窗占用"));};
+    });
+    return dbPromise;
+  }
+  async function put(label,data){
+    const d=await db(),row={id:Date.now()+"-"+CustomerDataCore.newId(),at:Date.now(),label,data};
+    await new Promise((resolve,reject)=>{const tx=d.transaction("copies","readwrite");tx.objectStore("copies").put(row);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error("安全備份未完成"));});
+    return row;
+  }
+  async function list(){
+    const d=await db();
+    return new Promise((resolve,reject)=>{const tx=d.transaction("copies","readonly"),r=tx.objectStore("copies").getAll();r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.at-a.at));r.onerror=()=>reject(r.error);});
+  }
+  window.CustomerRecovery={put,list};
+})();
+
+</script>
 <script>
-const APP_VERSION = "2026.09.05C";
+const APP_VERSION = "2026.09.05D";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},

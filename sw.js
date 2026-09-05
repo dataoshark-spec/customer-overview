@@ -1,8 +1,8 @@
 /* 客戶總覽：只維護自己作用範圍內的成功快取。 */
 const SCOPE=self.registration.scope;
 const PREFIX="customer-shell:"+SCOPE+":";
-const CACHE=PREFIX+"20260905C";
-const SHELL=["./","./index.html","./data-core.js","./sync-drive.js","./recovery-store.js","./icon-192.png","./icon-180.png","./icon-512.png"];
+const CACHE=PREFIX+"20260905D";
+const SHELL=["./","./index.html","./icon-192.png","./icon-180.png","./icon-512.png"];
 const ASSETS=new Set(SHELL.map(x=>new URL(x,SCOPE).href));
 self.addEventListener("install",e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(x=>new Request(new URL(x,SCOPE).href,{cache:"reload"})))).then(()=>self.skipWaiting()));
