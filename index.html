@@ -1506,7 +1506,7 @@
       </div>
 
       <div class="set-card">
-        <div class="set-card-title">資料與備份</div><p class="set-card-desc">2026.09.05B 起使用新版同步。使用相同帳號的每台裝置皆須更新至 B 版或更新版本。</p>
+        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝不再加入範例客戶。請將同一帳號使用的裝置更新至 2026.09.05E 或更新版本。</p>
         <p class="set-card-desc">變更會自動儲存在此瀏覽器。建議定期備份，或匯入先前的備份檔。</p>
         <div class="set-actions">
           <button class="s-btn" id="historyBtn">依日期還原備份</button>
@@ -1515,7 +1515,7 @@
           <button class="s-btn" id="importBtn">匯入備份檔</button>
           <button class="s-btn" id="cloudBtn">備份到 Google 雲端</button>
           <button class="s-btn" id="cloudImportBtn">從 Google 雲端匯入</button>
-          <button class="s-btn s-btn-danger" id="resetBtn">還原預設資料</button>
+          <button class="s-btn s-btn-danger" id="resetBtn">載入範例客戶</button>
         </div>
         <input type="file" id="importFile" accept="application/json,.json" hidden>
       </div>
@@ -1881,6 +1881,25 @@ if(p.syncState){
     return out;
   }
   function resolve(s,c,value,actor){const out=clone(s),fs=c.scope==="record"?out.records[c.id]:out.prefs;fs[c.field]=write(fs[c.field],value,actor,Date.now());return out;}
+  // Only undo unedited, automatically injected legacy samples with observed deletion.
+  // Exact baseline cells (including timestamps/clocks) exclude edits, imports and explicit restores.
+  function planSeedDeletionRepair(state, seeds) {
+    if(state.epoch.generation!==0 || state.epoch.id!=="initial")return [];
+    const originals=fromView({items:seeds}).records, plan=[];
+    for(const [id,expected] of Object.entries(originals)){
+      if(!/^seed\d+$/.test(id))continue;
+      const fields=state.records[id],life=fields?.["$alive"];
+      if(!life || !equal(Object.keys(fields).sort(),Object.keys(expected).sort()))continue;
+      if(Object.keys(expected).some(k=>k!=="$alive"&&!equal(fields[k],expected[k])))continue;
+      const originalTrue=expected["$alive"].choices[0];
+      const keeps=life.choices.filter(c=>c.value===true),deletes=life.choices.filter(c=>c.value===false);
+      if(keeps.length!==1 || !equal(keeps[0],originalTrue) || !deletes.length)continue;
+      // Extra historical keep clocks are ambiguous; leave these for the user's choice.
+      if(Object.entries(life.clock).some(([actor,n])=>!life.choices.some(c=>c.actor===actor&&c.n===n)))continue;
+      plan.push({scope:"record",id,field:"$alive"});
+    }
+    return plan;
+  }
   function restore(current,view,uuid){const s=fromView(view);s.epoch={generation:current.epoch.generation+1,id:uuid};return s;}
   function importMerge(current,view,uuid) {
     const base=fromView({items:view.items,cats:undefined,settings:{},deleted:{}});
@@ -1908,7 +1927,7 @@ if(p.syncState){
     return s;
   }
   const newId=()=>globalThis.crypto?.randomUUID?.() || ("id-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
-  return {newId,clone,stable,equal,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,conflicts,resolve,restore,importMerge,validateState,epochCmp};
+  return {newId,clone,stable,equal,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,conflicts,resolve,planSeedDeletionRepair,restore,importMerge,validateState,epochCmp};
 });
 
 </script>
@@ -2061,7 +2080,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.09.05D";
+const APP_VERSION = "2026.09.05E";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2203,7 +2222,7 @@ const STORE_KEY = "customer_app_data_v4";
 const DELETED_KEY = "customer_app_deleted_v1";
 const DEVICE_KEY = "customer_app_deviceid_v1";
 const BASE_TS = 1700000000000; // 舊/示範資料的預設時間戳(2023);任何實際新增或編輯都會比它新
-const SEED_VERSION = "seed30-20260713"; // 內建資料批次識別;日後更換內建資料時改此字串,App 會一次性自動重新載入該批
+// 範例僅供使用者明確還原預設資料及辨識舊版誤注入；新安裝保持空白。
 const storageOK = (() => {
   try { localStorage.setItem("__probe","1"); localStorage.removeItem("__probe"); return true; }
   catch (e) { return false; }
@@ -2240,9 +2259,8 @@ function loadItems(){
     try{return CustomerDataCore.normalizeBackup({app:"customer",items:JSON.parse(raw)},uid).items;}
     catch(e){markCorruptStore(STORE_KEY,raw);return [];}
   }
-  const seeded=SEED.map((d,i)=>({...d,id:"seed"+i,updatedAt:BASE_TS}));
-  try{localStorage.setItem(STORE_KEY,JSON.stringify(seeded));localStorage.setItem("customer_app_seedver",SEED_VERSION);}catch(e){window._saveError=true;}
-  return seeded;
+  try{localStorage.setItem(STORE_KEY,"[]");}catch(e){window._saveError=true;}
+  return [];
 }
 
 let _saveFailAt = 0;
@@ -7507,19 +7525,68 @@ function paintDataState(next){
     renderCover();renderTabs();renderCatOptions();applyFilter();updateDataNotice();
   }finally{applyingDataState=false;}
 }
+// Sample repair is a narrow migration; general conflict merging is unchanged.
+const originalSeedRows=SEED.map((d,i)=>({...d,id:"seed"+i,updatedAt:BASE_TS}));
+let seedRepairTimer=null;
+const seedRepairBusy=()=>window.isTableBusy()||detailBg.classList.contains("open");
+function queueMergedState(incoming){
+  window._pendingMerge=window._pendingMerge?DataCore.merge(window._pendingMerge,incoming):incoming;
+}
+function scheduleSeedDeletionRepair(){
+  clearTimeout(seedRepairTimer);
+  seedRepairTimer=setTimeout(()=>runSeedDeletionRepair(),2000);
+}
+async function prepareSeedDeletionRepair(candidate){
+  const plan=DataCore.planSeedDeletionRepair(candidate,originalSeedRows);
+  if(!plan.length)return {state:candidate,count:0,deferred:false};
+  if(seedRepairBusy())return {state:candidate,count:0,deferred:true};
+  const before=DataCore.clone(dataState),stored=localStorage.getItem(DATA_V6_KEY);
+  const copy={version:6,app:"customer",exportedAt:new Date().toISOString(),deviceId,
+    ...DataCore.project(candidate),syncState:DataCore.clone(candidate)};
+  // Await durable IndexedDB commit, including incoming data that is not yet on screen.
+  await CustomerRecovery.put("清理舊版預設客戶衝突前",copy);
+  if(seedRepairBusy() || stored!==localStorage.getItem(DATA_V6_KEY) ||
+     !DataCore.equal(before,dataState) || !DataCore.equal(before,DataCore.capture(dataState,dataView(),editActor)))
+    return {state:candidate,count:0,deferred:true};
+  let next=candidate;
+  for(const conflict of plan)next=DataCore.resolve(next,conflict,false,editActor);
+  return {state:next,count:plan.length,deferred:false};
+}
 async function acceptMergedState(incoming){
   if(window._storageCorrupt)return false;
-  storeCurrentState();
+  if(seedRepairBusy()){queueMergedState(incoming);scheduleSeedDeletionRepair();return false;}
+  if(!storeCurrentState())return false;
   const before=DataCore.clone(dataState),next=DataCore.merge(before,incoming);
-  if(DataCore.equal(before,next))return true;
   if(DataCore.epochCmp(next.epoch,before.epoch)>0){
     await CustomerRecovery.put("雲端完整還原前的本機副本",backupData());
-    storeCurrentState();
-    if(!DataCore.equal(before,dataState)){window._pendingMerge=incoming;return false;}
+    if(!storeCurrentState())return false;
+    if(seedRepairBusy()||!DataCore.equal(before,dataState)){queueMergedState(incoming);scheduleSeedDeletionRepair();return false;}
   }
-  paintDataState(DataCore.merge(dataState,incoming));return true;
+  const prepared=await prepareSeedDeletionRepair(next);
+  if(prepared.deferred||!DataCore.equal(before,dataState)){
+    queueMergedState(incoming);scheduleSeedDeletionRepair();return false;
+  }
+  if(!DataCore.equal(prepared.state,dataState))paintDataState(prepared.state);
+  if(window._pendingMerge&&DataCore.equal(DataCore.merge(dataState,window._pendingMerge),dataState))window._pendingMerge=null;
+  window._seedRepairError=false;
+  updateDataNotice();
+  if(prepared.count){
+    toast("已清理 "+prepared.count+" 筆未修改的預設客戶衝突；修復前備份已保留");
+    window.onLocalChange?.("data");
+  }
+  return true;
 }
-window.__applyMerged = m => acceptMergedState(m).catch(e=>{window._pendingMerge=m;toast("套用同步資料失敗："+e.message);});
+async function runSeedDeletionRepair(){
+  clearTimeout(seedRepairTimer);seedRepairTimer=null;
+  if(window._storageCorrupt)return false;
+  const candidate=window._pendingMerge?DataCore.merge(dataState,window._pendingMerge):dataState;
+  if(!window._pendingMerge&&!DataCore.planSeedDeletionRepair(candidate,originalSeedRows).length)return true;
+  try{return await acceptMergedState(candidate);}
+  catch(e){window._seedRepairError=true;updateDataNotice();toast("預設客戶整理未完成，原資料已保留，可稍後重試");return false;}
+}
+// Wait until all UI and sync handlers have initialized; the callback also works offline.
+setTimeout(()=>runSeedDeletionRepair(),0);
+window.__applyMerged = m => acceptMergedState(m).catch(e=>{queueMergedState(m);toast("套用同步資料失敗："+e.message);});
 window.addEventListener("storage",e=>{
   if(e.key!==DATA_V6_KEY||!e.newValue||window._storageCorrupt)return;
   try{
@@ -7541,13 +7608,15 @@ function dataDialog(title){
 function updateDataNotice(){
   const el=document.getElementById("dataNotice");if(!el)return;
   const n=DataCore.conflicts(dataState).length;
-  el.hidden=!window._storageCorrupt&&!window._saveError&&!n;
+  el.hidden=!window._storageCorrupt&&!window._saveError&&!window._seedRepairError&&!n;
   if(window._storageCorrupt)el.innerHTML='本機資料無法讀取，已停止改寫與同步。<button class="s-btn" data-rescue>匯出原始資料</button><button class="s-btn" data-import>匯入備份還原</button>';
   else if(window._saveError)el.innerHTML='本機儲存失敗，修改尚未安全保存。請先匯出備份。<button class="s-btn" data-rescue>匯出備份</button>';
+  else if(window._seedRepairError)el.innerHTML='預設客戶整理尚未完成，原資料皆已保留。<button class="s-btn" data-seed-retry>重試整理</button><button class="s-btn" data-conflicts>檢視不同版本</button>';
   else el.innerHTML='有 '+n+' 個欄位包含不同版本，兩份內容皆已保留。<button class="s-btn" data-conflicts>檢視並選擇</button>';
   el.querySelector("[data-rescue]")?.addEventListener("click",downloadBackup);
   el.querySelector("[data-import]")?.addEventListener("click",()=>importFile.click());
   el.querySelector("[data-conflicts]")?.addEventListener("click",showDataConflicts);
+  el.querySelector("[data-seed-retry]")?.addEventListener("click",runSeedDeletionRepair);
   const b=document.getElementById("conflictsBtn");if(b)b.textContent="檢查不同版本"+(n?"（"+n+"）":"");
 }
 async function showDataConflicts(){
@@ -7931,10 +8000,10 @@ let syncConnected = false, syncEmail = null;
       const pulled=await drive.pull(repair?repair.files.map(f=>f.id):[]);guard();
       if(!storeCurrentState())throw new Error("本機儲存失敗");
       let merged=pulled.state?DataCore.merge(dataState,pulled.state):DataCore.clone(dataState);
-      if(DataCore.epochCmp(merged.epoch,dataState.epoch)>0){
+      if(DataCore.epochCmp(merged.epoch,dataState.epoch)>0||DataCore.planSeedDeletionRepair(merged,originalSeedRows).length){
         // Do not discard edits made while a replacement is arriving.
         if(window.isTableBusy()||detailBg.classList.contains("open")){window._pendingMerge=merged;return {ok:false,reason:"editing"};}
-        if(!await acceptMergedState(merged))return {ok:false,reason:"local_change"};
+        if(!await acceptMergedState(merged)){scheduleSyncRetry();return {ok:false,reason:"local_change"};}
         guard();merged=DataCore.clone(dataState);
       }
       let published=null;
