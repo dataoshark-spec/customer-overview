@@ -15,12 +15,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
       var h = location.hostname;
-      if (h === "127.0.0.1" || h === "localhost") {
-        navigator.serviceWorker.getRegistrations().then(function (regs) {
-          regs.forEach(function (r) { r.unregister(); });
-        });
-        return;
-      }
+      if (h === "127.0.0.1" || h === "localhost") return;
       navigator.serviceWorker.register("sw.js").catch(function () {});
     });
   }
@@ -750,7 +745,7 @@
   .f-need3 .fneed-t{font-family:inherit;font-size:.82rem;font-weight:700;color:var(--text-faint);background:transparent!important;border:0!important;border-radius:0!important;padding:0 2px 3px!important;outline:none;box-shadow:none!important;width:auto;max-width:100%;letter-spacing:.02em;}
   .f-need3 .fneed-t::placeholder{color:var(--text-faint);opacity:.55;}
   .f-need3 .fneed-t:focus{color:var(--accent-deep);background:transparent!important;border:0!important;box-shadow:none!important;}
-  .fneed-c{font-family:inherit;font-size:.95rem;line-height:1.6;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 12px;outline:none;resize:vertical;min-height:64px;}
+  .fneed-c{font-family:inherit;font-size:calc(.95rem * var(--need-font-scale,1));line-height:1.6;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 12px;outline:none;resize:vertical;min-height:64px;}
   .fneed-c:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(43,92,168,.12);}
   /* 需求內容改用 contenteditable(可放「連結」標籤):文字流與行高比照原本 textarea */
   .fneed-ed{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;cursor:text;}
@@ -1141,7 +1136,14 @@
   .needexp-view{user-select:text;-webkit-user-select:text;cursor:text;}
   .nseg-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
   .nseg{min-width:0;}
-  .nseg-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .nseg-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .nseg-head .nseg-btns{margin-left:auto;}
+  .nseg-hbtn.need-font-btn{color:var(--ink);font-weight:500;min-height:26px;touch-action:manipulation;}
+  .need-font-btn:disabled{opacity:.35;cursor:default;}
+  .fneed-head{margin-bottom:0;}
+  .f-need3 .fneed-head .fneed-t{flex:1;min-width:48px;width:0;}
+  .dtl-need-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  .dtl-need-head .nseg-btns{margin-left:auto;}
   .nseg-t{font-size:.8rem;font-weight:700;color:var(--accent-deep);outline:none;border-radius:6px;padding:2px 5px;margin:-2px -5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .nseg-t[contenteditable="true"]{border-bottom:1px dashed var(--border-2);cursor:text;}
   .nseg-t[contenteditable="false"]{border-bottom:1px solid transparent;}  /* 正常模式保留同樣 1px 高度,切換時標題列不跳 */
@@ -1151,7 +1153,7 @@
   .nseg-hbtn:active{opacity:.55;}
   .nseg-hbtn-ph{visibility:hidden;pointer-events:none;}
   @media (max-width:860px){ .nseg-grid{grid-template-columns:1fr;} }
-  .needexp-ed{width:100%;box-sizing:border-box;font-family:inherit;font-size:.92rem;line-height:1.7;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 14px;outline:none;min-height:104px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;}
+  .needexp-ed{width:100%;box-sizing:border-box;font-family:inherit;font-size:calc(.92rem * var(--need-font-scale,1));line-height:1.7;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 14px;outline:none;min-height:104px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;}
   .needexp-ed:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(43,92,168,.12);}
   .needexp-ed div{min-height:1.25em;}
   .needexp-ed .nh{font-weight:800;font-size:1.06em;color:var(--accent-deep);}
@@ -1387,9 +1389,19 @@
   #rotateGate .rg-s{font-size:.84rem;color:var(--ink-soft,#5C6E76);}
   html.rot-block #rotateGate{display:grid;}
   html.rot-block body{overflow:hidden;}   /* 遮罩期間底層不可捲動 */
+
+.data-notice{position:sticky;top:0;z-index:1500;background:#fff3d6;color:#593b00;padding:10px 16px;font:14px/1.6 sans-serif;box-shadow:0 2px 8px #0002}
+.data-notice[hidden]{display:none}.data-notice .s-btn{margin:4px 6px}
+.data-dialog{width:min(720px,calc(100vw - 24px));max-height:85dvh;border:1px solid var(--line,#cdd4dc);border-radius:18px;padding:0;background:var(--paper,#fff);color:var(--ink,#17252b);box-sizing:border-box}
+.data-dialog::backdrop{background:#142b405c}.data-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--line,#ddd)}
+.data-dialog h2{font-size:20px;margin:0}.data-dialog-body{padding:16px;overflow:auto}.data-choice{border:1px solid var(--line,#ccd);border-radius:10px;padding:12px;margin-bottom:14px}
+.data-choice h3{margin:0 0 10px;font-size:16px}.data-choice pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;padding:10px;background:#8881;max-height:260px;overflow:auto}
+.data-history-row{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line,#ddd)}
+.data-history-row span{overflow-wrap:anywhere;min-width:0}.data-history-row button{flex-shrink:0}.data-import-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
 </style>
 </head>
 <body>
+<div id="dataNotice" class="data-notice" role="status" hidden></div>
 <div id="app">
 
   <!-- ===== View 1: Cover ===== -->
@@ -1478,7 +1490,7 @@
 
       <div class="set-card" id="syncCard">
         <div class="set-card-title">Google 雲端同步</div>
-        <p class="set-card-desc">連結 Google 帳號後，多台裝置的需求資料會自動同步、互不覆蓋。資料只存放在你 Google 雲端硬碟的私密應用程式資料夾（appDataFolder），不會外流，也不占用你雲端硬碟的一般空間。</p>
+        <p class="set-card-desc">連結 Google 帳號後，已儲存的客戶資料可在使用新版的裝置間同步。同欄不同版本會保留供你選擇；請定期匯出備份。</p>
         <div id="syncBoxOff" style="display:none">
           <div class="set-actions"><button class="s-btn s-btn-primary" id="gConnect">連結 Google 帳號</button></div>
         </div>
@@ -1494,9 +1506,11 @@
       </div>
 
       <div class="set-card">
-        <div class="set-card-title">資料與備份</div>
+        <div class="set-card-title">資料與備份</div><p class="set-card-desc">2026.09.05B 起使用新版同步。使用相同帳號的每台裝置皆須更新至 B 版或更新版本。</p>
         <p class="set-card-desc">變更會自動儲存在此瀏覽器。建議定期備份，或匯入先前的備份檔。</p>
         <div class="set-actions">
+          <button class="s-btn" id="historyBtn">依日期還原備份</button>
+          <button class="s-btn" id="conflictsBtn">檢查不同版本</button>
           <button class="s-btn" id="exportBtn">匯出備份檔</button>
           <button class="s-btn" id="importBtn">匯入備份檔</button>
           <button class="s-btn" id="cloudBtn">備份到 Google 雲端</button>
@@ -1578,9 +1592,9 @@
           </label>
         </div>
         <div class="f-need f-need3">
-          <div class="fneed-seg"><input class="fneed-t" id="f_t1" placeholder="標題"><div class="fneed-c fneed-ed" id="f_need" contenteditable="true" spellcheck="false"></div></div>
-          <div class="fneed-seg"><input class="fneed-t" id="f_t2" placeholder="標題"><div class="fneed-c fneed-ed" id="f_need2" contenteditable="true" spellcheck="false"></div></div>
-          <div class="fneed-seg"><input class="fneed-t" id="f_t3" placeholder="標題"><div class="fneed-c fneed-ed" id="f_need3" contenteditable="true" spellcheck="false"></div></div>
+          <div class="fneed-seg" data-need-font-seg="1"><div class="nseg-head fneed-head"><input class="fneed-t" id="f_t1" placeholder="標題"><span class="nseg-btns"></span></div><div class="fneed-c fneed-ed" id="f_need" contenteditable="true" spellcheck="false"></div></div>
+          <div class="fneed-seg" data-need-font-seg="2"><div class="nseg-head fneed-head"><input class="fneed-t" id="f_t2" placeholder="標題"><span class="nseg-btns"></span></div><div class="fneed-c fneed-ed" id="f_need2" contenteditable="true" spellcheck="false"></div></div>
+          <div class="fneed-seg" data-need-font-seg="3"><div class="nseg-head fneed-head"><input class="fneed-t" id="f_t3" placeholder="標題"><span class="nseg-btns"></span></div><div class="fneed-c fneed-ed" id="f_need3" contenteditable="true" spellcheck="false"></div></div>
         </div>
       </div>
       <div class="modal-foot">
@@ -1706,8 +1720,11 @@
   <div class="lp-hint">貼上後按 Enter 或「完成」即儲存</div>
 </div>
 
+<script src="data-core.js"></script>
+<script src="sync-drive.js"></script>
+<script src="recovery-store.js"></script>
 <script>
-const APP_VERSION = "2026.08.28C";
+const APP_VERSION = "2026.09.05C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -1872,45 +1889,31 @@ function loadDeviceId(){
 }
 const deviceId = loadDeviceId();
 
+
+function markCorruptStore(key,raw){window._storageCorrupt=true;(window._corruptRaw ||= {})[key]=raw;}
 function loadItems(){
-  if (storageOK){
-    try {
-      // 一次性:偵測到「新一批內建資料」尚未載入過 → 只在「這台從未建立過存檔」時種入一次(並清掉刪除記錄)。
-      // 【守衛】STORE_KEY 只要存在(即使是空陣列,代表使用者自己刪光了)就一律不重灌。
-      // 舊寫法只看 seedver 字串:日後更換內建資料改了 SEED_VERSION,每台裝置一載入就會無條件覆蓋整份存檔並清空墓碑
-      // → 沒連雲端的裝置真實客戶資料永久遺失;有連雲端的雖可能被拉回,但墓碑被清會讓已刪的示範資料復活並反推上雲。
-      const hasStore = localStorage.getItem(STORE_KEY) !== null;
-      if (localStorage.getItem("customer_app_seedver") !== SEED_VERSION){
-        localStorage.setItem("customer_app_seedver", SEED_VERSION);   // 標記照樣更新:記錄「這台已見過這批」,不必每次載入重判
-        if (!hasStore){
-          const seeded = SEED.map((d,i) => ({...d, id: "seed"+i, updatedAt: BASE_TS}));
-          localStorage.setItem(STORE_KEY, JSON.stringify(seeded));
-          localStorage.setItem(DELETED_KEY, "{}");
-          return seeded;
-        }
-      }
-      const raw = localStorage.getItem(STORE_KEY);
-      if (raw){
-        try {
-          const arr = JSON.parse(raw);
-          if (Array.isArray(arr)) return arr.map(d => ({...d, id: d.id || uid(), updatedAt: d.updatedAt || BASE_TS}));
-        } catch (parseErr) {
-          window._storageCorrupt = true;
-          setTimeout(() => { if (typeof toast === "function") toast("⚠ 本機資料已損壞，未自動覆寫。請先匯出備份或聯絡支援還原。"); }, 0);
-        }
-      }
-    } catch (e) {}
+  if(!storageOK){window._saveError=true;return [];}
+  const stateRaw=localStorage.getItem("customer_app_state_v6");
+  if(stateRaw!==null){
+    try{window._bootState=CustomerDataCore.validateState(JSON.parse(stateRaw));return CustomerDataCore.project(window._bootState).items;}
+    catch(e){markCorruptStore("customer_app_state_v6",stateRaw);return [];}
   }
-  // 【守衛】走到這裡 = 本機儲存不可用(無痕/被封鎖)或存檔壞掉,「不是」全新安裝——全新安裝在上面種子分支就處理完了。
-  // 舊寫法回 30 筆示範資料冒充存檔:畫面看似正常,其實讀不到真資料;此時編輯一下就把示範資料寫回本機,
-  // 連著雲端的話示範客戶還會被推上去。改回空陣列:誠實呈現「這台目前讀不到資料」,
-  // 存檔壞掉時也完全不碰原始內容,留住人工救援的機會;雲端連線後由遠端資料補回畫面。
-  return [];
+  const raw=localStorage.getItem(STORE_KEY);
+  if(raw!==null){
+    try{return CustomerDataCore.normalizeBackup({app:"customer",items:JSON.parse(raw)},uid).items;}
+    catch(e){markCorruptStore(STORE_KEY,raw);return [];}
+  }
+  const seeded=SEED.map((d,i)=>({...d,id:"seed"+i,updatedAt:BASE_TS}));
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(seeded));localStorage.setItem("customer_app_seedver",SEED_VERSION);}catch(e){window._saveError=true;}
+  return seeded;
 }
+
 let _saveFailAt = 0;
 function saveItems(){
-  if (!storageOK) return;
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(items)); }
+  if (window._storageCorrupt) return false;
+  if (window._persistData && !window._persistData()) return false;
+  if (!storageOK) return false;
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(items)); return true; }
   catch (e) {
     // 儲存空間滿(QuotaExceeded 等)寫入失敗:以前默默吞掉,使用者以為存好了,重開全沒了。
     // 現在明確警告(30 秒內不重複跳,連續編輯不洗版)。此刻資料仍在記憶體,雲端同步也照常運作。
@@ -1924,15 +1927,15 @@ function saveItems(){
 let items = loadItems();
 
 // 墓碑：被刪的 id → 刪除時間（雲端同步用，避免某台刪掉的資料被另一台又同步回來）
+
 function loadDeleted(){
-  let obj = {};
-  if (storageOK){ try { obj = JSON.parse(localStorage.getItem(DELETED_KEY) || "{}") || {}; } catch (e) { obj = {}; } }
-  const cutoff = Date.now() - 90*86400000; // 清掉 90 天前的舊墓碑，避免無限增長
-  for (const k in obj){ if (!(obj[k] > cutoff)) delete obj[k]; }
-  return obj;
+  if(window._bootState)return CustomerDataCore.project(window._bootState).deleted;
+  let raw=null;try{raw=localStorage.getItem(DELETED_KEY);const p=CustomerDataCore.normalizeBackup({app:"customer",items:[],deleted:JSON.parse(raw||"{}")});return p.deleted;}
+  catch(e){markCorruptStore(DELETED_KEY,raw);return {};}
 }
+
 function saveDeleted(){
-  if (!storageOK) return;
+  if (window._storageCorrupt || !storageOK) return;
   try { localStorage.setItem(DELETED_KEY, JSON.stringify(deleted)); }
   catch (e) {
     const now = Date.now();
@@ -1955,11 +1958,15 @@ const DEFAULT_CATS = [
 ];
 const CAT_PALETTE = ["#2B5CA8","#2C68A6","#C2790B","#7A4F9E","#B4472E","#0E8A8A","#4A6B2A","#B03060"];
 const CATS_KEY = "customer_app_cats_v4";
+
 function loadCats(){
-  if (storageOK){ try { const raw = localStorage.getItem(CATS_KEY); if (raw){ const a = JSON.parse(raw); if (Array.isArray(a)) return a; } } catch (e) {} }
-  return DEFAULT_CATS.map(c => ({...c}));
+  if(window._bootState)return CustomerDataCore.project(window._bootState).cats;
+  let raw=null;try{raw=localStorage.getItem(CATS_KEY);if(raw!==null){const c=JSON.parse(raw);CustomerDataCore.categories(c);return c;}}
+  catch(e){markCorruptStore(CATS_KEY,raw);}
+  return DEFAULT_CATS.map(c=>({...c}));
 }
-function saveCats(){ if (storageOK){ try { localStorage.setItem(CATS_KEY, JSON.stringify(cats)); } catch (e) {} } }
+function saveCats(){if(window._storageCorrupt||!storageOK)return;try{localStorage.setItem(CATS_KEY,JSON.stringify(cats));}catch(e){window._saveError=true;}}
+
 let cats = loadCats();
 
 const catCount = key => items.filter(d => fieldHas(d, "cat", key)).length;
@@ -2392,6 +2399,7 @@ function isNeedExpEditing(){
 // 注意:唯讀詳情(detailBg)不算忙碌——雲端合併已走 _pendingMerge,關詳情再套用;
 // 若把 detail 算 busy,瀏覽卡片時燈會一直橘黃閃(pending)、同步也被卡住。
 window.isTableBusy = function(){
+  if(document.querySelector("dialog.data-dialog[open]"))return true;
   if (modalBg.classList.contains("open")) return true;   // 編輯/新增表單才算忙碌
   if (tselMode) return true;             // 批次刪除選取中:暫停同步重繪,選取狀態不被洗掉
   const a = document.activeElement;
@@ -2628,6 +2636,57 @@ function needTitle(it, sg){
   if (sg===1 && t === "客戶需求") return "需求";   // 舊資料存的舊預設 → 顯示新預設
   return t;
 }
+// 字級隨每位客戶的三段資料保存；只改容器樣式，不改寫文字、連結或選取範圍。
+function needFontKey(sg){ return sg === 2 ? "need2" : sg === 3 ? "need3" : "need"; }
+function needFontPercent(it, sg){
+  const value = it && it.needFontSizes && it.needFontSizes[needFontKey(sg)];
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(70, Math.min(180, Math.round(value / 10) * 10)) : 100;
+}
+function needFontPrefs(it){
+  return { need: needFontPercent(it, 1), need2: needFontPercent(it, 2), need3: needFontPercent(it, 3) };
+}
+function needFontButtons(sg){
+  return `<button type="button" class="nseg-hbtn need-font-btn" data-seg="${sg}" data-font-delta="10">字＋</button><button type="button" class="nseg-hbtn need-font-btn" data-seg="${sg}" data-font-delta="-10">字－</button>`;
+}
+function initNeedFontControls(root, readRecord, writeSize){
+  function refresh(){
+    const it = readRecord(); if (!it) return;
+    root.querySelectorAll("[data-need-font-seg]").forEach(seg => {
+      seg.style.setProperty("--need-font-scale", String(needFontPercent(it, +seg.dataset.needFontSeg) / 100));
+    });
+    root.querySelectorAll(".need-font-btn").forEach(btn => {
+      const sg = +btn.dataset.seg, delta = +btn.dataset.fontDelta, size = needFontPercent(it, sg);
+      const label = `${needTitle(it, sg)}：字體${delta > 0 ? "放大" : "縮小"}`;
+      btn.setAttribute("aria-label", label);
+      btn.title = `${label}（目前 ${size}%）`;
+      btn.disabled = delta > 0 ? size >= 180 : size <= 70;
+    });
+  }
+  root.querySelectorAll(".need-font-btn").forEach(btn => {
+    btn.addEventListener("pointerdown", e => { e.preventDefault(); });
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const it = readRecord(); if (!it) return;
+      const sg = +btn.dataset.seg;
+      const size = Math.max(70, Math.min(180, needFontPercent(it, sg) + +btn.dataset.fontDelta));
+      if (size !== needFontPercent(it, sg)) writeSize(sg, size);
+      refresh();
+    });
+  });
+  refresh();
+}
+function commitNeedFontSize(id, sg, size){
+  const it = items.find(x => x.id === id); if (!it) return;
+  it.needFontSizes = { ...needFontPrefs(it), [needFontKey(sg)]: size };
+  it.updatedAt = Date.now();
+  // 詳情開著時可能已有待套用的雲端結果；保留它的新內容，同時補入剛調好的字級。
+  const pending = window._pendingMerge;
+  const queued = pending && pending.data && Array.isArray(pending.data.properties)
+    ? pending.data.properties.find(x => x.id === id) : null;
+  if (queued){ queued.needFontSizes = { ...it.needFontSizes }; queued.updatedAt = it.updatedAt; }
+  saveItems(); onLocalChange("data");
+}
 function commitNeedSeg(id, sg, val){
   const it = items.find(x => x.id === id); if (!it) return;
   val = normalizeNeedStorage((val || "").replace(/\s+$/,""));
@@ -2677,16 +2736,17 @@ function openNeedExp(tr, doFocus){
     const thtml = `<span class="nseg-t" tabindex="0" contenteditable="${editMode?"true":"false"}" data-seg="${sg}" data-titleedit="1" spellcheck="false">${esc(ti)}</span>`;
     // 編輯模式:三段都放真「刪線／標題」(窄螢幕直排時需求/想看也要能按;寬螢幕三欄並排仍各自一組)
     const bhtml = editMode
-      ? `<span class="nseg-btns"><button type="button" class="nseg-hbtn nseg-sbtn" data-seg="${sg}" title="把選取中的文字加上／取消刪除線">刪線</button><button type="button" class="nseg-hbtn nseg-tbtn" data-seg="${sg}" title="把選取中的文字設為／取消標題">標題</button></span>`
-      : `<span class="nseg-btns"><span class="nseg-hbtn nseg-hbtn-ph" aria-hidden="true">刪線</span><span class="nseg-hbtn nseg-hbtn-ph" aria-hidden="true">標題</span></span>`;
+      ? `<span class="nseg-btns">${needFontButtons(sg)}<button type="button" class="nseg-hbtn nseg-sbtn" data-seg="${sg}" title="把選取中的文字加上／取消刪除線">刪線</button><button type="button" class="nseg-hbtn nseg-tbtn" data-seg="${sg}" title="把選取中的文字設為／取消標題">標題</button></span>`
+      : `<span class="nseg-btns">${needFontButtons(sg)}<span class="nseg-hbtn nseg-hbtn-ph" aria-hidden="true">刪線</span><span class="nseg-hbtn nseg-hbtn-ph" aria-hidden="true">標題</span></span>`;
     return `<div class="nseg-head">${thtml}${bhtml}</div>`;
   };
   const body = (sg) => editMode
     ? `<div class="needexp-ed nseg-ed" contenteditable="true" data-seg="${sg}" spellcheck="false"></div>`
     : `<div class="needexp-ed needexp-view nseg-ed" data-seg="${sg}"></div>`;
-  const seg = (sg) => `<div class="nseg">${head(sg)}${body(sg)}</div>`;
+  const seg = (sg) => `<div class="nseg" data-need-font-seg="${sg}">${head(sg)}${body(sg)}</div>`;
   exp.innerHTML = `<td colspan="${nCols}"><div class="needexp-wrap"><div class="nseg-grid">${seg(1)}${seg(2)}${seg(3)}</div></div></td>`;
   tr.after(exp); tr.classList.add("exp-open"); tr.classList.toggle("exp-editing", editMode); openNeedId = id;
+  initNeedFontControls(exp, () => items.find(x => x.id === id), (sg, size) => commitNeedFontSize(id, sg, size));
   if (typeof hideNeedHover === "function") hideNeedHover();   // 展開時收掉可能還開著的懸浮預覽
   // 建立當下就同步設定寬度,避免「先錯誤寬度排版、下一影格才跳正」的一影格閃動;rAF 保留作保險
   { const bw0 = tableWrap.querySelector(".tbody-wrap");
@@ -5322,6 +5382,7 @@ function trapFocusKey(e, container){
   try { nodes[j].focus(); } catch(err){}
 }
 function tabTrapTarget(){
+  const dataDlg=document.querySelector("dialog.data-dialog[open]");if(dataDlg)return dataDlg;
   if (confirmBg && confirmBg.classList.contains("open")) return confirmBg.querySelector(".confirm");
   const calOpen = document.getElementById("calBg");
   if (calOpen && calOpen.classList.contains("open")) return calOpen.querySelector(".cal");
@@ -5768,6 +5829,20 @@ function parseParking(str){ str = String(str||"").trim(); if (!str) return {t:""
   return {t:str, n:1}; }
 renderCatOptions();
 let editingId = null;
+let formNeedFontSizes = needFontPrefs(null);
+let formBaseRec=null;
+function setupFormNeedFonts(d){
+  formNeedFontSizes = needFontPrefs(d);
+  modalBg.querySelectorAll(".fneed-seg[data-need-font-seg]").forEach(seg => {
+    seg.querySelector(".nseg-btns").innerHTML = needFontButtons(+seg.dataset.needFontSeg);
+  });
+  initNeedFontControls(modalBg,
+    () => ({ needFontSizes: formNeedFontSizes, t1: F.t1.value, t2: F.t2.value, t3: F.t3.value }),
+    (sg, size) => {
+      formNeedFontSizes = { ...formNeedFontSizes, [needFontKey(sg)]: size };
+      saveFormDraft();
+    });
+}
 
 function normAsk(s){
   let out = "";
@@ -5804,13 +5879,20 @@ function openForm(id){
   F.t1.value = d ? needTitle(d, 1) : "需求";
   F.t2.value = d ? (d.t2||"想看") : "想看";
   F.t3.value = d ? (d.t3||"看過") : "看過";
+  setupFormNeedFonts(d);
+  formBaseRec=buildFormRec();
   modalBg.classList.add("open");
   lockOverlay();
-  if (!id){
-    const draft = loadFormDraft();
-    if (draft){ applyFormDraft(draft); toast("已還原上次未儲存的新增內容"); }
-    setTimeout(() => F.cust.focus(), 50);
+
+  const draft=loadFormDraft();
+  if(draft && (draft.editingId||null)===(id||null)){
+    applyFormDraft(draft.rec||draft);
+    if(draft.base)formBaseRec=draft.base;
+    toast("已還原未儲存草稿；按儲存才會套用");
   }
+  if(!id)setTimeout(()=>F.cust.focus(),50);
+
+
 }
 function applyPendingMergeIfAny(){
   if (window._pendingMerge && typeof window.__applyMerged === "function"){
@@ -5818,7 +5900,8 @@ function applyPendingMergeIfAny(){
   }
 }
 function closeForm(){
-  modalBg.classList.remove("open"); editingId = null;
+  clearFormDraft();
+  modalBg.classList.remove("open"); editingId = null; formBaseRec=null;
   unlockOverlay();
   applyPendingMergeIfAny();
 }
@@ -5867,9 +5950,10 @@ function openDetail(id){
     <div class="dtl-card">${cellMulti("區域","area")}${cellMulti("類型","cat")}${cell("預算", d.budget)}${cellMulti("房數","rooms")}${cellMulti("車位","pType")}${cellMulti("車數","pNum")}</div>
   </div>`;
   // 三段需求(沿用展開內容框)
-  const seg = (t, c, ic) => `<div class="dtl-sec"><div class="dtl-h">${ic}${esc(t)}</div><div class="needexp-ed needexp-view">${c ? needToViewHTML(c) : '<span class="tneed-ph">—</span>'}</div></div>`;
-  const segHTML = seg(needTitle(d,1), d.need, IC_DOC) + seg(needTitle(d,2), d.need2, IC_EYE) + seg(needTitle(d,3), d.need3, IC_CHECK);
+  const seg = (sg, ic) => `<div class="dtl-sec" data-need-font-seg="${sg}"><div class="dtl-need-head"><div class="dtl-h">${ic}${esc(needTitle(d,sg))}</div><span class="nseg-btns">${needFontButtons(sg)}</span></div><div class="needexp-ed needexp-view">${needSeg(d,sg) ? needToViewHTML(needSeg(d,sg)) : '<span class="tneed-ph">—</span>'}</div></div>`;
+  const segHTML = seg(1, IC_DOC) + seg(2, IC_EYE) + seg(3, IC_CHECK);
   document.getElementById("detailBody").innerHTML = contact + buy + segHTML;
+  initNeedFontControls(document.getElementById("detailBody"), () => items.find(x => x.id === id), (sg, size) => commitNeedFontSize(id, sg, size));
   detailBg.classList.add("open");
   lockOverlay();
 }
@@ -5926,18 +6010,22 @@ function buildFormRec(){
     t1: F.t1.value.trim() || "需求",
     t2: F.t2.value.trim() || "想看",
     t3: F.t3.value.trim() || "看過",
+    needFontSizes: { ...formNeedFontSizes },
   };
 }
 const FORM_DRAFT_KEY = "customer_app_form_draft_v1";
 function formDraftHasContent(rec){
-  return !!(rec.cust || asFieldVals(rec.area).length || rec.budget || rec.need || rec.need2 || rec.need3 || rec.tel || rec.ask || asFieldVals(rec.cat).length);
+  return !!(rec.cust || asFieldVals(rec.area).length || rec.budget || rec.need || rec.need2 || rec.need3 || rec.tel || rec.ask || asFieldVals(rec.cat).length || [1,2,3].some(sg => needFontPercent(rec, sg) !== 100));
 }
+
 function saveFormDraft(){
-  if (editingId || !modalBg.classList.contains("open")) return;
-  const rec = buildFormRec();
-  if (!formDraftHasContent(rec)){ clearFormDraft(); return; }
-  try { sessionStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(rec)); } catch(e){}
+  if(!modalBg.classList.contains("open"))return;
+  const rec=buildFormRec();
+  if(!editingId&&!formDraftHasContent(rec)){clearFormDraft();return;}
+  try{sessionStorage.setItem(FORM_DRAFT_KEY,JSON.stringify({editingId,rec,base:formBaseRec}));}
+  catch(e){toast("草稿暫存失敗，請保持表單開啟並按儲存");}
 }
+
 function loadFormDraft(){
   try { const s = sessionStorage.getItem(FORM_DRAFT_KEY); return s ? JSON.parse(s) : null; } catch(e){ return null; }
 }
@@ -5962,26 +6050,20 @@ function applyFormDraft(d){
   F.t1.value = d.t1 || "需求";
   F.t2.value = d.t2 || "想看";
   F.t3.value = d.t3 || "看過";
+  setupFormNeedFonts(d);
 }
 (function(){
   let draftT = null;
   modalBg.addEventListener("input", () => {
-    if (editingId) return;
     clearTimeout(draftT);
     draftT = setTimeout(saveFormDraft, 400);
   });
 })();
+
 function commitFormIfOpen(){
-  if (!modalBg.classList.contains("open")) return;
-  if (editingId){
-    const cust = F.cust.value.trim(); if (!cust) return;
-    const i = items.findIndex(x => x.id === editingId); if (i < 0) return;
-    items[i] = {...items[i], ...buildFormRec(), updatedAt: Date.now()};
-    saveItems(); onLocalChange("data");
-  } else {
-    saveFormDraft();
-  }
+  if(modalBg.classList.contains("open"))saveFormDraft();
 }
+
 function saveForm(){
   const cust = F.cust.value.trim();
   if (!cust){ toast("請輸入客戶稱呼"); F.cust.focus(); return; }
@@ -5991,13 +6073,21 @@ function saveForm(){
   if (editingId){
     const i = items.findIndex(x => x.id === editingId);
     if (i < 0){ toast("此客戶已不存在，無法儲存"); closeForm(); applyFilter(); return; }
-    items[i] = {...items[i], ...rec, updatedAt: Date.now()};
+
+    const changed={};
+    for(const k of Object.keys(rec)){
+      if(k==="needFontSizes"){
+        const fonts={...needFontPrefs(items[i])};let any=false;
+        for(const f of ["need","need2","need3"])if(rec.needFontSizes[f]!==formBaseRec?.needFontSizes?.[f]){fonts[f]=rec.needFontSizes[f];any=true;}
+        if(any)changed.needFontSizes=fonts;
+      }else if(!CustomerDataCore.equal(rec[k],formBaseRec?.[k]))changed[k]=rec[k];
+    }
+    items[i] = {...items[i], ...changed, updatedAt: Date.now()};
   } else {
     const now = Date.now();
     items.push({...rec, id: uid(), createdAt: now, updatedAt: now});
   }
-  saveItems();
-  window._pendingMerge = null;   // 剛儲存為準,丟掉同步期間的過期合併快照(避免 closeForm 蓋回舊資料)
+  if(saveItems()===false){saveFormDraft();toast("尚未儲存成功，請先匯出備份");return;}
   closeForm();
   applyFilter();
   onLocalChange("data");
@@ -6504,22 +6594,21 @@ function applySettings(s){
   if (s.colFilter || s.fltB){ applyColFilterState(s); saveColFilterState(); }
   applyFilter();
 }
+
 function backupData(){
-  // v5:設定統一放進 settings;頂層 colw/theme/opts 保留一份,讓「舊版 App」也能匯入這個新備份檔(向下相容)
-  return { version: 5, app: "customer", exportedAt: new Date().toISOString(), deviceId, cats, items, deleted, settings: collectSettings(), colw: colW, theme: theme, opts: customOpts };
+  if(window._storageCorrupt)return rescueData();
+  storeCurrentState();
+  return {version:6,app:"customer",exportedAt:new Date().toISOString(),deviceId,cats,items,deleted,settings:collectSettings(),syncState:DataCore.clone(dataState)};
 }
+
 function backupFileName(){
   const d = new Date(), p = n => String(n).padStart(2,"0");
   return "客戶總覽備份_" + d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate())
     + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + ".json";
 }
-function downloadBackup(){
-  const blob = new Blob([JSON.stringify(backupData(), null, 2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = backupFileName(); a.click();
-  URL.revokeObjectURL(url);
-}
+
+function downloadBackup(){downloadJSON(backupData(),window._storageCorrupt?"客戶總覽原始資料_救援.json":backupFileName());}
+
 document.getElementById("exportBtn").addEventListener("click", () => { downloadBackup(); toast("已下載備份檔"); });
 // 「備份到 Google 雲端」的實作在下方 Google 雲端同步 IIFE 內(用獨立的 drive.file 授權,不影響同步)
 const BACKUP_APP = "customer";
@@ -6544,68 +6633,67 @@ function detectBackupApp(parsed){
   if (declared && inferred && declared !== inferred) return inferred;
   return declared || inferred;
 }
-function validateBackup(parsed){
-  let arr = null;
-  if (Array.isArray(parsed)) arr = parsed;
-  else if (parsed && Array.isArray(parsed.items)) arr = parsed.items;
-  else throw new Error("bad format");
-  if (arr.length){
-    const app = detectBackupApp(parsed);
-    if (!app || app !== BACKUP_APP) throw new Error("wrong_app");
-    if (arr.length > BACKUP_MAX_ITEMS) throw new Error("too_many");
-    for (let i = 0; i < arr.length; i++){
-      const d = arr[i];
-      if (!d || typeof d !== "object" || Array.isArray(d)) throw new Error("bad format");
-    }
-  }
-}
+
+function validateBackup(parsed){return DataCore.normalizeBackup(parsed,uid);}
+
 const importFile = document.getElementById("importFile");
-function applyBackup(parsed){
-  validateBackup(parsed);
-  let newItems, newCats = null, newDeleted = null, hasDeletedField = false;
-  if (Array.isArray(parsed)) { newItems = parsed; }
-  else if (parsed && Array.isArray(parsed.items)) {
-    newItems = parsed.items;
-    if (Array.isArray(parsed.cats) && parsed.cats.length) newCats = parsed.cats;
-    if (parsed.deleted && typeof parsed.deleted === "object"){ newDeleted = parsed.deleted; hasDeletedField = true; }
+
+async function applyBackup(parsed,mode="replace"){
+  const normalized=validateBackup(parsed);
+  if(window._storageCorrupt&&mode!=="replace")throw new Error("本機資料損壞時，請使用完整還原");
+  if(typeof closeNeedExp==="function")closeNeedExp();
+  if(typeof hideNeedHover==="function")hideNeedHover();
+  if(!window._storageCorrupt)storeCurrentState();
+  const before=DataCore.clone(dataState);
+  let restoreBase=before, repair=null;
+  if(mode==="replace"&&syncConnected&&window.prepareCloudRestore){
+    repair=await window.prepareCloudRestore();
+    const remote=repair.state;
+    if(remote&&DataCore.epochCmp(remote.epoch,restoreBase.epoch)>0)restoreBase=remote;
   }
-  else throw new Error("bad format");
-  if (typeof closeNeedExp === "function") closeNeedExp();   // 匯入覆蓋前列表備註展開先收合提交,避免殘留幽靈展開列
-  if (typeof hideNeedHover === "function") hideNeedHover();
-  const importTs = Date.now();
-  items = newItems.map(d => ({...d, id: d.id || uid(), updatedAt: (d.updatedAt && d.updatedAt > 0) ? d.updatedAt : importTs}));
-  if (newCats) { cats = newCats; saveCats(); touchCats(); renderTabs(); renderCatOptions(); }
-  if (hasDeletedField) { deleted = newDeleted; saveDeleted(); }
-  else { deleted = {}; saveDeleted(); }
-  if (parsed && parsed.settings && typeof parsed.settings === "object"){
-    applySettings(parsed.settings);
-    onLocalChange("settings");
-  } else if (parsed && (parsed.colw || parsed.theme || parsed.opts)){
-    applySettings({ colw: parsed.colw, theme: parsed.theme, opts: parsed.opts });
-    onLocalChange("settings");
+  await CustomerRecovery.put(mode==="replace"?"完整還原前":"合併匯入前",backupData());
+  if(!DataCore.equal(before,dataState))throw new Error("資料剛有更新，請重新選擇匯入");
+  const v={...normalized,cats:normalized.cats??cats,settings:{...collectSettings(),...normalized.settings}};
+  let next;
+  if(mode==="merge")next=DataCore.importMerge(dataState,v,DataCore.newId());
+  else{
+    next=normalized.syncState?DataCore.clone(normalized.syncState):DataCore.fromView(v);
+    next.epoch={generation:restoreBase.epoch.generation+1,id:DataCore.newId()};
   }
-  saveItems(); renderCover();
-  resetListFilters();
-  if (typeof applyFilter === "function") applyFilter();
+
+  if(repair?.damaged.length){
+    await CustomerRecovery.put("雲端損壞檔案原始副本",{app:"customer-rescue",raw:repair.damaged});
+    if(!DataCore.equal(before,dataState))throw new Error("資料剛有更新，請重新選擇匯入");
+    localStorage.setItem("customer_app_repair_v6",JSON.stringify({email:syncEmail,epoch:next.epoch,files:repair.damaged.map(f=>({id:f.id,name:f.name}))}));
+  }
+  paintDataState(next);
+  window._pendingMerge=null;window._corruptRaw=null;
+  document.querySelectorAll("dialog.data-dialog").forEach(d=>d.close());
   onLocalChange("data");
-  toast(`已匯入 ${items.length} 筆需求`);
+  toast(mode==="merge"?"已合併匯入；不同內容已保留供選擇":"已完整還原，還原前資料可由備份記錄找回");
 }
 function confirmApplyBackup(parsed){
-  try { validateBackup(parsed); }
-  catch (e){
-    if (e && e.message === "wrong_app") toast("這是「物件總覽」的備份檔，無法匯入客戶總覽");
-    else if (e && e.message === "too_many") toast("匯入失敗：筆數超過 " + BACKUP_MAX_ITEMS + " 筆上限");
-    else toast("匯入失敗：格式不正確");
-    return;
+  let normalized;
+  try{normalized=validateBackup(parsed);}catch(e){
+    toast(e.message==="wrong_app"?"這不是客戶總覽的備份檔":e.message==="too_many"?"備份超過 5000 筆上限":"匯入失敗："+e.message);return;
   }
-  const n = Array.isArray(parsed) ? parsed.length : (parsed.items || []).length;
-  const cloudNote = syncConnected ? "若已連結 Google 雲端，同步後也會影響雲端資料。" : "";
-  askConfirm("匯入備份檔？", `將以備份檔的 ${n} 筆資料覆蓋本機。${cloudNote}`, () => applyBackup(parsed));
+  const {body,dialog}=dataDialog("如何匯入 "+normalized.items.length+" 筆客戶資料？");
+  const p=document.createElement("p");p.textContent="合併匯入會保留目前客戶，內容不同時提供選擇。完整還原會以備份取代目前資料。執行前會先建立可找回的安全副本。";
+  const note=document.createElement("p");note.textContent=syncConnected?"完整還原會同步到使用新版的其他裝置；必須連上網路才能執行。":"";
+  const actions=document.createElement("div");actions.className="data-import-actions";
+  for(const [mode,label] of [["merge","合併匯入"],["replace","完整還原"]]){
+    const b=document.createElement("button");b.className="s-btn"+(mode==="replace"?" s-btn-danger":"");b.textContent=label;b.disabled=window._storageCorrupt&&mode==="merge";
+    b.onclick=async()=>{actions.querySelectorAll("button").forEach(b=>b.disabled=true);try{await applyBackup(normalized,mode);}catch(e){toast("未匯入："+e.message);actions.querySelectorAll("button").forEach(b=>b.disabled=window._storageCorrupt&&b.textContent==="合併匯入");}};
+    actions.append(b);
+  }
+  body.append(p,note,actions);
 }
+
 // 「匯入備份檔」的來源選擇(手機 / Google 雲端)綁定在下方 Google 雲端 IIFE 內
 importFile.addEventListener("change", e => {
   const file = e.target.files[0];
   if (!file) return;
+  if(file.size>20*1024*1024){toast("備份檔超過 20 MB 上限");importFile.value="";return;}
   const reader = new FileReader();
   reader.onload = () => {
     try { confirmApplyBackup(JSON.parse(reader.result)); }
@@ -6615,17 +6703,8 @@ importFile.addEventListener("change", e => {
   reader.readAsText(file);
 });
 document.getElementById("importBtn").addEventListener("click", () => importFile.click());
-document.getElementById("resetBtn").addEventListener("click", () => {
-  askConfirm("還原預設資料？", "目前所有的新增與修改都會被覆蓋。", () => {
-    items = SEED.map((d,i) => ({...d, id: "seed"+i, updatedAt: Date.now()}));
-    deleted = {}; saveDeleted();
-    saveItems(); renderCover();
-    resetListFilters();
-    if (typeof applyFilter === "function") applyFilter();
-    onLocalChange("data");
-    toast("已還原預設資料");
-  });
-});
+
+document.getElementById("resetBtn").addEventListener("click",()=>confirmApplyBackup({app:"customer",version:6,items:SEED.map((d,i)=>({...d,id:"seed"+i,updatedAt:Date.now()})),cats:DEFAULT_CATS,deleted:{},settings:collectSettings()}));
 
 // ---- Settings page ----
 
@@ -7058,10 +7137,141 @@ document.addEventListener("pointercancel", endCatDrag);
   }, { passive: false });
 })();
 
+// v6 single-envelope local state and recovery controls.
+const DATA_V6_KEY = "customer_app_state_v6";
+const DataCore = CustomerDataCore;
+const editActor = deviceId + "-" + DataCore.newId();
+let applyingDataState = false;
+let dataState = window._bootState || DataCore.fromView({items,cats,deleted,settings:collectSettings()});
+if(window._bootState && !window._storageCorrupt) applySettings(DataCore.project(dataState).settings);
+function dataView(){return {items,cats,deleted,settings:collectSettings()};}
+function storeCurrentState(){
+  if(applyingDataState)return true;
+  if(window._storageCorrupt)return false;
+  const next=DataCore.capture(dataState,dataView(),editActor);
+  dataState=next;
+  try{
+    if(!storageOK)throw new Error("本機儲存不可用");
+    localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));
+    window._saveError=false;updateDataNotice();return true;
+  }catch(e){window._saveError=true;updateDataNotice();return false;}
+}
+window._persistData = storeCurrentState;
+function paintDataState(next){
+  DataCore.validateState(next);
+  // This single durable write commits the entire data set, before any projection is replaced.
+  localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));
+  applyingDataState=true;
+  try{
+    dataState=DataCore.clone(next);const v=DataCore.project(next);
+    items=v.items;cats=v.cats;deleted=v.deleted;
+    window._storageCorrupt=false;window._saveError=false;
+    saveItems();saveCats();saveDeleted();applySettings(v.settings);
+    renderCover();renderTabs();renderCatOptions();applyFilter();updateDataNotice();
+  }finally{applyingDataState=false;}
+}
+async function acceptMergedState(incoming){
+  if(window._storageCorrupt)return false;
+  storeCurrentState();
+  const before=DataCore.clone(dataState),next=DataCore.merge(before,incoming);
+  if(DataCore.equal(before,next))return true;
+  if(DataCore.epochCmp(next.epoch,before.epoch)>0){
+    await CustomerRecovery.put("雲端完整還原前的本機副本",backupData());
+    storeCurrentState();
+    if(!DataCore.equal(before,dataState)){window._pendingMerge=incoming;return false;}
+  }
+  paintDataState(DataCore.merge(dataState,incoming));return true;
+}
+window.__applyMerged = m => acceptMergedState(m).catch(e=>{window._pendingMerge=m;toast("套用同步資料失敗："+e.message);});
+window.addEventListener("storage",e=>{
+  if(e.key!==DATA_V6_KEY||!e.newValue||window._storageCorrupt)return;
+  try{
+    const remote=DataCore.validateState(JSON.parse(e.newValue));
+    if(DataCore.equal(DataCore.merge(dataState,remote),dataState))return;
+    window._pendingMerge=window._pendingMerge?DataCore.merge(window._pendingMerge,remote):remote;
+    if(!window.isTableBusy()&&!detailBg.classList.contains("open"))applyPendingMergeIfAny();
+  }catch(err){toast("另一個視窗的資料無法讀取，請保留目前畫面並匯出備份");}
+});
+function dataDialog(title){
+  document.querySelectorAll("dialog.data-dialog").forEach(x=>{x.close();x.remove();});
+  const d=document.createElement("dialog");d.className="data-dialog";
+  d.innerHTML='<div class="data-dialog-head"><h2></h2><button type="button" class="s-btn" aria-label="關閉">關閉</button></div><div class="data-dialog-body"></div>';
+  d.querySelector("h2").textContent=title;d.querySelector("button").onclick=()=>d.close();
+  d.addEventListener("keydown",e=>{if(e.key==="Escape")e.stopPropagation();});
+  d.addEventListener("close",()=>{d.remove();applyPendingMergeIfAny();});
+  document.body.append(d);d.showModal();return {dialog:d,body:d.querySelector(".data-dialog-body")};
+}
+function updateDataNotice(){
+  const el=document.getElementById("dataNotice");if(!el)return;
+  const n=DataCore.conflicts(dataState).length;
+  el.hidden=!window._storageCorrupt&&!window._saveError&&!n;
+  if(window._storageCorrupt)el.innerHTML='本機資料無法讀取，已停止改寫與同步。<button class="s-btn" data-rescue>匯出原始資料</button><button class="s-btn" data-import>匯入備份還原</button>';
+  else if(window._saveError)el.innerHTML='本機儲存失敗，修改尚未安全保存。請先匯出備份。<button class="s-btn" data-rescue>匯出備份</button>';
+  else el.innerHTML='有 '+n+' 個欄位包含不同版本，兩份內容皆已保留。<button class="s-btn" data-conflicts>檢視並選擇</button>';
+  el.querySelector("[data-rescue]")?.addEventListener("click",downloadBackup);
+  el.querySelector("[data-import]")?.addEventListener("click",()=>importFile.click());
+  el.querySelector("[data-conflicts]")?.addEventListener("click",showDataConflicts);
+  const b=document.getElementById("conflictsBtn");if(b)b.textContent="檢查不同版本"+(n?"（"+n+"）":"");
+}
+async function showDataConflicts(){
+  const {body}=dataDialog("選擇要保留的內容");
+  const cs=DataCore.conflicts(dataState);
+  if(!cs.length){body.textContent="目前沒有需要選擇的不同版本。";return;}
+  const labels={need:"需求",need2:"想看",need3:"安排／看過",t1:"第一欄標題",t2:"第二欄標題",t3:"第三欄標題","font:need":"需求字級","font:need2":"想看字級","font:need3":"第三欄字級",cust:"客戶稱呼",tel:"電話",line:"LINE",ask:"詢問",cat:"類型",area:"區域",status:"狀態",rooms:"房數",budget:"預算","$alive":"保留或刪除客戶",cats:"類別設定"};
+  for(const c of cs){
+    const box=document.createElement("section");box.className="data-choice";
+    const name=c.scope==="record"?(items.find(x=>x.id===c.id)?.cust||"已刪除客戶"):"偏好設定";
+    const h=document.createElement("h3");h.textContent=name+" · "+(labels[c.field]||c.field.replace("setting:",""));box.append(h);
+    for(const choice of c.choices.filter((v,i,a)=>a.findIndex(w=>DataCore.equal(w.value,v.value))===i)){
+      const pre=document.createElement("pre");
+      pre.textContent=c.field==="$alive"?(choice.value?"保留客戶":"刪除客戶"):typeof choice.value==="string"?choice.value:JSON.stringify(choice.value,null,2);
+      const b=document.createElement("button");b.className="s-btn";b.textContent="採用此內容";
+      b.onclick=async()=>{b.disabled=true;try{await CustomerRecovery.put("選擇不同版本前",backupData());paintDataState(DataCore.resolve(dataState,c,choice.value,editActor));onLocalChange("data");showDataConflicts();}catch(e){toast("未變更："+e.message);b.disabled=false;}};
+      box.append(pre,b);
+    }
+    body.append(box);
+  }
+}
+async function showBackupHistory(){
+  const {body}=dataDialog("依日期還原備份");body.textContent="讀取備份記錄…";
+  let rows=[];try{rows=await CustomerRecovery.list();}catch(e){body.textContent="本機備份空間無法讀取："+e.message;return;}
+  body.textContent="";
+  const add=(label,load,rescue=false)=>{
+    const row=document.createElement("div");row.className="data-history-row";
+    const t=document.createElement("span");t.textContent=label;
+    const b=document.createElement("button");b.className="s-btn";b.textContent=rescue?"下載救援資料":"選擇";
+    b.onclick=async()=>{b.disabled=true;try{const value=await load();if(rescue)downloadJSON(value,"客戶總覽原始資料.json");else confirmApplyBackup(value);}catch(e){toast("這份備份無法還原："+e.message);b.disabled=false;}};
+    row.append(t,b);body.append(row);
+  };
+  for(const row of rows)add(new Date(row.at).toLocaleString()+" · "+row.label,async()=>row.data,row.data?.app==="customer-rescue");
+  if(!rows.length){const p=document.createElement("p");p.textContent="目前沒有本機安全副本。";body.append(p);}
+  if(syncConnected&&window.listCloudSnapshots){
+    const info=document.createElement("p");info.textContent="讀取雲端每日備份…";body.append(info);
+    try{const files=await window.listCloudSnapshots();info.textContent=files.length?"雲端每日備份":"目前沒有雲端每日備份";files.forEach(f=>add(f.name,()=>window.readCloudSnapshot(f.id)));}
+    catch(e){info.textContent="雲端備份清單讀取失敗，可稍後重試："+e.message;}
+  }
+}
+function rescueData(){
+  const raw={};
+  for(const k of [STORE_KEY,DELETED_KEY,CATS_KEY,DATA_V6_KEY]){try{raw[k]=localStorage.getItem(k);}catch(e){}}
+  return {app:"customer-rescue",exportedAt:new Date().toISOString(),raw,...(window._corruptRaw?{damaged:window._corruptRaw}:{})};
+}
+function downloadJSON(value,name){
+  const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:"application/json"}));
+  const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+}
+document.getElementById("historyBtn").addEventListener("click",showBackupHistory);
+document.getElementById("conflictsBtn").addEventListener("click",showDataConflicts);
+document.addEventListener("click",e=>{
+  if(!window._storageCorrupt)return;
+  if(e.target.closest("#dataNotice,dialog.data-dialog,#exportBtn,#importBtn,#cloudImportBtn,#historyBtn,#importFile"))return;
+  e.preventDefault();e.stopImmediatePropagation();toast("請先匯出原始資料，再從有效備份完整還原");
+},true);
+updateDataNotice();
+
 let syncConnected = false, syncEmail = null;
 /* =========================================================================
-   Google 雲端同步 (依規格:appDataFolder 主檔 sync-main.json,union+LWW+墓碑
-   冪等合併，樂觀併發，啟動/變更/輪詢/焦點觸發，外加每日快照當保險)
+   Google 雲端同步 v6：不可覆寫的完整檢查點、逐欄合併、衝突保留及每日快照
    ========================================================================= */
 (function(){
   const CLIENT_ID = "970345889249-9btcuh0j6gvofgg0segcgb3q68kt17ok.apps.googleusercontent.com";
@@ -7092,8 +7302,9 @@ let syncConnected = false, syncEmail = null;
   // expose touch/schedule hooks (called from mutation sites)
   window.touchCats = function(){ window.__catsTs = Date.now(); saveTs("cats", window.__catsTs); };
   window.touchSettings = function(){ window.__settingsTs = Date.now(); saveTs("settings", window.__settingsTs); };
-  window.onLocalChange = function(kind){ if (kind === "cats") window.touchCats(); if (kind === "settings") window.touchSettings(); window.scheduleSync(); };
+  window.onLocalChange = function(kind){ if (kind === "cats") window.touchCats(); if (kind === "settings") window.touchSettings(); storeCurrentState(); window.scheduleSync(); };
   let pushTimer = null;
+  let syncError=false, syncHasSucceeded=false, snapshotError=false;
   let dirty = false;      // 本機有尚未成功推上雲端的變更(記憶體旗標即可:每次開啟 App 都會先做一次完整同步)
   let retryMs = 5000;     // 失敗重試的退避間隔;成功後歸位,每次失敗加倍,上限 60 秒
   window.scheduleSync = function(){ dirty = true; if (!syncConnected) return; clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 1500); };
@@ -7155,45 +7366,15 @@ let syncConnected = false, syncEmail = null;
     if (res.status === 401){ accessToken = null; clearGToken(); const t2 = await requestToken(false); opts.headers.Authorization = "Bearer " + t2; res = await tfetch(url, opts); }
     return res;
   }
-  async function findFile(name){
-    const q = encodeURIComponent("name='" + name + "' and trashed=false");
-    const res = await dfetch("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=appDataFolder&fields=files(id,version)");
-    const data = await res.json();
-    return (data.files && data.files.length) ? data.files[0] : null;
-  }
-  async function createFile(name){
-    const res = await dfetch("https://www.googleapis.com/drive/v3/files", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name, parents: ["appDataFolder"] })
-    });
-    const data = await res.json();
-    return data.id;
-  }
-  async function ensureFileId(){
-    if (fileId) return fileId;
-    const f = await findFile(MAIN_NAME);
-    fileId = f ? f.id : await createFile(MAIN_NAME);
-    return fileId;
-  }
-  async function getVersion(){
-    const res = await dfetch("https://www.googleapis.com/drive/v3/files/" + fileId + "?fields=version");
-    const data = await res.json();
-    return data.version || null;
-  }
-  async function download(){
-    const res = await dfetch("https://www.googleapis.com/drive/v3/files/" + fileId + "?alt=media");
-    if (!res.ok) return null;
-    const text = await res.text();
-    if (!text) return null;
-    try { return JSON.parse(text); } catch(e){ return { __syncCorrupt: true }; }
-  }
-  async function upload(id, obj){
-    const res = await dfetch("https://www.googleapis.com/upload/drive/v3/files/" + id + "?uploadType=media&fields=version", {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj)
-    });
-    const data = await res.json();
-    return data.version || null;
-  }
+
+  let drive=CustomerDrive.create(dfetch,DataCore,()=>DataCore.newId());
+  window.listCloudSnapshots=()=>drive.snapshots();
+  window.readCloudSnapshot=async id=>drive.snapshotView(await drive.read(id));
+  window.prepareCloudRestore=async()=>{
+    if(!navigator.onLine)throw new Error("請連上網路後再完整還原");
+    if(inFlight)throw new Error("同步正在進行，請稍後重試");
+    return await drive.prepareRestore();
+  };
 
   // ---- 備份到「看得到」的 Google Drive(獨立 drive.file 授權,不影響上面的 appDataFolder 同步)----
   const FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
@@ -7315,117 +7496,6 @@ let syncConnected = false, syncEmail = null;
     }
   }
 
-  // ---- main-file model + merge ----
-  function buildLocal(){
-    return {
-      rev: 0, lastWriteBy: deviceId, updatedAt: Date.now(),
-      data: { properties: items.map(function(x){ return Object.assign({}, x); }) },
-      cats: { list: cats.map(function(c){ return Object.assign({}, c); }), _updatedAt: window.__catsTs },
-      settings: { density: density, sort: currentSort, colw: colW, theme: theme, opts: customOpts, fltorder: filterOrder, expfocus: expFocus, optorder: optOrder, _updatedAt: window.__settingsTs },
-      deleted: Object.assign({}, deleted)
-    };
-  }
-  function mergeMain(local, remote){
-    if (!remote || !remote.data) return local;
-    const out = { rev: 0, lastWriteBy: deviceId, updatedAt: Date.now(), data: {}, cats: null, settings: null, deleted: {} };
-    // tombstones: union, later deletion time wins
-    const del = {}; const ld = local.deleted || {}, rd = remote.deleted || {};
-    for (const k in ld) del[k] = ld[k];
-    for (const k in rd) del[k] = Math.max(del[k] || 0, rd[k]);
-    // properties: union by id, newer updatedAt wins, then drop if tombstoned after last update
-    // 平手(同 updatedAt 但內容不同)改用「確定性裁決」:兩端都選序列化字串較大的那筆,必然收斂。
-    // 舊寫法平手時偏向本機(先看到的贏),兩台各自堅持自己 → 每輪輪詢互相推翻的無限推送戰爭。
-    const recKey = function(r){ return JSON.stringify(sortKeys(r)); };
-    const byId = {}; const lp = (local.data && local.data.properties) || [], rp = (remote.data && remote.data.properties) || [];
-    lp.concat(rp).forEach(function(r){
-      if (!r || r.id == null) return;
-      const cur = byId[r.id];
-      if (!cur){ byId[r.id] = r; return; }
-      const a = (r.updatedAt||0), b = (cur.updatedAt||0);
-      if (a > b){ byId[r.id] = r; return; }
-      if (a === b && recKey(r) > recKey(cur)) byId[r.id] = r;
-    });
-    const props = [];
-    for (const id in byId){ const r = byId[id]; const dt = del[id]; if (dt && dt >= (r.updatedAt||0)) continue; props.push(r); }
-    out.data.properties = props; out.deleted = del;
-    // categories / settings: whole-object last-write-wins;平手同樣用確定性裁決,不偏本機
-    const pickLWW = function(l, r){
-      const lt = (l._updatedAt||0), rt = (r._updatedAt||0);
-      if (lt !== rt) return lt > rt ? l : r;
-      return JSON.stringify(sortKeys(l)) >= JSON.stringify(sortKeys(r)) ? l : r;
-    };
-    const lc = local.cats || { list: [], _updatedAt: 0 }, rc = remote.cats || { list: [], _updatedAt: 0 };
-    out.cats = pickLWW(lc, rc);
-    const ls = local.settings || { _updatedAt: 0 }, rs = remote.settings || { _updatedAt: 0 };
-    out.settings = pickLWW(ls, rs);
-    return out;
-  }
-  function sortKeys(o){ const r = {}; Object.keys(o).sort().forEach(function(k){ r[k] = o[k]; }); return r; }
-  function canonical(m){
-    if (!m) return "";
-    const props = (((m.data||{}).properties)||[]).slice().sort(function(a,b){ return String(a.id).localeCompare(String(b.id)); }).map(sortKeys);
-    const del = m.deleted || {}; const dk = Object.keys(del).sort();
-    const catList = ((m.cats||{}).list || []).slice().sort(function(a,b){ return String(a.key).localeCompare(String(b.key)); }).map(sortKeys);
-    const s = m.settings || {};
-    return JSON.stringify({ p: props, d: dk.map(function(k){ return [k, del[k]]; }), c: [catList, (m.cats||{})._updatedAt||0], s: sortKeys(s) });
-  }
-  function applyMerged(merged){
-    items = (merged.data.properties || []).map(function(d){ return Object.assign({}, d, { id: d.id || uid(), updatedAt: d.updatedAt || BASE_TS }); });
-    saveItems();
-    deleted = merged.deleted || {}; saveDeleted();
-    if (merged.cats && Array.isArray(merged.cats.list)){
-      cats = merged.cats.list.map(function(c){ return Object.assign({}, c); });
-      window.__catsTs = merged.cats._updatedAt || window.__catsTs; saveTs("cats", window.__catsTs);
-      saveCats();
-    }
-    if (merged.settings && merged.settings._updatedAt){
-      const s = merged.settings;
-      if (s.density){ density = s.density; if (storageOK){ try { localStorage.setItem("customer_app_density_v1", density); } catch(e){} } }
-      if (s.sort){ currentSort = s.sort; saveSort(); }
-      if (s.colw && typeof s.colw === "object"){ colW = {...DEFAULT_COLW, ...s.colw}; saveColW(); }
-      if (s.theme === "dark" || s.theme === "light"){ theme = s.theme; saveTheme(); applyTheme(); }
-      if (s.opts && typeof s.opts === "object"){ customOpts = normOpts(s.opts); try { localStorage.setItem("customer_app_opts_v1", JSON.stringify(customOpts)); } catch(e){} }
-      if (s.fltorder && typeof s.fltorder === "object"){ filterOrder = s.fltorder; saveFltOrder(); }
-      if (typeof s.expfocus === "boolean"){ expFocus = s.expfocus; saveExpFocus(); applyExpFocus(); }
-      if (s.optorder && typeof s.optorder === "object"){ optOrder = s.optorder; saveOptOrder(); }
-      window.__settingsTs = s._updatedAt || window.__settingsTs; saveTs("settings", window.__settingsTs);
-    }
-    // re-render UI to reflect merged state
-    renderCover(); renderTabs(); renderCatOptions();
-    if (typeof renderSortOptions === "function"){ renderSortOptions(); sortTxt.textContent = (SORTS.find(function(x){ return x.key === currentSort; }) || SORTS[0]).label; }
-    setDensity(density);
-    if (typeof applyFilter === "function") applyFilter();
-  }
-  window.__applyMerged = applyMerged;
-
-  // ---- daily snapshot (insurance; keeps one per day, auto-prune to 30 days) ----
-  async function pruneSnapshots(keepDays){
-    try {
-      const q = encodeURIComponent("name contains 'customer-sync-backup-' and trashed=false");
-      const res = await dfetch("https://www.googleapis.com/drive/v3/files?q=" + q + "&spaces=appDataFolder&fields=files(id,name)&pageSize=1000");
-      const data = await res.json();
-      const files = (data && data.files) || [];
-      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - keepDays);
-      const cutoffStr = (function(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); })(cutoff);
-      for (const f of files){
-        const m = /customer-sync-backup-(\d{4}-\d{2}-\d{2})\.json/.exec(f.name || "");
-        if (m && m[1] < cutoffStr){
-          try { await dfetch("https://www.googleapis.com/drive/v3/files/" + f.id, { method: "DELETE" }); } catch(e){}
-        }
-      }
-    } catch(e){}
-  }
-  async function maybeSnapshot(obj){
-    try {
-      const day = (function(d){ const t = d || new Date(); return t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0") + "-" + String(t.getDate()).padStart(2,"0"); })(new Date());
-      const name = "customer-sync-backup-" + day + ".json";
-      const existing = await findFile(name);
-      if (existing) return;
-      const id = await createFile(name);
-      await upload(id, obj);
-      pruneSnapshots(30);   // 只留最近 30 天,自動刪更舊的快照
-    } catch(e){}
-  }
 
   // ---- status UI ----
   function setLed(cls){   // 同時更新列表 + 封面兩顆同步燈(封面那顆保留 cover-led 容器樣式)
@@ -7445,7 +7515,8 @@ let syncConnected = false, syncEmail = null;
     if (inFlight) cls = "busy";
     else if (window.isTableBusy && window.isTableBusy()) cls = "pending";   // 編輯中、變更尚未落地
     else if (syncConnected && !navigator.onLine) cls = "offline";           // 已連結但目前沒網路:離線(灰),畫面是上次同步的資料
-    else if (syncConnected && !needReauth) cls = "ok";
+    else if (syncConnected && !needReauth && syncHasSucceeded && !dirty && !syncError && !snapshotError && !window._saveError && !window._storageCorrupt && !DataCore.conflicts(dataState).length) cls = "ok";
+    else if (syncConnected && !syncError && !needReauth && !window._storageCorrupt) cls = "pending";
     else cls = "warn";
     setLed(cls);
   }
@@ -7475,11 +7546,7 @@ let syncConnected = false, syncEmail = null;
   function resetSyncSuccess(){
     syncFailCount = 0; retryMs = 5000;
   }
-  function bumpSyncFail(){
-    syncFailCount++;
-    if (syncFailCount >= SYNC_FAIL_MAX){ markNeedReauth(); return true; }
-    return false;
-  }
+  function bumpSyncFail(){ syncFailCount++; syncError=true; return false; }
   function scheduleSyncRetry(){
     clearTimeout(pushTimer);
     pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
@@ -7508,103 +7575,80 @@ let syncConnected = false, syncEmail = null;
   }
   // ---- core two-way sync ----
   async function syncNow(force){
-    if (!syncConnected) return { ok: false, reason: "not_connected" };
-    if (!navigator.onLine && !force){
-      if (window.refreshLed) window.refreshLed();
-      return { ok: false, reason: "offline" };
+    if(!syncConnected)return {ok:false,reason:"not_connected"};
+    if(window._storageCorrupt||window._saveError){setStatus("本機資料尚未安全保存，請先備份處理","warn");syncError=true;return {ok:false,reason:"local_storage"};}
+    if(!navigator.onLine){setStatus("目前離線，連線後重試","offline");return {ok:false,reason:"offline"};}
+    if(inFlight)return {ok:false,reason:"busy"};
+    if(window.isTableBusy()||detailBg.classList.contains("open")){clearTimeout(pushTimer);pushTimer=setTimeout(()=>syncNow(),2000);return {ok:false,reason:"editing"};}
+    const thisRun=++syncGen;
+    syncAbort=new AbortController();const runAbort=syncAbort;
+    const guard=()=>{if(thisRun!==syncGen||runAbort.signal.aborted||!syncConnected)throw new DOMException("同步已中止","AbortError");};
+    inFlight=true;setStatus("同步中…","busy");
+    const watchdog=setTimeout(()=>runAbort.abort(),SYNC_WATCHDOG_MS);
+    let complete=false;
+    try{
+      if(!storeCurrentState())throw new Error("本機儲存失敗");
+
+      let repair=null;
+      try{const p=JSON.parse(localStorage.getItem("customer_app_repair_v6")||"null");if(p&&p.email===syncEmail&&DataCore.equal(p.epoch,dataState.epoch))repair=p;}catch(e){}
+      const pulled=await drive.pull(repair?repair.files.map(f=>f.id):[]);guard();
+      if(!storeCurrentState())throw new Error("本機儲存失敗");
+      let merged=pulled.state?DataCore.merge(dataState,pulled.state):DataCore.clone(dataState);
+      if(DataCore.epochCmp(merged.epoch,dataState.epoch)>0){
+        // Do not discard edits made while a replacement is arriving.
+        if(window.isTableBusy()||detailBg.classList.contains("open")){window._pendingMerge=merged;return {ok:false,reason:"editing"};}
+        if(!await acceptMergedState(merged))return {ok:false,reason:"local_change"};
+        guard();merged=DataCore.clone(dataState);
+      }
+      let published=null;
+      if(repair||!pulled.loaded.length||!pulled.state||!DataCore.equal(merged,pulled.state)){
+        published=await drive.publish(merged);guard();
+      }
+      // A verified upload contains exactly this checkpoint. New local changes remain dirty.
+      const latest=DataCore.merge(dataState,merged);
+      if(!DataCore.equal(latest,dataState)){
+        if(window.isTableBusy()||detailBg.classList.contains("open"))window._pendingMerge=window._pendingMerge?DataCore.merge(window._pendingMerge,latest):latest;
+        else paintDataState(latest);
+      }
+      dirty=!DataCore.equal(DataCore.merge(dataState,merged),merged);
+
+      if(published)await drive.compact(pulled.loaded,published,merged);
+      if(repair&&published){
+        await drive.removeDamaged(repair.files.filter(f=>f.name.startsWith("customer-state-v6-")).map(f=>f.id));
+        localStorage.removeItem("customer_app_repair_v6");
+      }
+      guard();
+      snapshotError=false;
+      try{
+        const d=new Date(),day=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+        await drive.daily(merged,day);
+      }catch(e){snapshotError=true;}
+      guard();
+      complete=true;syncError=false;syncHasSucceeded=true;needReauth=false;resetSyncSuccess();
+      dirty=dirty||!DataCore.equal(DataCore.merge(dataState,merged),merged);
+      const n=DataCore.conflicts(merged).length;
+      setStatus(dirty?"新修改等待同步":snapshotError?"資料已同步，每日備份未完成，稍後重試":n?"已同步，有不同版本待選擇":"已同步",dirty||snapshotError||n?"pending":"ok");
+      localStorage.setItem("customer_app_lastsync_v1",String(Date.now()));window.renderLastSync();
+      if(dirty||snapshotError)scheduleSyncRetry();
+    }catch(e){
+      if(thisRun!==syncGen)return {ok:false,reason:"cancelled"};
+      syncError=true;
+      if(isSyncAuthError(e)||e.status===401){markNeedReauth();}
+      else{setStatus(isAbortError(e)?"同步逾時，資料仍保留在本機":"同步失敗："+(e.message||"請稍後重試"),"warn");scheduleSyncRetry();}
+    }finally{
+      clearTimeout(watchdog);
+      if(thisRun===syncGen){inFlight=false;if(syncAbort===runAbort)syncAbort=null;refreshLed();}
     }
-    if (inFlight){
-      if (force){
-        const idle = await waitSyncIdle(45000);
-        if (!dirty && idle) return { ok: true };
-        if (inFlight) return { ok: false, reason: "busy" };
-      } else {
-        clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 2000);
-        return { ok: false, reason: "busy" };
-      }
-    }
-    const wasDirty = dirty;   // 進場時的未推狀態;失敗時據此還原,避免把「純拉取失敗」也誤標成有東西沒推
-    // 編輯中暫停同步重繪(避免游標被打斷);但 force=true(切背景/關閉)例外:此時已 flushEditing 存好、使用者要離開了,
-    // 應盡力把變更推上雲端(背景重繪看不到、也不會丟資料),否則「編輯沒點掉就切背景」換裝置會拿到舊資料。
-    if (!force && window.isTableBusy && window.isTableBusy()){ clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 2000); return { ok: false, reason: "busy" }; }
-    const thisRun = ++syncGen;
-    syncAbort = new AbortController();
-    const runAbort = syncAbort;
-    inFlight = true; setStatus("同步中…", "busy");
-    let __wd = setTimeout(function(){ if (inFlight && thisRun === syncGen){ runAbort.abort(); inFlight = false; setStatus("同步逾時，稍後重試", "warn"); if (window.refreshLed) window.refreshLed(); } }, SYNC_WATCHDOG_MS);
-    let syncComplete = false;
-    try {
-      await ensureToken();
-      await ensureFileId();
-      let tries = 0, pushed = null;
-      while (tries < 3){
-        tries++;
-        const remote = await download();
-        if (remote && remote.__syncCorrupt){
-          dirty = wasDirty || dirty;
-          setStatus("雲端資料損壞，請從快照還原", "warn");
-          break;
-        }
-        const local = buildLocal();
-        dirty = false;   // 本輪 buildLocal 已涵蓋目前為止的所有變更;若中途又有編輯,scheduleSync 會重新標回 true
-        const merged = mergeMain(local, remote);
-        const localCanon = canonical(local);
-        const mergedCanon = canonical(merged);
-        // 合併結果跟本機一致就不套用:applyMerged 會整表重繪,無故執行會偷走使用中的焦點/游標,
-        // 也會讓展開聚焦的淡化轉場重播。只有真的有差異(遠端帶來新東西)才需要重繪。
-        if (mergedCanon !== localCanon){
-          if (modalBg.classList.contains("open") || detailBg.classList.contains("open") || catBg.classList.contains("open") || fltBg.classList.contains("open") || confirmBg.classList.contains("open")) window._pendingMerge = merged;
-          else applyMerged(merged);
-        }
-        const needPush = !remote || mergedCanon !== canonical(remote);
-        if (!needPush){ lastVersion = await getVersion(); syncComplete = true; break; }
-        merged.rev = ((remote && remote.rev) || 0) + 1; merged.lastWriteBy = deviceId; merged.updatedAt = Date.now();
-        const newVer = await upload(fileId, merged);
-        const afterVer = await getVersion();
-        pushed = merged;
-        if (afterVer && newVer && afterVer === newVer){ lastVersion = afterVer; syncComplete = true; break; }
-        // else someone wrote concurrently → loop and re-merge
-      }
-      if (!syncComplete){
-        dirty = true;
-        if (!bumpSyncFail()){ setStatus("同步未完成，稍後重試", "warn"); scheduleSyncRetry(); }
-      } else {
-        if (pushed) maybeSnapshot(pushed);
-        resetSyncSuccess();
-        needReauth = false;   // 同步成功=授權有效:清掉可能殘留的「需要重新連結」(離線誤設,或 token 未過期沒走 requestToken 的情況)
-        setStatus("已同步", "ok");
-        try { localStorage.setItem("customer_app_lastsync_v1", String(Date.now())); } catch(e){}
-        window.renderLastSync();
-      }
-    } catch (e){
-      dirty = dirty || wasDirty;   // 這輪沒完成:把進場時的未推狀態還原(中途的新編輯本來就會自己標 true)
-      if (isSyncAuthError(e)){
-        markNeedReauth();
-      } else if (isAbortError(e)){
-        if (!bumpSyncFail()){ setStatus("同步逾時，稍後重試", "warn"); scheduleSyncRetry(); }
-      } else {
-        if (!bumpSyncFail()){ setStatus("同步失敗，稍後重試", "warn"); scheduleSyncRetry(); }
-      }
-    } finally {
-      if (thisRun === syncGen){
-        clearTimeout(__wd);
-        if (syncAbort === runAbort) syncAbort = null;
-        inFlight = false;
-        if (window.refreshLed) window.refreshLed();
-      }
-    }
-    return { ok: syncComplete && !dirty && !needReauth, reason: syncComplete ? undefined : (needReauth ? "reauth" : "failed") };
+    return {ok:complete&&!dirty&&!needReauth,reason:complete?undefined:"failed"};
   }
+
   window.__syncNow = syncNow;
 
+
   function startPolling(){
-    stopPolling();
-    pollTimer = setInterval(async function(){
-      if (!syncConnected || document.hidden || inFlight || needReauth) return;
-      if (dirty){ syncNow(); return; }   // 本機還有未推送的變更:直接補推,不必等遠端版本變化(重試計時器之外的保險網)
-      try { await ensureFileId(); const v = await getVersion(); if (v && v !== lastVersion) syncNow(); } catch(e){}
-    }, POLL_MS);
+    stopPolling();pollTimer=setInterval(()=>{if(syncConnected&&!document.hidden&&!inFlight&&!needReauth)syncNow();},POLL_MS);
   }
+
   function stopPolling(){ if (pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
 
   // ---- connect / disconnect ----
@@ -7614,7 +7658,9 @@ let syncConnected = false, syncEmail = null;
       setStatus("連結中…", "busy");
       await requestToken(true);
       const res = await dfetch("https://www.googleapis.com/oauth2/v2/userinfo");
+      if(!res.ok)throw new Error("Google 帳號讀取失敗");
       const info = await res.json();
+      if(syncEmail!==info.email)drive=CustomerDrive.create(dfetch,DataCore,()=>DataCore.newId());
       syncEmail = info.email || "已連結"; syncConnected = true; needReauth = false;
       resetSyncSuccess(); bootSyncPending = false;
       saveAuth(); saveGToken(); window.renderSyncCard();
@@ -7628,6 +7674,7 @@ let syncConnected = false, syncEmail = null;
   function disconnect(){
     askConfirm("解除 Google 連結？", "只會停止這台裝置的同步，雲端資料不會被刪除。", function(){
       if (accessToken && window.google && google.accounts && google.accounts.oauth2){ try { google.accounts.oauth2.revoke(accessToken, function(){}); } catch(e){} }
+      ++syncGen;if(syncAbort)syncAbort.abort();inFlight=false;clearTimeout(pushTimer);syncHasSucceeded=false;
       syncConnected = false; syncEmail = null; accessToken = null; tokenExpiry = 0; fileId = null; lastVersion = null; needReauth = false;
       clearGToken();
       stopPolling(); saveAuth(); window.renderSyncCard(); refreshLed();
