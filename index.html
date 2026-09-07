@@ -382,7 +382,11 @@
   .sync-led.offline .led{background:var(--text-faint);box-shadow:0 0 0 3px color-mix(in srgb,var(--text-faint) 24%,transparent);}
   .sync-led.pending .led{animation:ledYGled 1.1s steps(1,end) infinite;}
   @keyframes ledYGled{0%,49%{background:#D8961F;box-shadow:0 0 0 3px color-mix(in srgb,#D8961F 26%,transparent);}50%,100%{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 26%,transparent);}}
-  .ver-line{text-align:center;font-size:.76rem;color:var(--ink-soft);opacity:.72;letter-spacing:.02em;margin-top:26px;padding-bottom:6px;}
+/* completion-check:start */  .sync-led .led,.sync-dot{position:relative;}
+  #gDot{width:18px;height:18px;}
+  #listLed .led,#coverLed .led{width:16px;height:16px;}
+  .sync-led.sync-complete .led::after,.sync-dot.sync-complete::after{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M4.25%208.1%206.8%2010.55%2011.75%205.55%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E") center/100% 100% no-repeat;pointer-events:none;}
+/* completion-check:end */  .ver-line{text-align:center;font-size:.76rem;color:var(--ink-soft);opacity:.72;letter-spacing:.02em;margin-top:26px;padding-bottom:6px;}
   .soon-tag{font-family:inherit;font-size:.68rem;font-weight:700;letter-spacing:.02em;color:var(--accent-deep);
     background:var(--accent-tint);border:1px solid var(--accent-tint-bd);border-radius:999px;padding:3px 9px;}
 
@@ -1744,7 +1748,6 @@
 
 
 <script id="customer-data-core">
-
 /* 客戶總覽資料核心 v6。純函式；瀏覽器與離線測試共用。 */
 (function(root, factory) {
   const api = factory();
@@ -1923,8 +1926,7 @@ if(p.syncState){
     }
     v.items.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)||(a.id<b.id?-1:a.id>b.id?1:0));
     for(const [k,c] of Object.entries(s.prefs))if(k.startsWith("setting:"))v.settings[k.slice(8)]=chosen(c);
-    // UI edits must not mutate register values before capture records a new version.
-    return clone(v);
+    return v;
   }
   function capture(state,view,actor,at=Date.now(),previousPrefs) {
     const s=clone(state), normalized=normalizeLegacy(state);
@@ -1991,7 +1993,6 @@ if(p.syncState){
 
 </script>
 <script id="customer-sync-drive">
-
 /* Google Drive transport. Checkpoints are immutable; a failed read never authorizes a write. */
 (function(root,factory){const api=factory();if(typeof module==="object"&&module.exports)module.exports=api;else root.CustomerDrive=api;})(typeof globalThis!=="undefined"?globalThis:this,function(){
 "use strict";
@@ -2000,17 +2001,7 @@ const UPLOAD="https://www.googleapis.com/upload/drive/v3/files";
 const PREFIX="customer-state-v6-";
 function create(fetcher,core,uuid){
   const memo=new Map();
-  let mergedKey="",mergedMemo=null;
-  async function checked(url,opts){
-    const r=await fetcher(url,opts);
-    if(!r.ok){
-      const e=new Error("Google 雲端讀寫失敗（"+r.status+"）");e.status=r.status;
-      const retry=r.headers?.get?.("Retry-After");
-      if(retry){const seconds=Number(retry),until=Date.parse(retry);e.retryAfterMs=Number.isFinite(seconds)?Math.max(0,seconds*1000):Number.isFinite(until)?Math.max(0,until-Date.now()):0;}
-      throw e;
-    }
-    return r;
-  }
+  async function checked(url,opts){const r=await fetcher(url,opts);if(!r.ok){const e=new Error("Google 雲端讀寫失敗（"+r.status+"）");e.status=r.status;throw e;}return r;}
   async function list(q){
     const all=[];let token="";const seen=new Set();
     do{
@@ -2046,27 +2037,11 @@ function create(fetcher,core,uuid){
     for(let attempt=0;attempt<3;attempt++){
       try{
         const files=(await list("name contains '"+PREFIX+"'")).filter(f=>f.name.startsWith(PREFIX)&&f.name.endsWith(".json")&&!ignoreIds.includes(f.id));
-        const present=new Set(files.map(f=>f.id));
-        for(const id of memo.keys())if(!present.has(id))memo.delete(id);
-        // Reuse validated immutable checkpoints and their merged state while the complete list is unchanged.
-        const key=files.map(f=>f.id).sort().join("\n");
-        let cursor=0,readError=null;
-        const worker=async()=>{
-          while(cursor<files.length&&!readError){
-            const f=files[cursor++];if(memo.has(f.id))continue;
-            try{memo.set(f.id,core.validateState(await read(f.id)));}catch(e){readError=e;}
-          }
-        };
-        await Promise.all(Array.from({length:Math.min(3,files.length)},worker));
-        if(readError)throw readError;
-        let state=null;const loaded=files.map(file=>({file,state:memo.get(file.id)}));
-        if(files.length){
-          if(key===mergedKey&&mergedMemo)state=core.clone(mergedMemo);
-          else{
-            for(const entry of loaded)state=state?core.merge(state,entry.state):core.clone(entry.state);
-            mergedKey=key;mergedMemo=core.clone(state);
-          }
-        }else{mergedKey="";mergedMemo=null;}
+        let state=null;const loaded=[];
+        for(const f of files){
+          const s=memo.get(f.id)||core.validateState(await read(f.id));
+          memo.set(f.id,s);state=state?core.merge(state,s):core.clone(s);loaded.push({file:f,state:s});
+        }
         if(!files.length){
           for(const f of (await list("name='customer-sync-main.json'")).filter(f=>!ignoreIds.includes(f.id))){
             const legacy=core.fromLegacy(await read(f.id));
@@ -2104,10 +2079,7 @@ function create(fetcher,core,uuid){
     // Never touch legacy files, snapshots, unknown apps, or a concurrent writer's new files.
     for(const {file,state:old} of loaded){
       if(file.id===published.id||core.epochCmp(old.epoch,state.epoch)!==0||!core.equal(core.merge(old,state),state))continue;
-      try{await checked(API+"/"+encodeURIComponent(file.id),{method:"DELETE"});memo.delete(file.id);}catch(e){
-        // Keep extra immutable copies on failure; avoid further cleanup requests while Google is throttling.
-        if(e.status===429||e.status===503||e.name==="AbortError")break;
-      }
+      try{await checked(API+"/"+encodeURIComponent(file.id),{method:"DELETE"});memo.delete(file.id);}catch(e){/* Extra immutable copies are safe; retry on a later successful publication. */}
     }
   }
   async function snapshots(){
@@ -2143,79 +2115,33 @@ return {create};
 
 </script>
 <script id="customer-recovery-store">
-/* 只整理自動同步安全副本；手動還原前、匯入及損壞救援原件一律保留。 */
+/* 本機安全副本：交易完成後才允許還原取代現有資料。 */
 (function(){
-  const AUTO_LIMIT=200;
-  const automatic=label=>/^(自動採用較新修改前：|同步取代前：雲端來源|閱讀期間同步前：)/.test(label);
   let dbPromise;
   function db(){
-    if(!dbPromise)dbPromise=new Promise((resolve,reject)=>{
-      let settled=false;
-      const r=indexedDB.open('customer_recovery_v1',1);
-      r.onupgradeneeded=()=>r.result.createObjectStore('copies',{keyPath:'id'});
-      r.onsuccess=()=>{
-        if(settled){r.result.close();return;}
-        settled=true;const d=r.result;
-        d.onversionchange=()=>{d.close();dbPromise=null;};
-        resolve(d);
-      };
-      const failed=error=>{if(settled)return;settled=true;dbPromise=null;reject(error);};
-      r.onerror=()=>failed(r.error);
-      r.onblocked=()=>failed(new Error('備份空間被另一個視窗占用'));
+    if(!dbPromise) dbPromise=new Promise((resolve,reject)=>{
+      const r=indexedDB.open("customer_recovery_v1",1);
+      r.onupgradeneeded=()=>r.result.createObjectStore("copies",{keyPath:"id"});
+      r.onsuccess=()=>resolve(r.result);r.onerror=()=>{dbPromise=null;reject(r.error);};
+      r.onblocked=()=>{dbPromise=null;reject(new Error("備份空間被另一個視窗占用"));};
     });
     return dbPromise;
   }
-  async function automaticId(label,data){
-    if(!automatic(label)||!globalThis.crypto?.subtle)return null;
-    // Ignore export time so an unchanged checkpoint is backed up only once.
-    const payload=CustomerDataCore.stable([label,data.syncState||data]);
-    const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(payload));
-    return 'auto-'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
-  }
   async function put(label,data){
-    const id=await automaticId(label,data),d=await db();
-    const row={id:id||Date.now()+'-'+CustomerDataCore.newId(),at:Date.now(),label,data};
-    return new Promise((resolve,reject)=>{
-      const tx=d.transaction('copies','readwrite'),s=tx.objectStore('copies');
-      let result=row;
-      const save=()=>{
-        s.put(row);
-        const rows=[],cursor=s.openCursor();
-        cursor.onsuccess=()=>{
-          const c=cursor.result;
-          if(c){if(automatic(c.value.label))rows.push({id:c.value.id,at:c.value.at,usedAt:c.value.usedAt});c.continue();return;}
-          const rank=r=>Number.isSafeInteger(r.usedAt)&&r.usedAt>0?r.usedAt:0;
-          // Transaction order protects a just-used backup even when device time moves back.
-          if(automatic(row.label)){
-            row.usedAt=Math.max(0,...rows.map(rank))+1;
-            rows.find(r=>r.id===row.id).usedAt=row.usedAt;s.put(row);
-          }
-          rows.sort((a,b)=>rank(b)-rank(a)||b.at-a.at||b.id.localeCompare(a.id));
-          const keep=new Set(automatic(row.label)?[row.id]:[]);
-          for(const r of rows)if(keep.size<AUTO_LIMIT)keep.add(r.id);
-          for(const r of rows)if(!keep.has(r.id))s.delete(r.id);
-        };
-      };
-      if(id){const r=s.get(id);r.onsuccess=()=>{row.firstAt=r.result?.firstAt??r.result?.at??row.at;save();};}
-      else save();
-      tx.oncomplete=()=>resolve(result);
-      tx.onerror=()=>reject(tx.error||new Error('安全備份未完成'));
-      tx.onabort=()=>reject(tx.error||new Error('安全備份未完成'));
-    });
+    const d=await db(),row={id:Date.now()+"-"+CustomerDataCore.newId(),at:Date.now(),label,data};
+    await new Promise((resolve,reject)=>{const tx=d.transaction("copies","readwrite");tx.objectStore("copies").put(row);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error("安全備份未完成"));});
+    return row;
   }
   async function list(){
     const d=await db();
-    return new Promise((resolve,reject)=>{
-      const tx=d.transaction('copies','readonly'),r=tx.objectStore('copies').getAll();
-      r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.at-a.at));r.onerror=()=>reject(r.error);
-    });
+    return new Promise((resolve,reject)=>{const tx=d.transaction("copies","readonly"),r=tx.objectStore("copies").getAll();r.onsuccess=()=>resolve(r.result.sort((a,b)=>b.at-a.at));r.onerror=()=>reject(r.error);});
   }
   window.CustomerRecovery={put,list};
 })();
 
 </script>
 <script>
-const APP_VERSION = "2026.09.07A";
+const APP_VERSION = "2026.09.07C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2496,11 +2422,12 @@ function renderTabs(){
 }
 function refreshCategories(){
   saveCats();
-  if (typeof window.onLocalChange === "function") window.onLocalChange("cats");
+  if (typeof touchCats === "function") touchCats();
   renderCover();
   renderTabs();
   renderCatOptions();
   applyFilter();
+  if (typeof scheduleSync === "function") scheduleSync();
 }
 renderCover();
 
@@ -7399,21 +7326,19 @@ async function applyBackup(parsed,mode="replace"){
   if(typeof hideNeedHover==="function")hideNeedHover();
   if(!window._storageCorrupt&&!storeCurrentState())throw new Error("本機修改尚未安全保存，請先匯出備份後再匯入");
   const before=DataCore.clone(dataState),stored=localStorage.getItem(DATA_V6_KEY),localBefore=DataCore.clone(captureLocalState());
-  const deferredBefore=deferredSyncRows(),pendingBefore=DataCore.clone(window._pendingMerge||null);
-  const unchanged=()=>DataCore.equal(before,dataState)&&stored===localStorage.getItem(DATA_V6_KEY)&&DataCore.equal(localBefore,captureLocalState())&&DataCore.equal(deferredBefore,deferredSyncRows())&&DataCore.equal(pendingBefore,window._pendingMerge||null);
-  let restoreBase=mode==="replace"?deferredSyncRestoreBase(before,deferredBefore,pendingBefore):before, repair=null;
+  const unchanged=()=>DataCore.equal(before,dataState)&&stored===localStorage.getItem(DATA_V6_KEY)&&DataCore.equal(localBefore,captureLocalState());
+  let restoreBase=before, repair=null;
   if(mode==="replace"&&syncConnected&&window.prepareCloudRestore){
     repair=await window.prepareCloudRestore();
     const remote=repair.state;
     if(remote&&DataCore.epochCmp(remote.epoch,restoreBase.epoch)>0)restoreBase=remote;
   }
   await CustomerRecovery.put(mode==="replace"?"完整還原前":"合併匯入前",backupData());
-  if(deferredBefore.length||pendingBefore)await CustomerRecovery.put(mode==="replace"?"完整還原前：尚未套用同步資料":"合併匯入前：尚未套用同步資料",{app:"customer-rescue",raw:Object.fromEntries(deferredBefore.map(row=>[row.key,row.raw])),pendingState:pendingBefore});
   if(mode==="merge")await CustomerRecovery.put("合併匯入的來源備份",parsed);
   if(!unchanged())throw new Error("資料剛有更新，請重新選擇匯入");
   const v={...normalized,cats:normalized.cats??cats,settings:{...collectSettings(),...normalized.settings}};
   let next;
-  if(mode==="merge")next=DataCore.importMerge(currentSyncState(),v,DataCore.newId());
+  if(mode==="merge")next=DataCore.importMerge(dataState,v,DataCore.newId());
   else{
     next=DataCore.fromView(v);
     next.epoch={generation:restoreBase.epoch.generation+1,id:DataCore.newId()};
@@ -7425,10 +7350,7 @@ async function applyBackup(parsed,mode="replace"){
     localStorage.setItem("customer_app_repair_v6",JSON.stringify({email:syncEmail,epoch:next.epoch,files:repair.damaged.map(f=>({id:f.id,name:f.name}))}));
   }
   paintDataState(DataCore.autoLatest(next));
-  if(mode==="replace")removeRestoredDeferredSyncRows(deferredBefore);
-  else clearDeferredSyncIfApplied();
   window._pendingMerge=null;window._corruptRaw=null;window._autoApplyError=false;updateDataNotice();
-  loadDeferredSyncState();if(window._pendingMerge)scheduleAutoLatest();
   document.querySelectorAll("dialog.data-dialog").forEach(d=>d.close());
   onLocalChange("data");
   toast(mode==="merge"?"已合併匯入，自動採用較新的修改；取代前備份已保留":"已完整還原，還原前資料可由備份記錄找回");
@@ -7972,103 +7894,9 @@ async function acceptMergedState(incoming,guard=()=>{}){
       window.onLocalChange?.("data");
     }
     if(window._pendingMerge&&DataCore.equal(DataCore.autoLatest(DataCore.merge(dataState,window._pendingMerge)),dataState))window._pendingMerge=null;
-    clearDeferredSyncIfApplied();
     window._autoApplyError=false;updateDataNotice();return true;
   }catch(e){queueMergedState(incoming);window._autoApplyError=true;updateDataNotice();throw e;}
   finally{autoApplyBusy=false;}
-}
-// Received checkpoints are immutable so two reading windows cannot overwrite each other.
-const SYNC_PENDING_KEY='customer_app_sync_pending_v6';
-const SYNC_PENDING_PREFIX=SYNC_PENDING_KEY+':';
-const SYNC_PENDING_OWNER=DataCore.newId();
-function isDeferredSyncKey(key){return key===SYNC_PENDING_KEY||(typeof key==='string'&&key.startsWith(SYNC_PENDING_PREFIX));}
-function deferredSyncKeys(){
-  const keys=[];
-  for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(isDeferredSyncKey(key))keys.push(key);}
-  return [...new Set(keys)].sort();
-}
-function deferredSyncRows(){
-  return deferredSyncKeys().map(key=>({key,raw:localStorage.getItem(key)})).filter(row=>row.raw!==null);
-}
-function readDeferredSyncRow(row){
-  try{return DataCore.validateState(JSON.parse(row.raw));}
-  catch(e){markCorruptStore(row.key,row.raw);updateDataNotice();throw e;}
-}
-function loadDeferredSyncState(){
-  if(!storageOK||window._storageCorrupt)return;
-  try{for(const row of deferredSyncRows())queueMergedState(readDeferredSyncRow(row));}
-  catch(e){if(!window._storageCorrupt)markCorruptStore(SYNC_PENDING_KEY,null);updateDataNotice();}
-}
-function clearDeferredSyncIfApplied(){
-  for(const row of deferredSyncRows()){
-    const saved=readDeferredSyncRow(row);
-    if(DataCore.equal(DataCore.autoLatest(DataCore.merge(dataState,saved)),dataState)&&localStorage.getItem(row.key)===row.raw)localStorage.removeItem(row.key);
-  }
-}
-function deferredSyncRestoreBase(base,rows,pending){
-  let newest=base;
-  const states=pending?[pending]:[];
-  for(const row of rows){try{states.push(DataCore.validateState(JSON.parse(row.raw)));}catch(e){/* Raw malformed inboxes are backed up before an explicit full restore. */}}
-  for(const saved of states)if(DataCore.epochCmp(saved.epoch,newest.epoch)>0)newest=saved;
-  return newest;
-}
-function removeRestoredDeferredSyncRows(rows){
-  for(const row of rows)if(localStorage.getItem(row.key)===row.raw)localStorage.removeItem(row.key);
-}
-function handleDeferredSyncStorageEvent(e){
-  if(!isDeferredSyncKey(e.key))return false;
-  if(!e.newValue||window._storageCorrupt)return true;
-  try{
-    queueMergedState(readDeferredSyncRow({key:e.key,raw:e.newValue}));scheduleAutoLatest();
-    if(!autoApplyEditing())applyPendingMergeIfAny();
-  }catch(err){updateDataNotice();}
-  return true;
-}
-function persistDeferredSyncState(next){
-  const known=deferredSyncRows().map(row=>({...row,state:readDeferredSyncRow(row)}));
-  // Polling an unchanged checkpoint does not create another local copy.
-  if(known.some(row=>DataCore.equal(DataCore.autoLatest(row.state),next)))return;
-  const key=SYNC_PENDING_PREFIX+SYNC_PENDING_OWNER+':'+DataCore.newId();
-  localStorage.setItem(key,JSON.stringify(next));
-  // Only remove immutable checkpoints read here and fully included in the durable replacement.
-  for(const row of known)if(DataCore.equal(DataCore.autoLatest(DataCore.merge(row.state,next)),next)&&localStorage.getItem(row.key)===row.raw)localStorage.removeItem(row.key);
-}
-// A deferred detail view can have a fully synced checkpoint without repainting it.
-function currentSyncState(){
-  let next=window._pendingMerge?DataCore.merge(dataState,window._pendingMerge):dataState;
-  for(const row of deferredSyncRows())next=DataCore.merge(next,readDeferredSyncRow(row));
-  return DataCore.autoLatest(next);
-}
-async function prepareSyncState(incoming,guard=()=>{}){
-  if(!detailBg.classList.contains('open')){
-    const candidate=DataCore.merge(currentSyncState(),incoming);
-    return await acceptMergedState(candidate,guard)?DataCore.clone(dataState):null;
-  }
-  if(window._storageCorrupt)return null;
-  if(autoApplyBusy||window.isTableBusy()){
-    queueMergedState(incoming);scheduleAutoLatest();return null;
-  }
-  autoApplyBusy=true;
-  try{
-    if(!storeCurrentState())throw new Error('本機修改尚未安全保存');
-    const before=DataCore.clone(dataState),stored=localStorage.getItem(DATA_V6_KEY);
-    const next=DataCore.autoLatest(DataCore.merge(currentSyncState(),incoming));
-    if(!DataCore.equal(next,before)){
-      await CustomerRecovery.put('閱讀期間同步前：本機資料',stateBackup(before));
-      await CustomerRecovery.put('閱讀期間同步前：收到的資料',stateBackup(next));
-    }
-    guard();
-    if(window.isTableBusy()||stored!==localStorage.getItem(DATA_V6_KEY)||!DataCore.equal(before,dataState)||!DataCore.equal(before,captureLocalState())){
-      queueMergedState(next);scheduleAutoLatest();return null;
-    }
-    if(!DataCore.equal(next,dataState)){
-      persistDeferredSyncState(next);queueMergedState(next);scheduleAutoLatest();
-    }
-    window._autoApplyError=false;updateDataNotice();
-    return next;
-  }catch(e){
-    queueMergedState(incoming);window._autoApplyError=true;updateDataNotice();throw e;
-  }finally{autoApplyBusy=false;}
 }
 async function runAutoLatest(){
   clearTimeout(autoApplyTimer);autoApplyTimer=null;
@@ -8078,11 +7906,9 @@ async function runAutoLatest(){
   try{return await acceptMergedState(candidate);}
   catch(e){toast("自動整理未完成，原資料已保留，可稍後重試");return false;}
 }
-loadDeferredSyncState();
 setTimeout(()=>runAutoLatest(),0);
 window.__applyMerged=m=>acceptMergedState(m).catch(e=>{toast("套用同步資料失敗："+e.message);return false;});
 window.addEventListener("storage",e=>{
-  if(handleDeferredSyncStorageEvent(e))return;
   if(e.key!==DATA_V6_KEY||!e.newValue||window._storageCorrupt)return;
   try{
     const remote=DataCore.validateState(JSON.parse(e.newValue));
@@ -8100,7 +7926,7 @@ function dataDialog(title){
   d.addEventListener("close",()=>{d.remove();applyPendingMergeIfAny();});
   document.body.append(d);d.showModal();return {dialog:d,body:d.querySelector(".data-dialog-body")};
 }
-function updateDataNotice(){
+function updateDataNotice(){/* completion-check:start */window.refreshCompletionCheck?.();/* completion-check:end */
   const el=document.getElementById("dataNotice");if(!el)return;
   el.hidden=!window._storageCorrupt&&!window._saveError&&!window._autoApplyError;
   if(window._storageCorrupt)el.innerHTML='本機資料無法讀取，已停止改寫與同步。<button class="s-btn" data-rescue>匯出原始資料</button><button class="s-btn" data-import>匯入備份還原</button>';
@@ -8131,9 +7957,8 @@ async function showBackupHistory(){
   }
 }
 function rescueData(){
-  const raw={},keys=[STORE_KEY,DELETED_KEY,CATS_KEY,DATA_V6_KEY,SYNC_PENDING_KEY];
-  try{keys.push(...deferredSyncKeys());}catch(e){}
-  for(const k of new Set(keys)){try{raw[k]=localStorage.getItem(k);}catch(e){}}
+  const raw={};
+  for(const k of [STORE_KEY,DELETED_KEY,CATS_KEY,DATA_V6_KEY]){try{raw[k]=localStorage.getItem(k);}catch(e){}}
   return {app:"customer-rescue",exportedAt:new Date().toISOString(),raw,...(window._corruptRaw?{damaged:window._corruptRaw}:{})};
 }
 function downloadJSON(value,name){
@@ -8186,80 +8011,43 @@ let syncConnected = false, syncEmail = null;
   let syncError=false, syncHasSucceeded=false, snapshotError=false;
   let dirty = false;      // 本機有尚未成功推上雲端的變更(記憶體旗標即可:每次開啟 App 都會先做一次完整同步)
   let retryMs = 5000;     // 失敗重試的退避間隔;成功後歸位,每次失敗加倍,上限 60 秒
-  let nextAttemptAt=0,serverRetryUntil=0;
-  function queueSync(delay=0){
-    if(!syncConnected)return;
-    clearTimeout(pushTimer);
-    const wait=Math.max(delay,nextAttemptAt-Date.now(),serverRetryUntil-Date.now(),0);
-    pushTimer=setTimeout(()=>{pushTimer=null;syncNow();},wait);
-  }
-  window.scheduleSync = function(){dirty=true;queueSync(1500);};
+  window.scheduleSync = function(){ dirty = true;/* completion-check:start */ resetSyncCheck();/* completion-check:end */ if (!syncConnected) return; clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 1500); };
 
   // ---- GIS token flow ----
-  let gisLoadTask=null,tokenTask=null,authGeneration=0;
   function gisReady(){ return !!(window.google && google.accounts && google.accounts.oauth2); }
-  function ensureGis(){
-    if(gisReady())return Promise.resolve();
-    if(gisLoadTask)return gisLoadTask.promise;
-    if(!navigator.onLine)return Promise.reject(new Error("目前離線，連線後會重新載入 Google 登入服務"));
-    const task={};gisLoadTask=task;
-    task.promise=new Promise((resolve,reject)=>{
-      const url="https://accounts.google.com/gsi/client";
-      let script=document.querySelector('script[src="'+url+'"]');
-      if(script?.dataset.customerGisFailed){script.remove();script=null;}
-      const fresh=!script;if(fresh){script=document.createElement("script");script.src=url;script.async=true;}
-      let done=false;
-      const finish=error=>{
-        if(done)return;done=true;clearInterval(check);clearTimeout(timeout);
-        script.removeEventListener("load",loaded);script.removeEventListener("error",failed);
-        if(error)script.dataset.customerGisFailed="1";
-        if(gisLoadTask===task)gisLoadTask=null;
-        error?reject(error):resolve();
-      };
-      const loaded=()=>{if(gisReady())finish();};
-      const failed=()=>finish(new Error("Google 登入服務載入失敗，稍後會重試"));
-      const check=setInterval(loaded,250);
-      const timeout=setTimeout(()=>finish(new Error("Google 登入服務載入逾時，稍後會重試")),30000);
-      script.addEventListener("load",loaded);script.addEventListener("error",failed);
-      if(fresh)document.head.appendChild(script);
-      loaded();
-    });
-    return task.promise;
+  function whenGis(cb){
+    if (gisReady()){ cb(); return; }
+    let n = 0; const t = setInterval(function(){ if (gisReady()){ clearInterval(t); cb(); } else if (++n > 120){ clearInterval(t); } }, 100);
   }
-  function initClient(){return gisReady();}
+  function initClient(){
+    if (tokenClient || !gisReady()) return;
+    tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: SCOPES, callback: function(){} });
+  }
   function requestToken(interactive){
-    if(tokenTask)return tokenTask.promise;
-    const task={generation:authGeneration,cancel:null,promise:null};tokenTask=task;
-    task.promise=new Promise((resolve,reject)=>{
-      let done=false,timer=null;
-      const finish=(fn,value)=>{if(done)return;done=true;clearTimeout(timer);fn(value);};
-      task.cancel=()=>finish(reject,new DOMException("授權已中止","AbortError"));
-      ensureGis().then(()=>{
-        if(done||task.generation!==authGeneration)return task.cancel();
-        timer=setTimeout(()=>finish(reject,new Error("token_timeout")),TOKEN_MS);
-        // Every request owns its callbacks. Expired or cancelled requests cannot update a later session.
-        tokenClient=google.accounts.oauth2.initTokenClient({
-          client_id:CLIENT_ID,scope:SCOPES,
-          callback:resp=>{
-            if(done||task.generation!==authGeneration)return;
-            if(resp?.error)return finish(reject,resp);
-            if(!resp?.access_token)return finish(reject,new Error("Google 未提供授權憑證"));
-            accessToken=resp.access_token;tokenExpiry=Date.now()+((resp.expires_in||3600)-90)*1000;
-            needReauth=false;saveGToken();finish(resolve,accessToken);
-          },
-          error_callback:error=>{if(task.generation===authGeneration)finish(reject,error);}
-        });
-        const cfg={prompt:interactive?"consent":""};
-        if(syncEmail&&syncEmail.indexOf("@")>=0)cfg.hint=syncEmail;
-        try{tokenClient.requestAccessToken(cfg);}catch(error){finish(reject,error);}
-      }).catch(error=>finish(reject,error));
-    }).finally(()=>{if(tokenTask===task)tokenTask=null;});
-    return task.promise;
+    return new Promise(function(resolve, reject){
+      if (!tokenClient){ reject(new Error("gis")); return; }
+      let done = false;
+      const finish = function(fn, v){ if (done) return; done = true; clearTimeout(tmr); fn(v); };
+      const tmr = setTimeout(function(){ finish(reject, new Error("token_timeout")); }, TOKEN_MS);
+      tokenClient.callback = function(resp){
+        if (resp && resp.error){ finish(reject, resp); return; }
+        accessToken = resp.access_token;
+        tokenExpiry = Date.now() + ((resp.expires_in || 3600) - 90) * 1000;
+        needReauth = false;
+        saveGToken();
+        finish(resolve, accessToken);
+      };
+      try {
+        const cfg = { prompt: interactive ? "consent" : "" };
+        if (syncEmail && syncEmail.indexOf("@") >= 0) cfg.hint = syncEmail;   // 指定已連結的帳號,避免每次重開都跳「選擇帳戶」
+        tokenClient.requestAccessToken(cfg);
+      }
+      catch (e){ finish(reject, e); }
+    });
   }
-  function cancelTokenRequest(){authGeneration++;tokenTask?.cancel();tokenTask=null;tokenClient=null;}
   async function ensureToken(){
-    if(accessToken&&Date.now()<tokenExpiry)return accessToken;
-    return requestToken(false);
+    if (accessToken && Date.now() < tokenExpiry) return accessToken;
+    return await requestToken(false);
   }
 
   // ---- Drive REST helpers ----
@@ -8276,19 +8064,10 @@ let syncConnected = false, syncEmail = null;
     return fetch(url, o).finally(function(){ clearTimeout(timer); });
   }
   async function dfetch(url, opts){
-    if(Date.now()<serverRetryUntil)throw Object.assign(new Error("Google 雲端要求稍後重試"),{status:429,retryAfterMs:serverRetryUntil-Date.now()});
     const token = await ensureToken();
     opts = opts || {}; opts.headers = Object.assign({}, opts.headers, { Authorization: "Bearer " + token });
     let res = await tfetch(url, opts);
-    if(res.status===401){
-      if(accessToken===token){accessToken=null;clearGToken();}
-      const t2=await ensureToken();opts.headers.Authorization="Bearer "+t2;res=await tfetch(url,opts);
-    }
-    if(res.status===429||res.status===503){
-      const raw=res.headers?.get?.("Retry-After"),seconds=Number(raw),stamp=Date.parse(raw);
-      const delay=raw?(Number.isFinite(seconds)?Math.max(0,seconds*1000):Number.isFinite(stamp)?Math.max(0,stamp-Date.now()):0):0;
-      serverRetryUntil=Math.max(serverRetryUntil,Date.now()+delay);
-    }
+    if (res.status === 401){ accessToken = null; clearGToken(); const t2 = await requestToken(false); opts.headers.Authorization = "Bearer " + t2; res = await tfetch(url, opts); }
     return res;
   }
 
@@ -8422,12 +8201,58 @@ let syncConnected = false, syncEmail = null;
   }
 
 
-  // ---- status UI ----
+  // ---- status UI ----/* completion-check:start */
+  // Completion display only: this memory proof never saves data or schedules synchronization.
+  let completedCheckState=null,completedCheckEmail=null,checkSession=0;
+  function clearSyncCheck(){
+    for(const id of ["listLed","coverLed","gDot"]){try{document.getElementById(id)?.classList.remove("sync-complete");}catch(_){}}
+  }
+  function resetSyncCheck(){completedCheckState=null;completedCheckEmail=null;clearSyncCheck();}
+  function resetSyncCheckAccount(){checkSession++;resetSyncCheck();}
+  function confirmSyncCheck(state,email,session){
+    try{
+      if(session!==checkSession||email!==syncEmail||dirty||snapshotError||syncError){resetSyncCheck();return;}
+      completedCheckState=DataCore.clone(state);completedCheckEmail=email;
+    }catch(_){resetSyncCheck();}
+  }
+  function updateSyncCheck(cls){
+    let complete=false;
+    try{
+      if(cls==="warn"||cls==="offline"||cls==="busy"||!syncConnected||!navigator.onLine||needReauth||syncError||snapshotError||window._saveError||window._storageCorrupt||window._autoApplyError)resetSyncCheck();
+      if(completedCheckState&&completedCheckEmail===syncEmail&&syncConnected&&navigator.onLine&&syncHasSucceeded&&!inFlight&&!dirty&&!needReauth&&!syncError&&!snapshotError&&!window._saveError&&!window._storageCorrupt&&!window._autoApplyError&&!window._pendingMerge&&!(window.isTableBusy&&window.isTableBusy())&&!document.querySelector('.tcell[aria-invalid="true"]')){
+        // Both helpers below are read-only. A draft or failed save can never certify old stored data.
+        const saved=DataCore.validateState(JSON.parse(localStorage.getItem(DATA_V6_KEY)||"null"));
+        complete=DataCore.equal(saved,completedCheckState)&&DataCore.equal(dataState,completedCheckState)&&DataCore.equal(captureLocalState(),completedCheckState);
+      }
+    }catch(_){complete=false;}
+    for(const id of ["listLed","coverLed","gDot"]){try{
+      const el=document.getElementById(id),show=complete&&el?.classList.contains("ok");
+      if(el&&el.classList.contains("sync-complete")!==!!show)el.classList.toggle("sync-complete",!!show);
+    }catch(_){}}
+  }
+  window.refreshCompletionCheck=updateSyncCheck;
+  for(const type of ["input","compositionstart","compositionend"]){document.addEventListener(type,e=>{
+    if(e.target?.closest?.("#tableWrap, #modalBg"))clearSyncCheck();
+  },true);}
+  // These callbacks only repaint the check before the browser's next paint; no new timers or waits.
+  for(const type of ["click","pointerup","keydown","focusin","focusout","change"]){document.addEventListener(type,()=>{
+    updateSyncCheck();Promise.resolve().then(()=>updateSyncCheck());
+  },true);}
+  if(typeof MutationObserver!=="undefined")new MutationObserver(records=>{
+    if(records.some(r=>!["listLed","coverLed","gDot"].includes(r.target.id)))updateSyncCheck();
+  }).observe(document.body,{subtree:true,attributes:true,attributeFilter:["class","open","contenteditable","aria-invalid"]});
+  window.addEventListener("storage",e=>{
+    if(e.key===null||e.key==="customer_app_gauth_v1")resetSyncCheck();
+    if(e.key===null||e.key?.startsWith("customer_app_"))updateSyncCheck();
+  });
+
+/* completion-check:end */
   function setLed(cls){   // 同時更新列表 + 封面兩顆同步燈(封面那顆保留 cover-led 容器樣式)
     ["listLed","coverLed"].forEach(function(id){
       const el = document.getElementById(id); if (!el) return;
       el.className = (id === "coverLed" ? "sync-led cover-led" : "sync-led") + (cls ? " " + cls : "");
-    });
+    });/* completion-check:start */
+    updateSyncCheck(cls);/* completion-check:end */
   }
   function setStatus(text, kind){
     const st = document.getElementById("gStatus"), dot = document.getElementById("gDot");
@@ -8461,7 +8286,7 @@ let syncConnected = false, syncEmail = null;
   };
 
   let syncGen = 0;
-  function isSyncAuthError(e){ return e && (e.error === "access_denied" || e.error === "interaction_required" || e.error === "login_required" || e.type === "popup_failed_to_open" || e.type === "popup_closed"); }
+  function isSyncAuthError(e){ return e && (e.error === "access_denied" || e.error === "interaction_required" || e.error === "login_required"); }
   function isAbortError(e){ return e && (e.name === "AbortError" || e.message === "AbortError" || e.message === "token_timeout"); }
   function markNeedReauth(){
     needReauth = true; syncFailCount = 0;
@@ -8469,13 +8294,13 @@ let syncConnected = false, syncEmail = null;
     setStatus("需要重新連結", "warn"); window.renderSyncCard();
   }
   function resetSyncSuccess(){
-    syncFailCount = 0; retryMs = 5000; nextAttemptAt=0;
+    syncFailCount = 0; retryMs = 5000;
   }
   function bumpSyncFail(){ syncFailCount++; syncError=true; return false; }
-  function scheduleSyncRetry(error){
-    if(error?.retryAfterMs)serverRetryUntil=Math.max(serverRetryUntil,Date.now()+error.retryAfterMs);
-    nextAttemptAt=Math.max(Date.now()+retryMs+Math.floor(Math.random()*1000),serverRetryUntil);
-    retryMs=Math.min(retryMs*2,60000);queueSync();
+  function scheduleSyncRetry(){
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function(){ syncNow(); }, retryMs);
+    retryMs = Math.min(retryMs * 2, 60000);
   }
   function maybeBootSync(){
     if (!syncConnected || needReauth) return;
@@ -8499,19 +8324,18 @@ let syncConnected = false, syncEmail = null;
     });
   }
   // ---- core two-way sync ----
-  async function syncNow(force){
+  async function syncNow(force){/* completion-check:start */clearSyncCheck();/* completion-check:end */
     if(!syncConnected)return {ok:false,reason:"not_connected"};
-    if(window._storageCorrupt||(window._saveError&&!storeCurrentState())){setStatus("本機資料尚未安全保存，請先備份處理","warn");syncError=true;return {ok:false,reason:"local_storage"};}
+    if(window._storageCorrupt||window._saveError){setStatus("本機資料尚未安全保存，請先備份處理","warn");syncError=true;return {ok:false,reason:"local_storage"};}
     if(!navigator.onLine){setStatus("目前離線，連線後重試","offline");return {ok:false,reason:"offline"};}
     if(inFlight)return {ok:false,reason:"busy"};
-    if(Date.now()<Math.max(nextAttemptAt,serverRetryUntil)){queueSync();return {ok:false,reason:"backoff"};}
-    if(window.isTableBusy()){queueSync(2000);return {ok:false,reason:"editing"};}
-    const thisRun=++syncGen;
+    if(window.isTableBusy()||detailBg.classList.contains("open")){clearTimeout(pushTimer);pushTimer=setTimeout(()=>syncNow(),2000);return {ok:false,reason:"editing"};}
+    const thisRun=++syncGen;/* completion-check:start */const syncCheckEmail=syncEmail,syncCheckSession=checkSession;/* completion-check:end */
     syncAbort=new AbortController();const runAbort=syncAbort;
     const guard=()=>{if(thisRun!==syncGen||runAbort.signal.aborted||!syncConnected)throw new DOMException("同步已中止","AbortError");};
     inFlight=true;setStatus("同步中…","busy");
     const watchdog=setTimeout(()=>runAbort.abort(),SYNC_WATCHDOG_MS);
-    let complete=false,snapshotFailure=null;
+    let complete=false;
     try{
       if(!storeCurrentState())throw new Error("本機儲存失敗");
 
@@ -8519,22 +8343,24 @@ let syncConnected = false, syncEmail = null;
       try{const p=JSON.parse(localStorage.getItem("customer_app_repair_v6")||"null");if(p&&p.email===syncEmail&&DataCore.equal(p.epoch,dataState.epoch))repair=p;}catch(e){}
       const pulled=await drive.pull(repair?repair.files.map(f=>f.id):[]);guard();
       if(!storeCurrentState())throw new Error("本機儲存失敗");
-      let merged=await prepareSyncState(pulled.state||currentSyncState(),guard);
-      if(!merged){queueSync(2000);return {ok:false,reason:"local_change"};}
-      guard();merged=DataCore.clone(merged);
+      let merged=pulled.state?DataCore.merge(dataState,pulled.state):DataCore.clone(dataState);
+      if(!await acceptMergedState(merged,guard)){scheduleSyncRetry();return {ok:false,reason:"local_change"};}
+      guard();merged=DataCore.clone(dataState);
       let published=null;
       if(repair||!pulled.loaded.length||!pulled.state||!DataCore.equal(merged,pulled.state)){
         // Preserve individual cloud sources before compaction can remove them.
         for(const source of pulled.loaded)if(!DataCore.equal(source.state,merged)){
           await CustomerRecovery.put("同步取代前：雲端來源",stateBackup(source.state));guard();
         }
-        if(window.isTableBusy()||!DataCore.equal(dataState,captureLocalState())){queueSync(2000);return {ok:false,reason:"editing"};}
+        if(autoApplyEditing()||!DataCore.equal(dataState,captureLocalState())){scheduleSyncRetry();return {ok:false,reason:"editing"};}
         published=await drive.publish(merged);guard();
       }
       // A verified upload contains exactly this checkpoint. New local changes remain dirty.
-      const latest=DataCore.autoLatest(DataCore.merge(currentSyncState(),merged));
-      if(!DataCore.equal(latest,currentSyncState())){queueMergedState(latest);scheduleAutoLatest();}
-      dirty=!DataCore.equal(latest,merged);
+      const latest=DataCore.autoLatest(DataCore.merge(dataState,merged));
+      if(!DataCore.equal(latest,dataState)){
+        queueMergedState(latest);scheduleAutoLatest();
+      }
+      dirty=!DataCore.equal(latest,merged)||!!window._pendingMerge;
 
       if(published)await drive.compact(pulled.loaded,published,merged);
       if(repair&&published){
@@ -8546,18 +8372,18 @@ let syncConnected = false, syncEmail = null;
       try{
         const d=new Date(),day=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
         await drive.daily(merged,day);
-      }catch(e){snapshotError=true;snapshotFailure=e;}
+      }catch(e){snapshotError=true;}
       guard();
       complete=true;syncError=false;syncHasSucceeded=true;needReauth=false;resetSyncSuccess();
-      dirty=dirty||!DataCore.equal(currentSyncState(),merged)||!DataCore.equal(dataState,captureLocalState());
+      dirty=dirty||!DataCore.equal(DataCore.autoLatest(DataCore.merge(dataState,merged)),merged);
       setStatus(dirty?"新修改等待同步":snapshotError?"資料已同步，每日備份未完成，稍後重試":"已同步",dirty||snapshotError?"pending":"ok");
-      localStorage.setItem("customer_app_lastsync_v1",String(Date.now()));window.renderLastSync();
-      if(snapshotError)scheduleSyncRetry(snapshotFailure);else if(dirty)queueSync(1500);
+      localStorage.setItem("customer_app_lastsync_v1",String(Date.now()));window.renderLastSync();/* completion-check:start */confirmSyncCheck(merged,syncCheckEmail,syncCheckSession);/* completion-check:end */
+      if(dirty||snapshotError)scheduleSyncRetry();
     }catch(e){
       if(thisRun!==syncGen)return {ok:false,reason:"cancelled"};
       syncError=true;
       if(isSyncAuthError(e)||e.status===401){markNeedReauth();}
-      else{setStatus(isAbortError(e)?"同步逾時，資料仍保留在本機":"同步失敗："+(e.message||"請稍後重試"),"warn");scheduleSyncRetry(e);}
+      else{setStatus(isAbortError(e)?"同步逾時，資料仍保留在本機":"同步失敗："+(e.message||"請稍後重試"),"warn");scheduleSyncRetry();}
     }finally{
       clearTimeout(watchdog);
       if(thisRun===syncGen){inFlight=false;if(syncAbort===runAbort)syncAbort=null;refreshLed();}
@@ -8575,7 +8401,7 @@ let syncConnected = false, syncEmail = null;
   function stopPolling(){ if (pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
 
   // ---- connect / disconnect ----
-  async function connect(){
+  async function connect(){/* completion-check:start */resetSyncCheckAccount();/* completion-check:end */
     try {
       initClient();
       setStatus("連結中…", "busy");
@@ -8597,7 +8423,7 @@ let syncConnected = false, syncEmail = null;
   function disconnect(){
     askConfirm("解除 Google 連結？", "只會停止這台裝置的同步，雲端資料不會被刪除。", function(){
       if (accessToken && window.google && google.accounts && google.accounts.oauth2){ try { google.accounts.oauth2.revoke(accessToken, function(){}); } catch(e){} }
-      ++syncGen;if(syncAbort)syncAbort.abort();cancelTokenRequest();inFlight=false;clearTimeout(pushTimer);syncHasSucceeded=false;nextAttemptAt=0;serverRetryUntil=0;
+      ++syncGen;if(syncAbort)syncAbort.abort();inFlight=false;/* completion-check:start */resetSyncCheckAccount();/* completion-check:end */clearTimeout(pushTimer);syncHasSucceeded=false;
       syncConnected = false; syncEmail = null; accessToken = null; tokenExpiry = 0; fileId = null; lastVersion = null; needReauth = false;
       clearGToken();
       stopPolling(); saveAuth(); window.renderSyncCard(); refreshLed();
@@ -8643,24 +8469,42 @@ let syncConnected = false, syncEmail = null;
   // 網路恢復:退避歸位並立即嘗試同步。離線開啟時 GIS 載入不了會走「稍後重試」,回到有網路這裡馬上再試;
   // 若之前殘留 needReauth,syncNow 會 silent 取得 token,成功即自動清除,使用者不必手動點「重新連結」。
   window.addEventListener("online", function(){
-    if(window.refreshLed)window.refreshLed();
-    if(!syncConnected){ensureGis().catch(()=>{});return;}
-    retryMs=5000;nextAttemptAt=serverRetryUntil;bootSyncPending=false;
-    queueSync();startPolling();
+    if (window.refreshLed) window.refreshLed();   // 先把燈從離線灰更新過來
+    if (!syncConnected) return;
+    retryMs = 5000; clearTimeout(pushTimer); pushTimer = null;
+    if (bootSyncPending){
+      bootSyncPending = false;
+      syncNow().then(function(){ if (!needReauth) startPolling(); });
+      return;
+    }
+    syncNow();
   });
   window.addEventListener("offline", function(){ if (window.refreshLed) window.refreshLed(); });   // 斷網:燈轉離線灰
 
-  // Restore local connection and token state immediately. Google loading is retryable and does not gate offline startup.
+  // 開檔先依「上次的連結狀態」渲染同步卡片(純讀本機 localStorage,不等 GIS client 從網路載入完成),
+  // 避免視窗長時間背景後恢復/開啟時,「連結 Google 帳號」登入介面因枯等 GIS 載入而先露出、隨後才被隱藏(閃一下)。
   (function(){
-    try{
-      const auth=loadAuth();if(auth?.connected){syncConnected=true;syncEmail=auth.email||null;}
-      const gt=loadGToken();
-      if(syncConnected&&gt?.t&&gt.exp&&Date.now()<gt.exp-60000&&(gt.email||"")===(syncEmail||"")){accessToken=gt.t;tokenExpiry=gt.exp;}
-    }catch(e){}
-    window.renderSyncCard();refreshLed();
-    if(syncConnected)maybeBootSync();
-    else if(navigator.onLine)ensureGis().catch(()=>{});
+    try { const a = loadAuth(); if (a && a.connected){ syncConnected = true; syncEmail = a.email || null; } } catch(e){}
+    window.renderSyncCard();
+    refreshLed();   // 開檔即顯示兩顆燈的初始狀態(含離線判斷)
   })();
+
+  whenGis(function(){
+    initClient();
+    const auth = loadAuth();
+    if (auth && auth.connected){
+      syncConnected = true; syncEmail = auth.email || null;
+      const gt = loadGToken();
+      if (gt && gt.t && gt.exp && Date.now() < gt.exp - 60000 && (gt.email || "") === (syncEmail || "")){
+        accessToken = gt.t; tokenExpiry = gt.exp;
+      }
+      window.renderSyncCard();
+      maybeBootSync();
+    } else {
+      window.renderSyncCard();
+    }
+    refreshLed();
+  });
 })();
 </script>
 <div id="rotateGate" role="alertdialog" aria-live="polite" aria-label="請轉回直向使用">
