@@ -2141,7 +2141,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.09.07C";
+const APP_VERSION = "2026.09.07D";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -8011,7 +8011,7 @@ let syncConnected = false, syncEmail = null;
   let syncError=false, syncHasSucceeded=false, snapshotError=false;
   let dirty = false;      // 本機有尚未成功推上雲端的變更(記憶體旗標即可:每次開啟 App 都會先做一次完整同步)
   let retryMs = 5000;     // 失敗重試的退避間隔;成功後歸位,每次失敗加倍,上限 60 秒
-  window.scheduleSync = function(){ dirty = true;/* completion-check:start */ resetSyncCheck();/* completion-check:end */ if (!syncConnected) return; clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 1500); };
+  window.scheduleSync = function(){ dirty = true;/* completion-check:start */ resetSyncCheck();refreshLed();/* completion-check:end */ if (!syncConnected) return; clearTimeout(pushTimer); pushTimer = setTimeout(function(){ syncNow(); }, 1500); };
 
   // ---- GIS token flow ----
   function gisReady(){ return !!(window.google && google.accounts && google.accounts.oauth2); }
@@ -8066,7 +8066,7 @@ let syncConnected = false, syncEmail = null;
   async function dfetch(url, opts){
     const token = await ensureToken();
     opts = opts || {}; opts.headers = Object.assign({}, opts.headers, { Authorization: "Bearer " + token });
-    let res = await tfetch(url, opts);
+/* completion-check:start */if(inFlight&&/^(POST|PATCH|PUT|DELETE)$/i.test(opts.method||"GET"))showSyncWork();/* completion-check:end */    let res = await tfetch(url, opts);
     if (res.status === 401){ accessToken = null; clearGToken(); const t2 = await requestToken(false); opts.headers.Authorization = "Bearer " + t2; res = await tfetch(url, opts); }
     return res;
   }
@@ -8202,39 +8202,68 @@ let syncConnected = false, syncEmail = null;
 
 
   // ---- status UI ----/* completion-check:start */
-  // Completion display only: this memory proof never saves data or schedules synchronization.
+  // Display only: existing requests, storage and timers remain owned by the original sync flow.
   let completedCheckState=null,completedCheckEmail=null,checkSession=0;
+  let quietCheck=false,displayErrorText=null,paintingCheck=false;
   function clearSyncCheck(){
     for(const id of ["listLed","coverLed","gDot"]){try{document.getElementById(id)?.classList.remove("sync-complete");}catch(_){}}
   }
-  function resetSyncCheck(){completedCheckState=null;completedCheckEmail=null;clearSyncCheck();}
-  function resetSyncCheckAccount(){checkSession++;resetSyncCheck();}
+  function resetSyncCheck(){quietCheck=false;completedCheckState=null;completedCheckEmail=null;clearSyncCheck();}
+  function resetSyncCheckAccount(){checkSession++;displayErrorText=null;resetSyncCheck();}
+  function checkHasError(){return needReauth||syncError||snapshotError||window._saveError||window._storageCorrupt||window._autoApplyError;}
+  function checkContentMatches(){
+    try{
+      if(!completedCheckState||completedCheckEmail!==syncEmail||!syncConnected||!navigator.onLine||!syncHasSucceeded||dirty||checkHasError()||displayErrorText||window._pendingMerge||(window.isTableBusy&&window.isTableBusy())||document.querySelector('.tcell[aria-invalid="true"]'))return false;
+      const saved=DataCore.validateState(JSON.parse(localStorage.getItem(DATA_V6_KEY)||"null"));
+      return DataCore.equal(saved,completedCheckState)&&DataCore.equal(dataState,completedCheckState)&&DataCore.equal(captureLocalState(),completedCheckState);
+    }catch(_){return false;}
+  }
+  function beginSyncDisplay(){
+    // Called only after the original early returns. Once real work appears this run cannot become quiet again.
+    quietCheck=checkContentMatches();
+    if(!quietCheck)resetSyncCheck();
+  }
+  function showSyncWork(){
+    resetSyncCheck();
+    if(inFlight)setStatus("同步中…","busy");
+  }
   function confirmSyncCheck(state,email,session){
     try{
       if(session!==checkSession||email!==syncEmail||dirty||snapshotError||syncError){resetSyncCheck();return;}
       completedCheckState=DataCore.clone(state);completedCheckEmail=email;
     }catch(_){resetSyncCheck();}
   }
+  function syncDisplayKind(cls){
+    if(displayErrorText||checkHasError())return "warn";
+    if(syncConnected&&!navigator.onLine)return "offline";
+    if(cls==="busy"&&quietCheck&&checkContentMatches())return "ok";
+    return cls;
+  }
+  function syncDisplayStatus(text,kind){
+    if(kind==="warn"||snapshotError){displayErrorText=text;resetSyncCheck();}
+    else if((kind==="ok"||kind==="pending")&&!checkHasError())displayErrorText=null;
+    const displayKind=syncDisplayKind(kind);
+    return {kind:displayKind,text:displayKind==="warn"&&displayErrorText?displayErrorText:displayKind==="ok"&&kind==="busy"?"已同步":text};
+  }
   function updateSyncCheck(cls){
-    let complete=false;
+    if(paintingCheck)return;paintingCheck=true;
     try{
-      if(cls==="warn"||cls==="offline"||cls==="busy"||!syncConnected||!navigator.onLine||needReauth||syncError||snapshotError||window._saveError||window._storageCorrupt||window._autoApplyError)resetSyncCheck();
-      if(completedCheckState&&completedCheckEmail===syncEmail&&syncConnected&&navigator.onLine&&syncHasSucceeded&&!inFlight&&!dirty&&!needReauth&&!syncError&&!snapshotError&&!window._saveError&&!window._storageCorrupt&&!window._autoApplyError&&!window._pendingMerge&&!(window.isTableBusy&&window.isTableBusy())&&!document.querySelector('.tcell[aria-invalid="true"]')){
-        // Both helpers below are read-only. A draft or failed save can never certify old stored data.
-        const saved=DataCore.validateState(JSON.parse(localStorage.getItem(DATA_V6_KEY)||"null"));
-        complete=DataCore.equal(saved,completedCheckState)&&DataCore.equal(dataState,completedCheckState)&&DataCore.equal(captureLocalState(),completedCheckState);
-      }
-    }catch(_){complete=false;}
-    for(const id of ["listLed","coverLed","gDot"]){try{
-      const el=document.getElementById(id),show=complete&&el?.classList.contains("ok");
-      if(el&&el.classList.contains("sync-complete")!==!!show)el.classList.toggle("sync-complete",!!show);
-    }catch(_){}}
+      const wasQuiet=quietCheck;
+      if(cls==="warn"||cls==="offline"||!syncConnected||!navigator.onLine||checkHasError()||displayErrorText||syncAbort?.signal.aborted)resetSyncCheck();
+      let matches=checkContentMatches();
+      if(quietCheck&&!matches){resetSyncCheck();matches=false;}
+      if(wasQuiet&&!quietCheck&&inFlight){setStatus("同步中…","busy");}
+      const complete=matches&&(!inFlight||quietCheck);
+      for(const id of ["listLed","coverLed","gDot"]){try{
+        const el=document.getElementById(id),show=complete&&el?.classList.contains("ok");
+        if(el&&el.classList.contains("sync-complete")!==!!show)el.classList.toggle("sync-complete",!!show);
+      }catch(_){}}
+    }finally{paintingCheck=false;}
   }
   window.refreshCompletionCheck=updateSyncCheck;
   for(const type of ["input","compositionstart","compositionend"]){document.addEventListener(type,e=>{
-    if(e.target?.closest?.("#tableWrap, #modalBg"))clearSyncCheck();
+    if(e.target?.closest?.("#tableWrap, #modalBg")){if(inFlight&&quietCheck)showSyncWork();else clearSyncCheck();}
   },true);}
-  // These callbacks only repaint the check before the browser's next paint; no new timers or waits.
   for(const type of ["click","pointerup","keydown","focusin","focusout","change"]){document.addEventListener(type,()=>{
     updateSyncCheck();Promise.resolve().then(()=>updateSyncCheck());
   },true);}
@@ -8242,19 +8271,19 @@ let syncConnected = false, syncEmail = null;
     if(records.some(r=>!["listLed","coverLed","gDot"].includes(r.target.id)))updateSyncCheck();
   }).observe(document.body,{subtree:true,attributes:true,attributeFilter:["class","open","contenteditable","aria-invalid"]});
   window.addEventListener("storage",e=>{
-    if(e.key===null||e.key==="customer_app_gauth_v1")resetSyncCheck();
+    if(e.key===null||e.key==="customer_app_gauth_v1")resetSyncCheckAccount();
     if(e.key===null||e.key?.startsWith("customer_app_"))updateSyncCheck();
   });
 
 /* completion-check:end */
-  function setLed(cls){   // 同時更新列表 + 封面兩顆同步燈(封面那顆保留 cover-led 容器樣式)
+  function setLed(cls){/* completion-check:start */cls=syncDisplayKind(cls);/* completion-check:end */   // 同時更新列表 + 封面兩顆同步燈(封面那顆保留 cover-led 容器樣式)
     ["listLed","coverLed"].forEach(function(id){
       const el = document.getElementById(id); if (!el) return;
       el.className = (id === "coverLed" ? "sync-led cover-led" : "sync-led") + (cls ? " " + cls : "");
     });/* completion-check:start */
     updateSyncCheck(cls);/* completion-check:end */
   }
-  function setStatus(text, kind){
+  function setStatus(text, kind){/* completion-check:start */const display=syncDisplayStatus(text,kind);text=display.text;kind=display.kind;/* completion-check:end */
     const st = document.getElementById("gStatus"), dot = document.getElementById("gDot");
     if (st) st.textContent = text;
     if (dot) dot.className = "sync-dot" + (kind ? " " + kind : "");
@@ -8324,13 +8353,13 @@ let syncConnected = false, syncEmail = null;
     });
   }
   // ---- core two-way sync ----
-  async function syncNow(force){/* completion-check:start */clearSyncCheck();/* completion-check:end */
+  async function syncNow(force){/* completion-check:start */updateSyncCheck();/* completion-check:end */
     if(!syncConnected)return {ok:false,reason:"not_connected"};
     if(window._storageCorrupt||window._saveError){setStatus("本機資料尚未安全保存，請先備份處理","warn");syncError=true;return {ok:false,reason:"local_storage"};}
     if(!navigator.onLine){setStatus("目前離線，連線後重試","offline");return {ok:false,reason:"offline"};}
     if(inFlight)return {ok:false,reason:"busy"};
     if(window.isTableBusy()||detailBg.classList.contains("open")){clearTimeout(pushTimer);pushTimer=setTimeout(()=>syncNow(),2000);return {ok:false,reason:"editing"};}
-    const thisRun=++syncGen;/* completion-check:start */const syncCheckEmail=syncEmail,syncCheckSession=checkSession;/* completion-check:end */
+    const thisRun=++syncGen;/* completion-check:start */const syncCheckEmail=syncEmail,syncCheckSession=checkSession;beginSyncDisplay();/* completion-check:end */
     syncAbort=new AbortController();const runAbort=syncAbort;
     const guard=()=>{if(thisRun!==syncGen||runAbort.signal.aborted||!syncConnected)throw new DOMException("同步已中止","AbortError");};
     inFlight=true;setStatus("同步中…","busy");
@@ -8343,11 +8372,11 @@ let syncConnected = false, syncEmail = null;
       try{const p=JSON.parse(localStorage.getItem("customer_app_repair_v6")||"null");if(p&&p.email===syncEmail&&DataCore.equal(p.epoch,dataState.epoch))repair=p;}catch(e){}
       const pulled=await drive.pull(repair?repair.files.map(f=>f.id):[]);guard();
       if(!storeCurrentState())throw new Error("本機儲存失敗");
-      let merged=pulled.state?DataCore.merge(dataState,pulled.state):DataCore.clone(dataState);
+      let merged=pulled.state?DataCore.merge(dataState,pulled.state):DataCore.clone(dataState);/* completion-check:start */if(!DataCore.equal(DataCore.autoLatest(merged),dataState))showSyncWork();/* completion-check:end */
       if(!await acceptMergedState(merged,guard)){scheduleSyncRetry();return {ok:false,reason:"local_change"};}
       guard();merged=DataCore.clone(dataState);
       let published=null;
-      if(repair||!pulled.loaded.length||!pulled.state||!DataCore.equal(merged,pulled.state)){
+      if(repair||!pulled.loaded.length||!pulled.state||!DataCore.equal(merged,pulled.state)){/* completion-check:start */showSyncWork();/* completion-check:end */
         // Preserve individual cloud sources before compaction can remove them.
         for(const source of pulled.loaded)if(!DataCore.equal(source.state,merged)){
           await CustomerRecovery.put("同步取代前：雲端來源",stateBackup(source.state));guard();
@@ -8386,7 +8415,7 @@ let syncConnected = false, syncEmail = null;
       else{setStatus(isAbortError(e)?"同步逾時，資料仍保留在本機":"同步失敗："+(e.message||"請稍後重試"),"warn");scheduleSyncRetry();}
     }finally{
       clearTimeout(watchdog);
-      if(thisRun===syncGen){inFlight=false;if(syncAbort===runAbort)syncAbort=null;refreshLed();}
+      if(thisRun===syncGen){inFlight=false;/* completion-check:start */quietCheck=false;/* completion-check:end */if(syncAbort===runAbort)syncAbort=null;refreshLed();}
     }
     return {ok:complete&&!dirty&&!needReauth,reason:complete?undefined:"failed"};
   }
