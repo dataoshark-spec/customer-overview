@@ -2141,7 +2141,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.09.07D";
+const APP_VERSION = "2026.09.12A";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2725,7 +2725,7 @@ function trowHTML(d){
     cell("tel")+
     cell("line")+
     segCell("ask")+
-    `<td class="tneedcell"><div class="tcell tneed" data-need="1"${editMode ? ' tabindex="0"' : ""}>${d.need ? linkifyNeed(needToPlain(d.need)) : '<span class="tneed-ph">—</span>'}</div></td>`+
+    `<td class="tneedcell"><div class="tcell tneed" data-need="1"${editMode ? ' tabindex="0"' : ""}>${needSummaryHTML(d)}</div></td>`+
     delCell+
   `</tr>`;
 }
@@ -3063,6 +3063,13 @@ function needTitle(it, sg){
 }
 // 每位客戶只保存欄位身分的順序；內容、標題、字級不改名、不互相覆寫。
 function needOrder(it){return CustomerDataCore.needOrder(it&&it.needOrder)}
+// 摘要跟隨每位客戶最左欄；只讀取原欄位，不搬移內容或改變儲存資料。
+function needSummaryText(it){return needToPlain(needSeg(it,needOrder(it)[0]));}
+function needSummaryHTML(it){const text=needSummaryText(it);return text?linkifyNeed(text):'<span class="tneed-ph">—</span>';}
+function refreshNeedSummary(it){
+  const tr=tableWrap.querySelector(`tr[data-id="${it.id}"]`),cell=tr&&tr.querySelector(".tneed");
+  if(cell){cell.innerHTML=needSummaryHTML(it);cell.title=needSummaryText(it);}
+}
 function swappedNeedOrder(order,source,target){
  const next=CustomerDataCore.needOrder(order),a=next.indexOf(source),b=next.indexOf(target);
  if(a<0||b<0)return next;
@@ -3079,7 +3086,7 @@ function commitNeedOrder(id,order){
   if(previousTime===undefined)delete it.updatedAt;else it.updatedAt=previousTime;
   return false;
  }
- onLocalChange("data");return true;
+ onLocalChange("data");refreshNeedSummary(it);return true;
 }
 function initNeedOrderControls(scope,readRecord,writeOrder){
  if(!scope)return;
@@ -3316,11 +3323,7 @@ function commitNeedSeg(id, sg, val){
   if (needSeg(it,sg) === val) return;
   if (sg===2) it.need2 = val; else if (sg===3) it.need3 = val; else it.need = val;
   it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
-  if (sg===1){
-    const tr = tableWrap.querySelector(`tr[data-id="${id}"]`);
-    const cell = tr && tr.querySelector(".tneed");
-    if (cell){ if (val){ cell.innerHTML = linkifyNeed(needToPlain(val)); } else { cell.innerHTML = '<span class="tneed-ph">—</span>'; } cell.title = needToPlain(val); }
-  }
+  if (sg===needOrder(it)[0]) refreshNeedSummary(it);
 }
 function commitNeedTitle(id, sg, val){
   const it = items.find(x => x.id === id); if (!it) return;
@@ -5447,7 +5450,8 @@ function fragToNeedText(box){
   const lines = []; let cur = "";
   const flush = () => { lines.push(cur); cur = ""; };
   const walk = n => {
-    if (n.nodeType === 3){ cur += n.textContent; return; }
+    // 編輯連結後的零寬字元僅供游標定位，不能跟著網址進入剪貼簿。
+    if (n.nodeType === 3){ cur += n.textContent.replace(/\u200B/g, ""); return; }
     if (n.nodeType !== 1) return;
     if (n.classList && n.classList.contains("need-link-chip")){ cur += (n.getAttribute("data-url") || ""); return; }
     if (n.classList && n.classList.contains("need-link")){ cur += (n.getAttribute("data-url") || n.getAttribute("href") || ""); return; }   // 正常模式的「連結」(span data-url;舊 <a> href 相容)也還原成網址
