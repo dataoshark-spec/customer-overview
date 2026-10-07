@@ -2141,7 +2141,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.09.12A";
+const APP_VERSION = "2026.10.07A";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3889,6 +3889,83 @@ function toggleNeedHeading(exp){
   }
   reselectAfterNeedOp(ed, bookmark, pick);
 }
+// 標題只套用已選取內容；在末尾繼續輸入或換行時，游標退出標題。
+// 使用原生輸入流程，保留中文組字及既有儲存／草稿事件。
+function needHeadingHasContent(fragment){
+  return !!String(fragment.textContent || "").replace(/\u200B/g, "") ||
+    !!fragment.querySelector("br,.need-link-chip,.need-link,img");
+}
+function prepareNeedHeadingInput(ed, breakLine){
+  const sel = window.getSelection();
+  if (!ed || !sel || !sel.rangeCount || !sel.isCollapsed) return;
+  const caret = sel.getRangeAt(0);
+  if (!ed.contains(caret.startContainer)) return;
+  let node = caret.startContainer, offset = caret.startOffset;
+  let heading = (node.nodeType === 1 ? node : node.parentElement).closest("span.need-h");
+  // 游標也可能停在標題後的父節點邊界，而不是標題的文字節點。
+  if (!heading){
+    let previous = null;
+    if (node.nodeType === 3){
+      if (node.textContent.slice(0, offset).replace(/\u200B/g, "")) return;
+      previous = node.previousSibling;
+    } else previous = node.childNodes[offset - 1];
+    while (previous && previous.nodeType === 3 && !previous.textContent.replace(/\u200B/g, "")) previous = previous.previousSibling;
+    while (previous && previous.lastChild) previous = previous.lastChild;
+    heading = previous && (previous.nodeType === 1 ? previous : previous.parentElement).closest("span.need-h");
+    if (!heading || !ed.contains(heading)) return;
+    // 已在標題外的普通文字中（含錨點）時，不要重複插入。
+    if (node.nodeType === 3 && node.textContent.includes("\u200B")) return;
+  }
+  if (!heading || !ed.contains(heading)) return;
+  for (let p = heading.parentElement; p && p !== ed; p = p.parentElement){
+    if (p.matches("span.need-h")) heading = p;
+  }
+  const inside = heading.contains(caret.startContainer);
+  let remainder = null;
+  if (inside){
+    remainder = document.createRange();
+    remainder.selectNodeContents(heading);
+    remainder.setStart(caret.startContainer, caret.startOffset);
+    if (!breakLine && needHeadingHasContent(remainder.cloneContents())) return;
+  }
+  let beforeHeading = false;
+  if (inside && breakLine){
+    const prefix = document.createRange();
+    prefix.selectNodeContents(heading);
+    prefix.setEnd(caret.startContainer, caret.startOffset);
+    beforeHeading = !needHeadingHasContent(prefix.cloneContents());
+  }
+  let right = null;
+  if (inside && breakLine && !beforeHeading && needHeadingHasContent(remainder.cloneContents())){
+    right = heading.cloneNode(false);
+    right.appendChild(remainder.extractContents());
+  }
+  // 換行時讓原生編輯在兩側各保留一個錨點，維持普通格式及復原／重做的文字位置。
+  const anchor = document.createTextNode(breakLine ? "\u200B\u200B" : "\u200B");
+  if (beforeHeading) heading.before(anchor); else heading.after(anchor);
+  if (right) anchor.after(right);
+  const next = document.createRange();
+  next.setStart(anchor, 1); next.collapse(true);
+  sel.removeAllRanges(); sel.addRange(next);
+}
+document.addEventListener("beforeinput", e => {
+  if (e.isComposing || !e.inputType || !e.inputType.startsWith("insert")) return;
+  const ed = needContentEditorFrom(e.target);
+  if (!ed) return;
+  prepareNeedHeadingInput(ed, e.inputType === "insertParagraph" || e.inputType === "insertLineBreak");
+}, true);
+// 換行後，瀏覽器可能把游標放入右半段既有標題；只退出游標位置，保留該段文字。
+document.addEventListener("input", e => {
+  if (e.isComposing || (e.inputType !== "insertParagraph" && e.inputType !== "insertLineBreak")) return;
+  prepareNeedHeadingInput(needContentEditorFrom(e.target), true);
+}, true);
+document.addEventListener("compositionstart", e => {
+  prepareNeedHeadingInput(needContentEditorFrom(e.target), false);
+}, true);
+document.addEventListener("paste", e => {
+  prepareNeedHeadingInput(needContentEditorFrom(e.target), false);
+}, true);
+
 // 收合目前展開的客戶需求(供 ESC 使用):先提交編輯,再移除展開列並清狀態
 function closeNeedExp(){
   closeNeedOrderUI();
