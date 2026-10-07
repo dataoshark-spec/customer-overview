@@ -2141,7 +2141,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.10.07C";
+const APP_VERSION = "2026.10.07D";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3066,10 +3066,23 @@ function needOrder(it){return CustomerDataCore.needOrder(it&&it.needOrder)}
 // 摘要跟隨每位客戶最左欄；只讀取原欄位，不搬移內容或改變儲存資料。
 function needSummaryText(it){return needToPlain(needSeg(it,needOrder(it)[0]));}
 function needSummaryHTML(it){const text=needSummaryText(it);return text?linkifyNeed(text):'<span class="tneed-ph">—</span>';}
-function refreshNeedSummary(it){
+function refreshNeedSummary(it, force){
   const tr=tableWrap.querySelector(`tr[data-id="${it.id}"]`),cell=tr&&tr.querySelector(".tneed");
-  if(cell){cell.innerHTML=needSummaryHTML(it);cell.title=needSummaryText(it);}
+  if (!cell) return;
+  const active = needContentEditorFrom(document.activeElement);
+  const expansion = active && active.closest(".needexp");
+  // 內容照常即時儲存；焦點離開或收合時才重畫摘要，以保留一次復原。
+  if (!force && expansion && expansion.dataset.for === it.id) return;
+  const html = needSummaryHTML(it), title = needSummaryText(it);
+  if (cell.innerHTML !== html) cell.innerHTML = html;
+  if (cell.title !== title) cell.title = title;
 }
+document.addEventListener("focusout", e => {
+  const ed = needContentEditorFrom(e.target), expansion = ed && ed.closest(".needexp");
+  if (!expansion) return;
+  const it = items.find(x => x.id === expansion.dataset.for);
+  if (it) refreshNeedSummary(it, true);
+}, true);
 function swappedNeedOrder(order,source,target){
  const next=CustomerDataCore.needOrder(order),a=next.indexOf(source),b=next.indexOf(target);
  if(a<0||b<0)return next;
@@ -3086,7 +3099,7 @@ function commitNeedOrder(id,order){
   if(previousTime===undefined)delete it.updatedAt;else it.updatedAt=previousTime;
   return false;
  }
- onLocalChange("data");refreshNeedSummary(it);return true;
+ onLocalChange("data");refreshNeedSummary(it, true);return true;
 }
 function initNeedOrderControls(scope,readRecord,writeOrder){
  if(!scope)return;
@@ -3353,6 +3366,8 @@ function openNeedExp(tr, doFocus){
     commitAllSegs(ex);
     const orow = tableWrap.querySelector(`tr[data-id="${ex.dataset.for}"]`); if (orow) orow.classList.remove("exp-open", "exp-editing");
     ex.remove();
+    const previous = items.find(x => x.id === ex.dataset.for);
+    if (previous) refreshNeedSummary(previous);
   });
   const it = items.find(x => x.id === id); if (!it) return;
   const nCols = T_FIELDS.length + 1;
@@ -3872,8 +3887,10 @@ function toggleNeedStrike(exp){
   const ed = needFormatEditor(exp, rg);
   if (!ed || !exp.contains(ed)){ toast("先選取要加刪除線的文字"); return; }
   const bookmark = saveNeedBookmark(ed, rg);
+  if (!bookmark) return;
   normalizeNeedInlineRoot(ed);
-  if (bookmark && restoreNeedBookmark(ed, bookmark)) rg = sel.getRangeAt(0);
+  if (!restoreNeedBookmark(ed, bookmark)) return;
+  rg = sel.getRangeAt(0);
   const before = editToNeed(ed);
   const saved = saveNeedRange(rg);
   let pick = null;
@@ -3927,8 +3944,10 @@ function toggleNeedHeading(exp){
   const ed = needFormatEditor(exp, rg);
   if (!ed || !exp.contains(ed)){ toast("先選取要設為標題的文字"); return; }
   const bookmark = saveNeedBookmark(ed, rg);
+  if (!bookmark) return;
   normalizeNeedInlineRoot(ed);
-  if (bookmark && restoreNeedBookmark(ed, bookmark)) rg = sel.getRangeAt(0);
+  if (!restoreNeedBookmark(ed, bookmark)) return;
+  rg = sel.getRangeAt(0);
   const before = editToNeed(ed);
   const saved = saveNeedRange(rg);
   let pick = null;
@@ -4015,26 +4034,78 @@ function prepareNeedHeadingInput(ed, breakLine){
   next.setStart(anchor, 1); next.collapse(true);
   sel.removeAllRanges(); sel.addRange(next);
 }
-// 原生刪除可能留下待輸入的標題樣式；重新定位同一游標即可重設，保留內容及復原記錄。
+// 完整標題覆寫使用原生一次取代；保留一次復原及欄位字級繼承。
+const needHeadingReplacementAnchors = new WeakSet();
 function prepareNeedHeadingReplacement(ed){
   const sel = window.getSelection();
   if (!ed || !sel || !sel.rangeCount || sel.isCollapsed) return false;
   const range = sel.getRangeAt(0);
   if (!ed.contains(range.startContainer) || !ed.contains(range.endContainer)) return false;
-  let fullHeading = false;
+  // paste/compositionstart 與緊接的 beforeinput 不重複準備同一選取。
+  const alreadyPrepared = needHeadingReplacementAnchors.has(range.startContainer);
+  const useOriginalSelection = () => {
+    if (alreadyPrepared){
+      const current = saveNeedBookmark(ed, range);
+      if (current) restoreNeedBookmark(ed, current);
+    }
+    return false;
+  };
+
+  const hasContent = fragment => !!fragment.textContent.replace(/\u200B/g, "") ||
+    !!fragment.querySelector("br,.need-link-chip,.need-link,img");
+  const touched = [];
   for (const heading of ed.querySelectorAll("span.need-h")){
-    if (!range.intersectsNode(heading)) continue;
+    const outer = heading.parentElement.closest("span.need-h");
+    if ((outer && ed.contains(outer)) || !range.intersectsNode(heading)) continue;
     const part = document.createRange(); part.selectNodeContents(heading);
     if (range.compareBoundaryPoints(Range.START_TO_START, part) > 0) part.setStart(range.startContainer, range.startOffset);
     if (range.compareBoundaryPoints(Range.END_TO_END, part) < 0) part.setEnd(range.endContainer, range.endOffset);
-    if (!needHeadingHasContent(part.cloneContents())) continue;
+    if (hasContent(part.cloneContents())) touched.push({ heading, part });
+  }
+  if (!touched.length) return useOriginalSelection();
+  for (const { heading, part } of touched){
     const before = document.createRange(); before.selectNodeContents(heading); before.setEnd(part.startContainer, part.startOffset);
     const after = document.createRange(); after.selectNodeContents(heading); after.setStart(part.endContainer, part.endOffset);
-    if (needHeadingHasContent(before.cloneContents()) || needHeadingHasContent(after.cloneContents())) return false;
-    fullHeading = true;
+    if (hasContent(before.cloneContents()) || hasContent(after.cloneContents())) return useOriginalSelection();
   }
-  if (!fullHeading || !document.execCommand("delete", false)) return false;
-  resetNeedTypingAfterDelete(ed);
+
+  if (alreadyPrepared) return true;
+  const bookmark = saveNeedBookmark(ed, range);
+  if (!bookmark) return false;
+  // 邊界可能仍落在未選取的上一段標題末端；以真正選取的第一個字定位。
+  const start = needSelectionPoint(needSelectionMap(ed), bookmark.so, false);
+  const startElement = start.node.nodeType === 1 ? start.node : start.node.parentElement;
+  let heading = startElement && startElement.closest("span.need-h");
+  if (heading && !ed.contains(heading)) heading = null;
+  if (heading){
+    for (let parent = heading.parentElement; parent && parent !== ed; parent = parent.parentElement){
+      if (isHeadingEl(parent)) heading = parent;
+    }
+  }
+  const anchor = document.createTextNode("\u200B\u200B");
+  needHeadingReplacementAnchors.add(anchor);
+  needHeadingAnchors.add(anchor);
+  const ordinary = document.createElement("span");
+  ordinary.style.color = "inherit";
+  ordinary.style.fontWeight = "inherit";
+  ordinary.style.fontSize = "inherit";
+  ordinary.appendChild(anchor);
+  if (heading){
+    // 起點標題中的刪線維持獨立；退出標題不會一併取消刪線。
+    const strikes = [];
+    for (let parent = startElement; parent && parent !== heading; parent = parent.parentElement){
+      if (isStrikeEl(parent)) strikes.unshift(parent.cloneNode(false));
+    }
+    let insertion = ordinary;
+    for (let i = strikes.length - 1; i >= 0; i--){ strikes[i].appendChild(insertion); insertion = strikes[i]; }
+    heading.before(insertion);
+  } else {
+    const at = document.createRange(); at.setStart(start.node, start.offset); at.collapse(true); at.insertNode(ordinary);
+  }
+  // 插入節點可能改變端點；沿用 B 版可見字座標，網址依然是不可分割的標籤。
+  const end = needSelectionPoint(needSelectionMap(ed), bookmark.eo, true);
+  const replacement = document.createRange(); replacement.setStart(anchor, 1); replacement.setEnd(end.node, end.offset);
+  sel.removeAllRanges(); sel.addRange(replacement);
   return true;
 }
 function resetNeedTypingAfterDelete(ed){
@@ -4073,30 +4144,56 @@ function skipNeedHeadingAnchor(ed){
     node.deleteData(0, offset);
   }
 }
+// 組字只在第一次非空輸入時準備取代；開始後立刻取消不改原文或選取。
+const needHeadingComposing = new WeakSet();
+const needHeadingCompositionInput = new WeakSet();
 document.addEventListener("keydown", e => {
-  if (e.key === "Backspace" && !e.isComposing && e.keyCode !== 229) skipNeedHeadingAnchor(needContentEditorFrom(e.target));
+  const ed = needContentEditorFrom(e.target);
+  if (e.key === "Backspace" && !e.isComposing && e.keyCode !== 229 && !needHeadingComposing.has(ed)) skipNeedHeadingAnchor(ed);
 }, true);
 document.addEventListener("beforeinput", e => {
-  if (!e.isComposing && e.inputType === "deleteContentBackward") skipNeedHeadingAnchor(needContentEditorFrom(e.target));
   const ed = needContentEditorFrom(e.target);
   if (!ed) return;
-  if (e.inputType === "insertCompositionText" && e.data && prepareNeedHeadingReplacement(ed)) prepareNeedHeadingInput(ed, false);
-  if (e.isComposing || !e.inputType || !e.inputType.startsWith("insert")) return;
-  if (e.inputType === "insertText") prepareNeedHeadingReplacement(ed);
+  if (e.inputType === "insertCompositionText"){
+    if (e.data && !needHeadingCompositionInput.has(ed)){
+      needHeadingCompositionInput.add(ed);
+      prepareNeedHeadingReplacement(ed);
+      prepareNeedHeadingInput(ed, false);
+    }
+    return;
+  }
+  if (e.isComposing || needHeadingComposing.has(ed)) return;
+  if (e.inputType === "deleteContentBackward") skipNeedHeadingAnchor(ed);
+  if (!e.inputType || !e.inputType.startsWith("insert")) return;
+  if (e.inputType === "insertText" || e.inputType === "insertReplacementText") prepareNeedHeadingReplacement(ed);
   prepareNeedHeadingInput(ed, e.inputType === "insertParagraph" || e.inputType === "insertLineBreak");
 }, true);
-// 換行後，瀏覽器可能把游標放入右半段既有標題；只退出游標位置，保留該段文字。
+// 換行後退出右半段標題；保留原文字與原生復原記錄。
 document.addEventListener("input", e => {
-  if (e.isComposing) return;
-  if (e.inputType && e.inputType.startsWith("delete")) resetNeedTypingAfterDelete(needContentEditorFrom(e.target));
+  const ed = needContentEditorFrom(e.target);
+  if (!ed || e.isComposing || needHeadingComposing.has(ed)) return;
+  if (e.inputType && e.inputType.startsWith("delete")) resetNeedTypingAfterDelete(ed);
   if (e.inputType !== "insertParagraph" && e.inputType !== "insertLineBreak") return;
-  prepareNeedHeadingInput(needContentEditorFrom(e.target), true);
+  prepareNeedHeadingInput(ed, true);
 }, true);
 document.addEventListener("compositionstart", e => {
-  prepareNeedHeadingInput(needContentEditorFrom(e.target), false);
+  const ed = needContentEditorFrom(e.target);
+  if (!ed) return;
+  needHeadingComposing.add(ed);
+  needHeadingCompositionInput.delete(ed);
+  prepareNeedHeadingInput(ed, false);
+}, true);
+document.addEventListener("compositionend", e => {
+  const ed = needContentEditorFrom(e.target);
+  if (!ed) return;
+  needHeadingComposing.delete(ed);
+  needHeadingCompositionInput.delete(ed);
 }, true);
 document.addEventListener("paste", e => {
-  prepareNeedHeadingInput(needContentEditorFrom(e.target), false);
+  const ed = needContentEditorFrom(e.target);
+  if (!ed || needHeadingComposing.has(ed)) return;
+  prepareNeedHeadingReplacement(ed);
+  prepareNeedHeadingInput(ed, false);
 }, true);
 
 // 收合目前展開的客戶需求(供 ESC 使用):先提交編輯,再移除展開列並清狀態
@@ -4107,6 +4204,8 @@ function closeNeedExp(){
   const tr = tableWrap.querySelector(`tr[data-id="${ex.dataset.for}"]`);
   commitAllSegs(ex);
   ex.remove();
+  const it = items.find(x => x.id === ex.dataset.for);
+  if (it) refreshNeedSummary(it);
   if (tr) tr.classList.remove("exp-open", "exp-editing");
   openNeedId = null;
   if (window.refreshLed) window.refreshLed();
@@ -4119,6 +4218,8 @@ function toggleNeedExp(tr){
   if (nx && nx.classList.contains("needexp") && nx.dataset.for === id){
     commitAllSegs(nx);
     nx.remove(); tr.classList.remove("exp-open", "exp-editing"); openNeedId = null;
+    const it = items.find(x => x.id === id);
+    if (it) refreshNeedSummary(it);
     if (window.refreshLed) window.refreshLed();
     return;
   }
