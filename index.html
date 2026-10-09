@@ -1441,6 +1441,8 @@
 
 </style>
 <style id="status-row-colors">
+/* Share the saved status tint with both card densities without changing selection or copy feedback. */
+#cards > .card[data-status-tint]{background:var(--status-bg)}
 /* Status tint changes cell backgrounds, preserving selected/expanded/editor states. */
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row)>td{background:var(--status-bg)}
 .ptable tbody tr[data-status-tint] [data-field="status"]::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--status-dot);margin-right:6px;vertical-align:middle;flex-shrink:0}
@@ -2234,7 +2236,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.10.09D";
+const APP_VERSION = "2026.10.09E";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2364,7 +2366,7 @@ function cardHTML(d){
     if (roomsPri) cbits.push({t: roomsTip, tip: roomsTip, room: true});
     if (d.parking) cbits.push({t: /車/.test(d.parking) ? d.parking : d.parking + "車位", tip: d.parking, dot: "", orphan: false});
     const csub = cbits.length ? cbits.map(p => { if(p.room) return `<span class="cv card-rooms" data-copy="${esc(roomsTip)}" title="${esc(roomsTip)}">${roomsHTML}</span>`; const v = normAsk(p.t); return `<span class="cv multi-wrap" data-copy="${esc(v)}" title="${esc(p.tip)}"><span class="multi-pri${p.orphan?" opt-orphan":""}">${esc(v)}</span>${p.dot}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
-    return `<article class="card compact-card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
+    return `<article class="card compact-card${sel}" data-id="${esc(d.id)}"${statusColorRowAttrs(d)}><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
       <div class="card-head">
@@ -2383,7 +2385,7 @@ function cardHTML(d){
   if (d.date) topBits.push(`<span class="ct-item">建檔 <span class="cv" data-copy="${esc(d.date)}">${esc(d.date)}</span></span>`);
   if (areaPri) topBits.push(`<span class="multi-wrap" data-copy="${esc(areaPri)}" title="${esc(areaOrphan ? areaTip + "（已從下拉移除）" : areaTip)}"><span class="multi-pri${areaOrphan?" opt-orphan":""}">${esc(areaPri)}</span>${areaDot}</span>`);
   const topHTML = topBits.length ? `<div class="card-top">${topBits.join('<span class="dot">／</span>')}</div>` : "";
-  return `<article class="card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
+  return `<article class="card${sel}" data-id="${esc(d.id)}"${statusColorRowAttrs(d)}><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
       ${topHTML}
@@ -6759,7 +6761,7 @@ function statusColorRowAttrs(d){
 }
 function paintStatusColorRows(){
   const map=new Map(items.map(it=>[String(it.id),it]));
-  document.querySelectorAll("tr[data-id]").forEach(row=>{
+  document.querySelectorAll("tr[data-id], #cards > .card[data-id]").forEach(row=>{
     const item=map.get(row.dataset.id), value=item&&statusColorFor(fieldPrimary(item,"status"));
     row.toggleAttribute("data-status-tint",!!(value&&value.alpha));
     if(value&&value.alpha){ row.style.setProperty("--status-bg",statusColorBackground(value));row.style.setProperty("--status-dot",value.hex); }
@@ -6772,7 +6774,7 @@ function paintStatusColorRows(){
 }
 function buildStatusColorMenuRow(v,curSingle){
   const value=statusColorFor(v), on=v===curSingle;
-  return '<div class="opt-line status-color-line'+(on?' sel':'')+'" data-v="'+esc(v)+'"><span class="opt-drag" aria-label="拖曳排序">☰</span><button type="button" class="cselect-opt'+(on?' sel':'')+'" data-v="'+esc(v)+'"><span class="opt-txt">'+esc(v)+'</span></button><button type="button" class="status-color-button" data-status-color="'+esc(v)+'" title="調整 '+esc(v)+' 的整排底色" aria-label="調整 '+esc(v)+' 的整排底色"><span class="status-color-dot'+(!value||!value.alpha?' none':'')+'" style="--dot:'+(value?.hex||'#64748b')+'"></span></button><span class="opt-del" data-del="'+esc(v)+'" title="刪除此選項" role="button">✕</span></div>';
+  return '<div class="opt-line status-color-line'+(on?' sel':'')+'" data-v="'+esc(v)+'"><span class="opt-drag" aria-label="拖曳排序">☰</span><button type="button" class="cselect-opt'+(on?' sel':'')+'" data-v="'+esc(v)+'"><span class="opt-txt">'+esc(v)+'</span></button><button type="button" class="status-color-button" data-status-color="'+esc(v)+'" title="調整 '+esc(v)+' 的底色" aria-label="調整 '+esc(v)+' 的底色"><span class="status-color-dot'+(!value||!value.alpha?' none':'')+'" style="--dot:'+(value?.hex||'#64748b')+'"></span></button><span class="opt-del" data-del="'+esc(v)+'" title="刪除此選項" role="button">✕</span></div>';
 }
 const statusColorPanel=document.createElement("section");
 statusColorPanel.id="tint-panel";
@@ -6840,7 +6842,7 @@ function openStatusColor(name,anchor){
   statusColorAnchor=anchor;
   statusColorDraft={name,value:{...(statusColorFor(name,false)||{hex:"#7c3aed",alpha:15})}};
   const value=statusColorDraft.value;
-  statusColorPanel.innerHTML='<h3>'+esc(name)+' 的整排底色</h3><div class="tint-label">純色</div><div class="tint-colors">'+STATUS_PURE_COLORS.map(c=>'<button type="button" class="tint-pure" data-pure="'+c.hex+'" aria-label="'+c.name+'" title="'+c.name+'"><span style="background:'+c.hex+'"></span></button>').join('')+'</div><label class="tint-custom-row"><span>自訂顏色</span><input aria-label="自訂純色" type="color" value="'+value.hex+'"></label><div class="tint-label"><label for="tint-range">底色濃度</label><label class="tint-percent"><input class="tint-percent-input" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-label="底色濃度百分比"><span aria-hidden="true">%</span></label></div><input id="tint-range" class="tint-range" type="range" min="0" max="100" step="1" list="tint-stops" aria-label="底色濃度"><datalist id="tint-stops">'+Array.from({length:21},(_,i)=>'<option value="'+i*5+'"></option>').join('')+'</datalist><div class="tint-ticks" aria-hidden="true">'+'<i></i>'.repeat(21)+'</div><div class="tint-range-hint"><span>0% 無底色</span><span>100% 純色</span></div><div class="tint-quick">'+[10,15,20,30].map(n=>'<button type="button" data-level="'+n+'">'+n+'%</button>').join('')+'</div><div class="tint-label">即時預覽</div><div class="tint-preview"><b><i class="tint-dot"></i>'+esc(name)+'</b><span>林小姐</span><span>2,000 萬</span></div><div class="tint-footer"><button type="button" data-tint-clear>無底色</button><button type="button" class="tint-done">完成</button></div>';
+  statusColorPanel.innerHTML='<h3>'+esc(name)+' 的底色</h3><div class="tint-label">純色</div><div class="tint-colors">'+STATUS_PURE_COLORS.map(c=>'<button type="button" class="tint-pure" data-pure="'+c.hex+'" aria-label="'+c.name+'" title="'+c.name+'"><span style="background:'+c.hex+'"></span></button>').join('')+'</div><label class="tint-custom-row"><span>自訂顏色</span><input aria-label="自訂純色" type="color" value="'+value.hex+'"></label><div class="tint-label"><label for="tint-range">底色濃度</label><label class="tint-percent"><input class="tint-percent-input" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-label="底色濃度百分比"><span aria-hidden="true">%</span></label></div><input id="tint-range" class="tint-range" type="range" min="0" max="100" step="1" list="tint-stops" aria-label="底色濃度"><datalist id="tint-stops">'+Array.from({length:21},(_,i)=>'<option value="'+i*5+'"></option>').join('')+'</datalist><div class="tint-ticks" aria-hidden="true">'+'<i></i>'.repeat(21)+'</div><div class="tint-range-hint"><span>0% 無底色</span><span>100% 純色</span></div><div class="tint-quick">'+[10,15,20,30].map(n=>'<button type="button" data-level="'+n+'">'+n+'%</button>').join('')+'</div><div class="tint-label">即時預覽</div><div class="tint-preview"><b><i class="tint-dot"></i>'+esc(name)+'</b><span>林小姐</span><span>2,000 萬</span></div><div class="tint-footer"><button type="button" data-tint-clear>無底色</button><button type="button" class="tint-done">完成</button></div>';
   statusColorPanel.style.display="block";
   updateStatusColorPanel();
   statusColorViewportWidth=innerWidth;
