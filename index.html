@@ -549,7 +549,7 @@
   .price .unit{font-size:.92rem;font-weight:700;color:var(--ink-soft);}
 
   .meta{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px;}
-  .meta span{font-size:.8rem;font-weight:700;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);padding:5px 10px;border-radius:8px;}
+  .meta > span{font-size:.8rem;font-weight:700;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);padding:5px 10px;border-radius:8px;}
   .meta .ml{color:var(--text-faint);font-style:normal;font-weight:600;}
   .card-top{display:flex;flex-wrap:wrap;align-items:center;font-size:.78rem;color:var(--text-faint);margin-bottom:6px;font-variant-numeric:tabular-nums;}
   .card-top .dot{margin:0 1px;opacity:.6;}
@@ -1425,6 +1425,93 @@
 .need-order-menu strong{font-weight:700}
 .need-order-position{white-space:nowrap}
 .need-order-label{color:var(--accent-deep);overflow-wrap:anywhere}
+
+  /* Card room choices: show all selected values, allow wrapping. */
+
+.card .meta{align-items:flex-start}
+.card .meta > span{display:inline-flex;align-items:center;justify-content:flex-start;gap:6px;max-width:100%;min-height:32px;box-sizing:border-box;line-height:20px;overflow-wrap:anywhere}
+.card .meta .ml{flex:none;white-space:nowrap}
+.card .card-rooms{min-width:0;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.card .card-room-value{white-space:normal}
+.card .card-room-value.opt-orphan{color:var(--text-faint);font-weight:500}
+.compact-card .sub-row{flex-wrap:wrap}
+.compact-card .sub-row .addr{flex:1 1 160px;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.compact-card .sub-row .price-tag{margin-left:auto}
+.compact-card .cv.card-rooms{display:inline}
+
+</style>
+<style id="status-row-colors">
+/* Status tint changes cell backgrounds, preserving selected/expanded/editor states. */
+.ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row)>td{background:var(--status-bg)}
+.ptable tbody tr[data-status-tint] [data-field="status"]::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--status-dot);margin-right:6px;vertical-align:middle;flex-shrink:0}
+@media(hover:hover){
+ .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row):hover>td{background:color-mix(in srgb,var(--status-bg) 97%,var(--status-dot) 3%)}
+ .ptable tbody tr[data-status-tint] .tcell:not([contenteditable="true"]):hover,
+ .ptable tbody tr[data-status-tint] .topt-trigger:hover,
+ .ptable tbody tr[data-status-tint] .tcat-trigger:hover,
+ .ptable.ro tbody tr[data-status-tint] .segcell .seg:hover{background:transparent}
+}
+.ptable tbody tr[data-status-tint] .tcell[contenteditable="false"]:focus{background:transparent}
+/* Keep hover/selected surfaces separated without reducing the option hit areas. */
+#statusMenu{gap:0}
+#statusMenu>.topt-empty,#toptmenu:has(>.status-color-line)>.topt-empty{margin:3px 4px;width:calc(100% - 8px)}
+#statusMenu>.opt-add,#toptmenu:has(>.status-color-line)>.opt-add{margin-top:4px}
+.status-color-line{gap:3px;position:relative;padding:3px 4px}
+.status-color-line>.cselect-opt{flex:1;min-width:0;margin:0}
+.status-color-line>.status-color-button{width:38px;height:38px;padding:0;display:grid;place-items:center;flex:none;border:0;background:transparent;cursor:pointer;border-radius:50%}
+.status-color-button:hover{background:var(--surface-2)}
+.status-color-button:focus,.status-color-button:focus-visible{outline:none;box-shadow:none}
+:root.status-keyboard-focus .status-color-button:focus .status-color-dot{outline:2px solid var(--accent);outline-offset:3px}
+:root:not(.status-keyboard-focus) #toptmenu:has(>.status-color-line) .cselect-opt.kb{outline:none}
+.status-color-dot{display:block;width:18px;height:18px;border-radius:50%;background:var(--dot);border:2px solid var(--card);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 30%,var(--line));box-sizing:border-box}
+.status-color-dot.none{background:linear-gradient(135deg,transparent 43%,var(--text-faint) 44%,var(--text-faint) 55%,transparent 56%);box-shadow:0 0 0 1px var(--line)}
+.status-color-line>.opt-del{flex:none;position:static;margin-left:1px}
+#tint-panel{display:none;position:fixed;z-index:450;width:min(352px,calc(100vw - 20px));max-height:calc(100dvh - 20px);overflow:auto;box-sizing:border-box;padding:22px;border:1px solid var(--line);border-radius:19px;background:var(--card);color:var(--ink);box-shadow:0 18px 50px -14px rgba(28,48,77,.25),0 3px 10px rgba(28,48,77,.05);font-family:inherit}
+#tint-panel h3{font-size:18px;letter-spacing:.01em;margin:0 0 23px;line-height:1.4;overflow-wrap:anywhere}
+#tint-panel .tint-label{font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:11px;letter-spacing:.04em;display:flex;align-items:center;justify-content:space-between}
+.tint-colors{display:flex;gap:6px;margin:0 0 15px;justify-content:space-between}
+.tint-pure{width:32px;height:32px;flex:none;padding:4px;border:1px solid transparent;background:var(--card);border-radius:50%;cursor:pointer;transition:transform .14s,box-shadow .14s}
+.tint-pure span{display:block;width:22px;height:22px;border-radius:50%}
+.tint-pure:hover{transform:translateY(-1px)}
+.tint-pure.on{padding:3px;border:2px solid var(--tint-selected);box-shadow:0 0 0 3px color-mix(in srgb,var(--tint-selected) 8%,transparent)}
+.tint-custom-row{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:0 0 25px;border-radius:11px;border:1px solid var(--line);background:var(--surface-1);color:var(--ink-soft);font-size:12px;cursor:pointer}
+.tint-custom-row:hover{background:var(--surface-2)}
+.tint-custom-row input[type="color"]{width:34px;height:26px;margin-left:auto;border-radius:7px;padding:0;border:0;background:transparent;cursor:pointer}
+.tint-custom-row input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+.tint-custom-row input[type="color"]::-webkit-color-swatch{border-radius:6px;border:0}
+.tint-percent{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:90px;height:40px;box-sizing:border-box;padding:0 9px;border:1px solid var(--line);border-radius:10px;background:var(--surface-1);font-size:22px;font-weight:650;letter-spacing:-.025em;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+.tint-percent-input{width:calc(var(--percent-ch,2) * 1ch);min-width:0;box-sizing:content-box;border:0;border-radius:0;padding:0;background:transparent;color:inherit;font:inherit;line-height:1.25;text-align:center;outline:none}
+.tint-percent:hover{border-color:var(--text-faint)}
+.tint-percent:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 10%,transparent)}
+.tint-percent:has([aria-invalid="true"]){border-color:#c43d3d}
+.tint-ticks{display:flex;justify-content:space-between;height:6px;margin:0 10.5px 5px;pointer-events:none}
+.tint-ticks i{display:block;width:1px;height:3px;background:var(--line)}
+.tint-ticks i:nth-child(5n+1){height:5px;background:var(--text-faint);opacity:.55}
+.tint-range{appearance:none;-webkit-appearance:none;display:block;height:28px;background:transparent;box-sizing:border-box;width:100%;margin:8px 0 0;outline:none;border:0;padding:0;cursor:pointer;touch-action:pan-y}
+.tint-range::-webkit-slider-runnable-track{height:7px;border-radius:999px;border:0;background:linear-gradient(to right,var(--tint-selected) 0%,var(--tint-selected) var(--tint-level),var(--surface-3) var(--tint-level),var(--surface-3) 100%)}
+.tint-range::-webkit-slider-thumb{-webkit-appearance:none;width:21px;height:21px;box-sizing:border-box;margin-top:-7px;border-radius:50%;background:#fff;border:3px solid var(--tint-selected);box-shadow:0 2px 5px rgba(30,47,72,.18);transition:box-shadow .14s,transform .14s}
+.tint-range:hover::-webkit-slider-thumb{box-shadow:0 0 0 5px color-mix(in srgb,var(--tint-selected) 10%,transparent),0 2px 5px rgba(30,47,72,.18)}
+.tint-range:active::-webkit-slider-thumb{transform:scale(1.08);box-shadow:0 0 0 6px color-mix(in srgb,var(--tint-selected) 13%,transparent)}
+.tint-range:focus-visible::-webkit-slider-thumb{outline:2px solid var(--accent);outline-offset:4px}
+.tint-range::-moz-range-track{height:7px;border-radius:999px;background:var(--surface-3);border:0}
+.tint-range::-moz-range-progress{height:7px;border-radius:999px;background:var(--tint-selected)}
+.tint-range::-moz-range-thumb{width:15px;height:15px;border:3px solid var(--tint-selected);border-radius:50%;background:white;box-shadow:0 2px 5px #1e2f482e}
+.tint-range-hint{display:flex;justify-content:space-between;color:var(--text-faint);font-size:10px;margin:0 0 16px}
+.tint-quick{display:flex;padding:4px;gap:4px;border-radius:11px;background:var(--surface-2);margin:0 0 24px}
+.tint-quick button{font:12px inherit;flex:1;padding:7px 3px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--ink-soft);cursor:pointer}
+.tint-quick button:hover{background:var(--card)}
+.tint-quick button.on{color:var(--accent-deep);background:var(--card);border-color:var(--line);box-shadow:0 2px 5px #1b375510;font-weight:700}
+.tint-preview{display:flex;align-items:center;flex-wrap:wrap;min-height:46px;padding:13px 14px;border:1px solid var(--line);border-radius:11px;font-size:12px;margin:0 0 22px;gap:17px;overflow-wrap:anywhere}
+.tint-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
+.tint-footer{display:flex;gap:9px}
+.tint-footer button{padding:11px 15px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);color:var(--ink-soft);background:var(--card);cursor:pointer}
+.tint-footer button:hover{background:var(--surface-1)}
+.tint-footer .tint-done{flex:1;background:var(--accent);color:white;border-color:var(--accent);box-shadow:0 3px 8px #2b5ca81c}
+.tint-footer .tint-done:hover{background:var(--accent-deep)}
+#tint-panel button:focus-visible,#tint-panel input[type=color]:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:370px){#tint-panel{padding:18px}.tint-colors{gap:2px}.tint-pure{width:30px;height:30px;padding:3px}.tint-pure.on{padding:2px}}
+@media(prefers-reduced-motion:reduce){#tint-panel *,#tint-panel .tint-range::-webkit-slider-thumb{transition:none!important}}
+
 </style>
 </head>
 <body>
@@ -1815,6 +1902,12 @@
       if(k==="colw"){if(!object(v))fail();Object.values(v).forEach(n=>{if(typeof n!=="number"||!Number.isFinite(n)||n<20||n>4000)fail("欄寬設定不正確");});}
       if(["fltorder","optorder"].includes(k)) arrayMap(v);
       if(k==="colFilter"){if(!object(v))fail();Object.values(v).forEach(x=>{if(x!==null)strings(x);});}
+      if(k==="statusColors"){
+        if(!object(v)||Object.keys(v).length>500)fail("狀態底色設定不正確");
+        for(const [name,color] of Object.entries(v)){
+          if(!name.startsWith("s:")||name.length<3||name.length>2002||!object(color)||Object.keys(color).some(k=>!["hex","alpha"].includes(k))||typeof color.hex!=="string"||!/^#[0-9a-f]{6}$/i.test(color.hex)||!Number.isInteger(color.alpha)||color.alpha<0||color.alpha>100)fail("狀態底色設定不正確");
+        }
+      }
       if(k==="opts"){if(!object(v))fail(); for(const [f,values] of Object.entries(v)){if(f==="hidden")arrayMap(values);else strings(values);}}
       if(k==="fltB"){if(!object(v))fail(); for(const f of ["lo","hi"])if(v[f]!=null&&(typeof v[f]!=="number"||!Number.isFinite(v[f])||v[f]<0))fail("預算篩選不正確");}
     }
@@ -2141,7 +2234,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.10.07D";
+const APP_VERSION = "2026.10.09D";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2216,14 +2309,51 @@ function segCopyHTML(value){
   }
   return html;
 }
+// LINE 註記使用全形標點；帳號字元與網址保留原文，不在載入/同步時改寫資料。
+function normalizeLineSymbols(value){
+  const text = String(value == null ? "" : value);
+  const urls = /(?:[a-z][a-z0-9+.-]*:\/\/|www\.|(?:line\.me|lin\.ee)\/)[^\s\u3000<>「」『』（）【】]+/gi;
+  const punctuation = /[!"#$%&'()*+,/:;<=>?\[\]\\^\x60{|}~]/g;
+  const convert = part => part.replace(punctuation, ch => String.fromCharCode(ch.charCodeAt(0) + 0xFEE0));
+  let out = "", from = 0, match;
+  while ((match = urls.exec(text))){
+    out += convert(text.slice(from, match.index)) + match[0];
+    from = match.index + match[0].length;
+  }
+  return out + convert(text.slice(from));
+}
+function lineSearchMatches(value, term){
+  return normalizeLineSymbols(value).toLowerCase().includes(normalizeLineSymbols(term).toLowerCase());
+}
+// 使用完整欄位辨識網址後才取選取範圍，避免只複製部分網址時改壞網址。
+function lineSelectedText(el){
+  if (!el) return "";
+  if (typeof el.value === "string"){
+    return normalizeLineSymbols(el.value).slice(el.selectionStart || 0, el.selectionEnd || 0);
+  }
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount || selection.isCollapsed) return "";
+  const range = selection.getRangeAt(0);
+  if (!el.contains(range.startContainer) || !el.contains(range.endContainer)) return "";
+  const prefix = document.createRange(); prefix.selectNodeContents(el);
+  prefix.setEnd(range.startContainer, range.startOffset);
+  const start = prefix.toString().length;
+  return normalizeLineSymbols(el.textContent).slice(start, start + range.toString().length);
+}
+function copyLineSelection(e, el){
+  if (!e.clipboardData) return;
+  const text = lineSelectedText(el); if (!text) return;
+  e.preventDefault(); e.clipboardData.setData("text/plain", text);
+}
+
 function cardHTML(d){
   const sel = selected.has(d.id) ? " selected" : "";
   const nameHTML = d.cust ? segCopyHTML(d.cust) : `<span class="cv-empty">（未填稱呼）</span>`;
   const TELSVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.53 15.53 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg>`;
   const areaPri = fieldPrimary(d, "area"), roomsPri = fieldPrimary(d, "rooms"), catPri = fieldPrimary(d, "cat");
-  const areaTip = fieldVals(d, "area").join("、"), roomsTip = fieldVals(d, "rooms").join("、"), catTip = fieldVals(d, "cat").join("、");
+  const areaTip = fieldVals(d, "area").join("、"), roomsTip = fieldVals(d, "rooms").join("／"), catTip = fieldVals(d, "cat").join("、");
   const areaDot = fieldIsMulti(d, "area") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
-  const roomsDot = fieldIsMulti(d, "rooms") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
+  const roomsHTML = fieldVals(d, "rooms").map(v => `<span class="card-room-value${typeof isOptOrphan === "function" && isOptOrphan("rooms", v) ? " opt-orphan" : ""}">${esc(v)}</span>`).join("／<wbr>");
   const catDot = fieldIsMulti(d, "cat") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
   const areaOrphan = areaPri && typeof isOptOrphan === "function" && isOptOrphan("area", areaPri);
   const roomsOrphan = roomsPri && typeof isOptOrphan === "function" && isOptOrphan("rooms", roomsPri);
@@ -2231,9 +2361,9 @@ function cardHTML(d){
   if (density === "compact"){
     const cbits = [];
     if (areaPri) cbits.push({t: areaPri, tip: areaTip, dot: areaDot, orphan: areaOrphan});
-    if (roomsPri) cbits.push({t: roomsPri, tip: roomsTip, dot: roomsDot, orphan: roomsOrphan});
+    if (roomsPri) cbits.push({t: roomsTip, tip: roomsTip, room: true});
     if (d.parking) cbits.push({t: /車/.test(d.parking) ? d.parking : d.parking + "車位", tip: d.parking, dot: "", orphan: false});
-    const csub = cbits.length ? cbits.map(p => { const v = normAsk(p.t); return `<span class="cv multi-wrap" data-copy="${esc(v)}" title="${esc(p.tip)}"><span class="multi-pri${p.orphan?" opt-orphan":""}">${esc(v)}</span>${p.dot}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
+    const csub = cbits.length ? cbits.map(p => { if(p.room) return `<span class="cv card-rooms" data-copy="${esc(roomsTip)}" title="${esc(roomsTip)}">${roomsHTML}</span>`; const v = normAsk(p.t); return `<span class="cv multi-wrap" data-copy="${esc(v)}" title="${esc(p.tip)}"><span class="multi-pri${p.orphan?" opt-orphan":""}">${esc(v)}</span>${p.dot}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
     return `<article class="card compact-card${sel}" data-id="${esc(d.id)}"><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
@@ -2266,12 +2396,12 @@ function cardHTML(d){
         <span class="price-value"><span class="num" data-copy="${esc(d.budget)}">${esc(d.budget)}</span></span>
       </div>` : ``}
       ${(roomsPri || d.parking) ? `<div class="meta">
-        ${roomsPri ? `<span class="multi-wrap" data-copy="${esc(roomsPri)}" title="${esc(roomsOrphan ? roomsTip + "（已從下拉移除）" : roomsTip)}"><i class="ml">房數</i> <span class="multi-pri${roomsOrphan?" opt-orphan":""}">${esc(roomsPri)}</span>${roomsDot}</span>` : ``}
+        ${roomsPri ? `<span class="card-room-chip" data-copy="${esc(roomsTip)}" title="${esc(roomsTip)}"><i class="ml">房數</i><span class="card-rooms">${roomsHTML}</span></span>` : ``}
         ${d.parking ? `<span data-copy="${esc(d.parking)}"><i class="ml">車位</i> ${esc(d.parking)}</span>` : ``}
       </div>` : ``}
       ${d.need ? `<div class="ov-need"><div class="ov-need-in">${linkifyNeed(needToPlain(d.need))}</div></div>` : ``}
       ${(d.tel || d.line) ? `<div class="agent">
-        <div class="agent-info">${d.line ? `LINE：<b data-copy="${esc(d.line)}">${esc(d.line)}</b>` : ``}</div>
+        <div class="agent-info">${d.line ? `LINE：<b data-copy="${esc(normalizeLineSymbols(d.line))}">${esc(normalizeLineSymbols(d.line))}</b>` : ``}</div>
         ${d.tel ? `<a class="tel" href="tel:${esc(d.tel)}">${TELSVG}${esc(d.tel)}</a>` : ``}
       </div>` : ``}
     </div>
@@ -2280,8 +2410,9 @@ function cardHTML(d){
 
 // ---- Storage (auto-saves on your own device; degrades to memory in preview) ----
 // Snapshot legacy preference presence before UI initialization writes fallback mirrors.
-const PREFERENCE_STORAGE_KEYS={cats:"customer_app_cats_v4",density:"customer_app_density_v1",sort:"customer_app_sort_v1",colw:"customer_app_colw_v1",theme:"customer_app_theme_v1",opts:"customer_app_opts_v1",fltorder:"customer_app_fltorder_v1",expfocus:"customer_app_expfocus_v1",optorder:"customer_app_optorder_v1",colFilter:"customer_app_filters_v1",fltB:"customer_app_filters_v1"};
+const PREFERENCE_STORAGE_KEYS={cats:"customer_app_cats_v4",density:"customer_app_density_v1",sort:"customer_app_sort_v1",colw:"customer_app_colw_v1",theme:"customer_app_theme_v1",opts:"customer_app_opts_v1",statusColors:"customer_app_status_colors_v1",fltorder:"customer_app_fltorder_v1",expfocus:"customer_app_expfocus_v1",optorder:"customer_app_optorder_v1",colFilter:"customer_app_filters_v1",fltB:"customer_app_filters_v1"};
 const bootPreferenceStorage=(()=>{const raw={};for(const [k,key] of Object.entries({...PREFERENCE_STORAGE_KEYS,catsAt:"customer_app_cats_ts_v1",settingsAt:"customer_app_settings_ts_v1"})){try{raw[k]=localStorage.getItem(key);}catch(e){raw[k]=null;}}return raw;})();
+var statusColorsReady = false;
 const STORE_KEY = "customer_app_data_v4";
 const DELETED_KEY = "customer_app_deleted_v1";
 const DEVICE_KEY = "customer_app_deviceid_v1";
@@ -2646,7 +2777,7 @@ function buildOptMenuRowHTML(v, { multi, curArr, curSingle }){
 }
 function buildOptMenuHTML(optKey, curArr, multi, emptyOn, curSingle){
   return `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>`
-    + optList(optKey).map(v => buildOptMenuRowHTML(v, { multi, curArr, curSingle })).join("")
+    + optList(optKey).map(v => optKey === "status" && !multi ? buildStatusColorMenuRow(v, curSingle) : buildOptMenuRowHTML(v, { multi, curArr, curSingle })).join("")
     + `<div class="opt-add"><input placeholder="自訂…"><button type="button">加入</button></div>`;
 }
 const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","詢問","客戶需求"];
@@ -2695,7 +2826,7 @@ function trowHTML(d){
   const delCell = editMode
     ? `<td class="tdel"><button data-act="del" title="刪除此列">${ICON_TRASH}</button></td>`
     : `<td class="tdel"></td>`;
-  const cell = (f, cls) => `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}" title="${esc(d[f])}">${esc(d[f])}</div></td>`;
+  const cell = (f, cls) => { const value = f === "line" ? normalizeLineSymbols(d[f]) : d[f]; return `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}" title="${esc(value)}">${esc(value)}</div></td>`; };
   const segCell = (f, cls) => editMode
     ? `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}" title="${esc(d[f])}">${esc(d[f])}</div></td>`
     : `<td><div class="tcell segcell${cls?" "+cls:""}" data-field="${f}" title="${esc(d[f])}">${segCopyHTML(d[f])}</div></td>`;
@@ -2713,7 +2844,7 @@ function trowHTML(d){
   const dateCell = `<td class="datewrap"><span class="gen-edge"></span><button type="button" class="gen-btn" tabindex="-1" data-gen="1" title="生成買方名稱並複製" aria-label="生成買方名稱並複製">${GEN_ICON}<span class="gen-label">生成</span></button>${dateInner}</td>`;
   // 重繪時直接帶上列狀態:展開列(首次排版即為淡化樣式,聚焦轉場不會重播)+ 批次選取列(同步重繪不掉選取)
   const _trCls = ((openNeedId === d.id) ? ("exp-open" + (editMode ? " exp-editing" : "") + " ") : "") + ((tselMode && selected.has(d.id)) ? "tsel-row" : "");
-  return `<tr data-id="${esc(d.id)}"${_trCls.trim() ? ` class="${_trCls.trim()}"` : ""}>`+
+  return `<tr data-id="${esc(d.id)}"${statusColorRowAttrs(d)}${_trCls.trim() ? ` class="${_trCls.trim()}"` : ""}>`+
     dateCell+
     optCell("status","status")+
     optCell("area","area")+
@@ -2840,6 +2971,17 @@ window.isTableBusy = function(){
   return false;
 };
 
+// LINE 組字期間不提交半成品；結束後沿用原有 200ms 自動儲存。
+tableWrap.addEventListener("compositionstart", e => {
+  const cell = e.target.closest && e.target.closest('.tcell[data-field="line"]');
+  if (cell){ cell._lineComposing = true; clearTimeout(cell._saveT); }
+}, true);
+tableWrap.addEventListener("compositionend", e => {
+  const cell = e.target.closest && e.target.closest('.tcell[data-field="line"]');
+  if (!cell) return;
+  cell._lineComposing = false; clearTimeout(cell._saveT);
+  cell._saveT = setTimeout(() => { if (cell.isConnected) tCommitCell(cell); }, 200);
+}, true);
 // ---- inline editing ----
 function tFindItem(el){ const tr = el.closest("tr"); return tr ? items.find(x => x.id === tr.dataset.id) : null; }
 function tFlash(el){ el.classList.add("saved"); setTimeout(()=>el.classList.remove("saved"), 700); }
@@ -2854,11 +2996,13 @@ function setCellText(cell, v){
 function tCommitCell(cell){                       // 回傳 true=值有變更(呼叫端據此決定要不要閃「已儲存」)
   const it = tFindItem(cell); if (!it) return false;
   const field = cell.dataset.field;
+  if (field === "line" && cell._lineComposing) return false;
   let val = cell.textContent.trim();
   if (field === "ask") val = normAsk(val);
-  if (!(field === "ask" && tCellIsEditing(cell))) setCellText(cell, val);   // 編輯中不重寫 DOM,避免 normAsk 大寫化時游標跳回開頭
+  if (field === "line") val = normalizeLineSymbols(val);
+  if (!((field === "ask" || field === "line") && tCellIsEditing(cell))) setCellText(cell, val);   // 編輯中不重寫 DOM,避免 normAsk 大寫化時游標跳回開頭
   cell.title = val;   // trowHTML 初繪寫入 title;inline 編輯後須同步,懸浮提示才會即時更新
-  if (it[field] !== val){
+  if ((field === "line" ? normalizeLineSymbols(it[field]) : it[field]) !== val){
     it[field] = val;
     if (field === "budget"){ const r = parseBudget(val); it.bMin = (r && isFinite(r[0]) && r[0] > 0) ? r[0] : null; it.bMax = (r && isFinite(r[1])) ? r[1] : null; }
     if (field === "pType"){ it.parking = fmtParking(val, it.pNum); }
@@ -4717,7 +4861,10 @@ tableWrap.addEventListener("paste", e => {
 tableWrap.addEventListener("copy", e => {
   const cell = (e.target && e.target.closest) ? e.target.closest(".tcell[data-field]") : null;
   if (!cell || !editMode) return;
-  if (tCellIsEditing(cell)) return;
+  if (tCellIsEditing(cell)){
+    if (cell.dataset.field === "line") copyLineSelection(e, cell);
+    return;
+  }
   if (document.activeElement !== cell) return;
   const text = tCellCopyPlain(cell);
   if (!text) return;
@@ -5286,6 +5433,7 @@ function toptMenuSyncIdx(){
   toptMenuHighlight();
 }
 function onToptMenuKey(e){
+  if (e.target.closest("#tint-panel") || e.target.closest("[data-status-color]")) return;
   if (!toptmenu.classList.contains("show")) return;
   if (e.target.closest(".opt-add")) return;
   const opts = toptMenuOpts();
@@ -5354,11 +5502,11 @@ function openOptMenu(trigger){
   setTimeout(() => document.addEventListener("click", toptOutside), 0);
 }
 function toptOutside(e){ if (e.target.closest("#toptmenu") || e.target.closest(".topt-trigger")) return; closeOptMenu(); }
-function closeOptMenu(){ document.removeEventListener("click", toptOutside); toptmenu.classList.remove("show"); toptTrigger = null; if (window.refreshLed) window.refreshLed(); }
+function closeOptMenu(){ closeStatusColor(); document.removeEventListener("click", toptOutside); toptmenu.classList.remove("show"); toptTrigger = null; if (window.refreshLed) window.refreshLed(); }
 // 表格滾動時關閉格子下拉(fixed 選單不會跟著移);選單本身內部捲動不關
 document.addEventListener("scroll", e => {
   const t = e.target;
-  if (t && t.closest && (t.closest("#toptmenu") || t.closest("#catmenu"))) return;
+  if (t && t.closest && (t.closest("#tint-panel") || t.closest("#toptmenu") || t.closest("#catmenu"))) return;
   if (toptmenu && toptmenu.classList.contains("show")) closeOptMenu();
   if (catmenu && catmenu.classList.contains("show")) closeCatMenu();
 }, true);
@@ -5393,6 +5541,7 @@ function setOptValue(v, opts){
   }
   it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
   paintOptTrigger(toptTrigger, it, toptField);
+  if (toptField === "status") paintStatusColorRows();
   if (multi) renderToptMenu();
 }
 toptmenu.addEventListener("click", e => {
@@ -5450,7 +5599,7 @@ toptmenu.addEventListener("keydown", e => { if (e.target.matches(".opt-add input
 (function(){
   let t=null,row=null,px=0,py=0;
   const clr=()=>toptmenu.querySelectorAll(".opt-line.reveal").forEach(el=>el.classList.remove("reveal"));
-  const start=(cx,cy,target)=>{ toptmenu.__lp=false; if(target.closest(".opt-del")||target.closest(".opt-add")||target.closest(".opt-drag"))return; const r=target.closest(".opt-line"); if(!r)return; row=r;px=cx;py=cy;clearTimeout(t); t=setTimeout(()=>{toptmenu.__lp=true;row=null;toptmenu.classList.add("opt-editing");try{navigator.vibrate&&navigator.vibrate(12);}catch(_){}} ,400); };
+  const start=(cx,cy,target)=>{ toptmenu.__lp=false; if(target.closest("[data-status-color]")||target.closest(".opt-del")||target.closest(".opt-add")||target.closest(".opt-drag"))return; const r=target.closest(".opt-line"); if(!r)return; row=r;px=cx;py=cy;clearTimeout(t); t=setTimeout(()=>{toptmenu.__lp=true;row=null;toptmenu.classList.add("opt-editing");try{navigator.vibrate&&navigator.vibrate(12);}catch(_){}} ,400); };
   const move=(cx,cy)=>{ if(row&&(Math.abs(cx-px)>10||Math.abs(cy-py)>10)){clearTimeout(t);row=null;} };
   const end=()=>{clearTimeout(t);row=null;};
   toptmenu.addEventListener("pointerdown",e=>start(e.clientX,e.clientY,e.target));
@@ -6057,7 +6206,7 @@ function applyFilter(){
   // 沒打「/」時行為與原本完全相同(單一關鍵字)。
   const terms = searchEl.value.toLowerCase().split(/[\/／]/).map(t => t.trim()).filter(Boolean);
   let list = currentCat ? items.filter(d => fieldHas(d, "cat", currentCat)) : items.slice();
-  if (terms.length) list = list.filter(d => { const hay = searchHay(d); return terms.every(t => hay.includes(t)); });
+  if (terms.length) list = list.filter(d => { const hay = searchHay(d); return terms.every(t => hay.includes(t) || lineSearchMatches(d.line, t)); });
   list = applyColFilters(list);
   list = sortList(list);
   countEl.textContent = `${list.length} 筆`;
@@ -6330,6 +6479,7 @@ function trapFocusKey(e, container){
   try { nodes[j].focus(); } catch(err){}
 }
 function tabTrapTarget(){
+  const tint=document.getElementById("tint-panel");if(tint&&tint.getClientRects().length)return tint;
   const dataDlg=document.querySelector("dialog.data-dialog[open]");if(dataDlg)return dataDlg;
   if (confirmBg && confirmBg.classList.contains("open")) return confirmBg.querySelector(".confirm");
   const calOpen = document.getElementById("calBg");
@@ -6387,6 +6537,10 @@ const F = {
   t3:document.getElementById("f_t3"),
 };
 if (F.ask) F.ask.addEventListener("blur", () => { const v = normAsk(F.ask.value); if (F.ask.value !== v) F.ask.value = v; });
+if (F.line){
+  F.line.addEventListener("blur", () => { const value = normalizeLineSymbols(F.line.value); if (F.line.value !== value) F.line.value = value; });
+  F.line.addEventListener("copy", e => copyLineSelection(e, F.line));
+}
 
 // 表單需求欄(contenteditable):貼上網址→「連結」標籤;游標緊鄰標籤時可整顆刪除
 function pasteNeedField(ed, tx){
@@ -6574,6 +6728,220 @@ const DEF_OPTS = {
   status:[]   // 客戶分級/狀態:不給預設,選項全由使用者在下拉的「自訂…」自行新增(例:A級、要帶看、無效客)
 };
 let customOpts = loadOpts();
+// Status colors are preferences; the editor draft never enters saved or synced data.
+const STATUS_COLORS_KEY = "customer_app_status_colors_v1";
+// Only the status menu uses this visual input mode; focus and keyboard navigation remain native.
+window.addEventListener("pointerdown",()=>document.documentElement.classList.remove("status-keyboard-focus"),true);
+window.addEventListener("keydown",e=>{
+  if(["Tab","Enter"," ","Escape","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown"].includes(e.key))document.documentElement.classList.add("status-keyboard-focus");
+},true);
+let statusColors = loadStatusColors();
+let statusColorDraft = null;
+let statusColorAnchor = null;
+const STATUS_PURE_COLORS = [{hex:"#ef4444",name:"紅色"},{hex:"#f97316",name:"橙色"},{hex:"#eab308",name:"黃色"},{hex:"#16a34a",name:"綠色"},{hex:"#0891b2",name:"青色"},{hex:"#2563eb",name:"藍色"},{hex:"#7c3aed",name:"紫色"},{hex:"#64748b",name:"灰色"}];
+function normalizeStatusColors(value){
+  CustomerDataCore.settings({statusColors:value});
+  return JSON.parse(JSON.stringify(value));
+}
+function loadStatusColors(){
+  try { return normalizeStatusColors(JSON.parse(localStorage.getItem(STATUS_COLORS_KEY)||"{}")); } catch(e){ return {}; }
+}
+function statusColorKey(name){ return "s:"+String(name); }
+function statusColorFor(name, preview=true){
+  if (!statusColorsReady || !name || !optList("status").includes(String(name))) return null;
+  if (preview && statusColorDraft && statusColorDraft.name===String(name)) return statusColorDraft.value;
+  return statusColors[statusColorKey(name)] || null;
+}
+function statusColorBackground(value){ return "color-mix(in srgb,"+value.hex+" "+value.alpha+"%,var(--card))"; }
+function statusColorRowAttrs(d){
+  const value=statusColorFor(fieldPrimary(d,"status"));
+  return value&&value.alpha ? ' data-status-tint="1" style="--status-bg:'+statusColorBackground(value)+';--status-dot:'+value.hex+'"' : "";
+}
+function paintStatusColorRows(){
+  const map=new Map(items.map(it=>[String(it.id),it]));
+  document.querySelectorAll("tr[data-id]").forEach(row=>{
+    const item=map.get(row.dataset.id), value=item&&statusColorFor(fieldPrimary(item,"status"));
+    row.toggleAttribute("data-status-tint",!!(value&&value.alpha));
+    if(value&&value.alpha){ row.style.setProperty("--status-bg",statusColorBackground(value));row.style.setProperty("--status-dot",value.hex); }
+    else { row.style.removeProperty("--status-bg");row.style.removeProperty("--status-dot"); }
+  });
+  document.querySelectorAll("[data-status-color]").forEach(button=>{
+    const value=statusColorFor(button.dataset.statusColor), dot=button.querySelector(".status-color-dot");
+    if(dot){dot.style.setProperty("--dot",value?.hex||"#64748b");dot.classList.toggle("none",!value||!value.alpha);}
+  });
+}
+function buildStatusColorMenuRow(v,curSingle){
+  const value=statusColorFor(v), on=v===curSingle;
+  return '<div class="opt-line status-color-line'+(on?' sel':'')+'" data-v="'+esc(v)+'"><span class="opt-drag" aria-label="拖曳排序">☰</span><button type="button" class="cselect-opt'+(on?' sel':'')+'" data-v="'+esc(v)+'"><span class="opt-txt">'+esc(v)+'</span></button><button type="button" class="status-color-button" data-status-color="'+esc(v)+'" title="調整 '+esc(v)+' 的整排底色" aria-label="調整 '+esc(v)+' 的整排底色"><span class="status-color-dot'+(!value||!value.alpha?' none':'')+'" style="--dot:'+(value?.hex||'#64748b')+'"></span></button><span class="opt-del" data-del="'+esc(v)+'" title="刪除此選項" role="button">✕</span></div>';
+}
+const statusColorPanel=document.createElement("section");
+statusColorPanel.id="tint-panel";
+statusColorPanel.setAttribute("role","dialog");
+statusColorPanel.setAttribute("aria-label","狀態顏色與底色濃度");
+document.body.appendChild(statusColorPanel);
+function readStatusColorPercent(text){
+  const raw=String(text).replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).trim().replace(/[%％]$/,"" ).trim();
+  if(!/^\d{1,3}$/.test(raw))return null;
+  const n=Number(raw);return n<=100?n:null;
+}
+function fitStatusColorPercent(input){
+  const length=Array.from(input.value||"0").reduce((n,c)=>n+(c.charCodeAt(0)>255?2:1),0);
+  input.style.setProperty("--percent-ch",Math.max(1,Math.min(4,length)));
+}
+function keepStatusColorFocusVisible(){
+  const focused=document.activeElement;
+  if(!statusColorDraft||!focused||!statusColorPanel.contains(focused))return;
+  const panel=statusColorPanel.getBoundingClientRect(), rect=focused.getBoundingClientRect();
+  if(rect.top<panel.top+8)statusColorPanel.scrollTop-=panel.top+8-rect.top;
+  else if(rect.bottom>panel.bottom-8)statusColorPanel.scrollTop+=rect.bottom-panel.bottom+8;
+}
+function finishStatusColorPercent(report=false){
+  if(!statusColorDraft)return false;
+  const input=statusColorPanel.querySelector(".tint-percent-input");
+  if(!input)return true;
+  if(input._tintComposing)return false;
+  const n=input.value.trim()===""?statusColorDraft.value.alpha:readStatusColorPercent(input.value);
+  const valid=n!==null;
+  input.setCustomValidity(valid?"":"請輸入 0–100 的整數");
+  input.toggleAttribute("aria-invalid",!valid);
+  if(!valid){input.setAttribute("aria-invalid","true");if(report){input.focus({preventScroll:true});input.reportValidity();}return false;}
+  statusColorDraft.value.alpha=n;updateStatusColorPanel(true);return true;
+}
+function positionStatusColorPanel(){
+  if(!statusColorDraft||!statusColorAnchor)return;
+  const vv=window.visualViewport, top=vv?vv.offsetTop:0, height=vv?vv.height:innerHeight;
+  statusColorPanel.style.maxHeight=Math.max(80,height-20)+"px";
+  const rect=statusColorAnchor.getBoundingClientRect(), w=statusColorPanel.offsetWidth,h=statusColorPanel.offsetHeight;
+  const left=rect.right+12+w<=innerWidth-10?rect.right+12:Math.max(10,Math.min(rect.left-w-12,innerWidth-w-10));
+  statusColorPanel.style.left=left+"px";
+  statusColorPanel.style.top=Math.max(top+10,Math.min(rect.top,top+height-h-10))+"px";
+  keepStatusColorFocusVisible();
+}
+let statusColorViewportWidth=0;
+function updateStatusColorPanel(forcePercent=false){
+  if(!statusColorDraft)return;
+  const value=statusColorDraft.value;
+  statusColorPanel.style.setProperty("--tint-selected",value.hex);
+  statusColorPanel.style.setProperty("--tint-level",value.alpha+"%");
+  const percent=statusColorPanel.querySelector(".tint-percent-input");
+  if(forcePercent||document.activeElement!==percent){percent.value=value.alpha;percent.setCustomValidity("");percent.removeAttribute("aria-invalid");}
+  fitStatusColorPercent(percent);
+  statusColorPanel.querySelector(".tint-range").value=value.alpha;
+  statusColorPanel.querySelector('input[type="color"]').value=value.hex;
+  statusColorPanel.querySelector(".tint-preview").style.background=statusColorBackground(value);
+  statusColorPanel.querySelector(".tint-dot").style.background=value.hex;
+  statusColorPanel.querySelectorAll("[data-pure]").forEach(b=>b.classList.toggle("on",b.dataset.pure===value.hex.toLowerCase()));
+  statusColorPanel.querySelectorAll("[data-level]").forEach(b=>b.classList.toggle("on",Number(b.dataset.level)===value.alpha));
+  paintStatusColorRows();
+}
+function openStatusColor(name,anchor){
+  closeStatusColor();
+  if(!optList("status").includes(name))return;
+  statusColorAnchor=anchor;
+  statusColorDraft={name,value:{...(statusColorFor(name,false)||{hex:"#7c3aed",alpha:15})}};
+  const value=statusColorDraft.value;
+  statusColorPanel.innerHTML='<h3>'+esc(name)+' 的整排底色</h3><div class="tint-label">純色</div><div class="tint-colors">'+STATUS_PURE_COLORS.map(c=>'<button type="button" class="tint-pure" data-pure="'+c.hex+'" aria-label="'+c.name+'" title="'+c.name+'"><span style="background:'+c.hex+'"></span></button>').join('')+'</div><label class="tint-custom-row"><span>自訂顏色</span><input aria-label="自訂純色" type="color" value="'+value.hex+'"></label><div class="tint-label"><label for="tint-range">底色濃度</label><label class="tint-percent"><input class="tint-percent-input" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-label="底色濃度百分比"><span aria-hidden="true">%</span></label></div><input id="tint-range" class="tint-range" type="range" min="0" max="100" step="1" list="tint-stops" aria-label="底色濃度"><datalist id="tint-stops">'+Array.from({length:21},(_,i)=>'<option value="'+i*5+'"></option>').join('')+'</datalist><div class="tint-ticks" aria-hidden="true">'+'<i></i>'.repeat(21)+'</div><div class="tint-range-hint"><span>0% 無底色</span><span>100% 純色</span></div><div class="tint-quick">'+[10,15,20,30].map(n=>'<button type="button" data-level="'+n+'">'+n+'%</button>').join('')+'</div><div class="tint-label">即時預覽</div><div class="tint-preview"><b><i class="tint-dot"></i>'+esc(name)+'</b><span>林小姐</span><span>2,000 萬</span></div><div class="tint-footer"><button type="button" data-tint-clear>無底色</button><button type="button" class="tint-done">完成</button></div>';
+  statusColorPanel.style.display="block";
+  updateStatusColorPanel();
+  statusColorViewportWidth=innerWidth;
+  positionStatusColorPanel();
+  statusColorPanel.querySelector(".tint-range").focus({preventScroll:true});
+}
+function closeStatusColor(restoreFocus=false){
+  if(!statusColorDraft)return;
+  const anchor=statusColorAnchor;
+  statusColorDraft=null;statusColorAnchor=null;
+  statusColorPanel.style.display="none";
+  paintStatusColorRows();
+  if(restoreFocus&&anchor&&anchor.isConnected)anchor.focus({preventScroll:true});
+}
+function commitStatusColor(){
+  if(!statusColorDraft||!finishStatusColorPercent(true))return;
+  const previous=statusColors, next={...statusColors};
+  next[statusColorKey(statusColorDraft.name)]={...statusColorDraft.value};
+  if(JSON.stringify(previous)!==JSON.stringify(next)){
+    statusColors=normalizeStatusColors(next);
+    if(!storeCurrentState()){statusColors=previous;toast("底色尚未儲存，請稍後再試");return;}
+    try{localStorage.setItem(STATUS_COLORS_KEY,JSON.stringify(statusColors));}catch(e){}
+    onLocalChange("settings");
+  }
+  closeStatusColor(true);
+}
+statusColorPanel.addEventListener("pointerdown",e=>{
+  // Finish native IME before another control replaces the numeric field's text.
+  const percent=statusColorPanel.querySelector(".tint-percent-input");
+  if(percent&&percent._tintComposing&&!e.target.closest(".tint-percent"))percent.blur();
+  e.stopPropagation();
+});
+statusColorPanel.addEventListener("keydown",e=>{
+  e.stopPropagation();
+  if(e.target.matches(".tint-percent-input")&&e.key==="Enter"){
+    if(e.isComposing||e.keyCode===229||e.target._tintComposing)return;
+    e.preventDefault();
+    if(finishStatusColorPercent(true)){statusColorPanel.querySelector(".tint-range").focus({preventScroll:true});keepStatusColorFocusVisible();}
+  }
+});
+statusColorPanel.addEventListener("compositionstart",e=>{
+  if(e.target.matches(".tint-percent-input"))e.target._tintComposing=true;
+});
+statusColorPanel.addEventListener("compositionend",e=>{
+  if(!e.target.matches(".tint-percent-input"))return;
+  e.target._tintComposing=false;
+  if(!statusColorDraft)return;
+  const n=readStatusColorPercent(e.target.value);
+  if(n!==null){
+    e.target.setCustomValidity("");e.target.removeAttribute("aria-invalid");
+    statusColorDraft.value.alpha=n;updateStatusColorPanel();
+  }else fitStatusColorPercent(e.target);
+});
+statusColorPanel.addEventListener("focusout",e=>{
+  if(e.target.matches(".tint-percent-input")&&statusColorDraft)finishStatusColorPercent();
+});
+statusColorPanel.addEventListener("click",e=>{
+  e.stopPropagation();if(!statusColorDraft)return;
+  const pure=e.target.closest("[data-pure]"),level=e.target.closest("[data-level]");
+  if(pure)statusColorDraft.value.hex=pure.dataset.pure;
+  else if(level)statusColorDraft.value.alpha=Number(level.dataset.level);
+  else if(e.target.closest("[data-tint-clear]"))statusColorDraft.value.alpha=0;
+  else if(e.target.closest(".tint-done")){commitStatusColor();return;}
+  // Touch controls need not take focus; explicit alpha choices replace any prior number text.
+  updateStatusColorPanel(!!level||!!e.target.closest("[data-tint-clear]"));
+});
+statusColorPanel.addEventListener("input",e=>{
+  if(!statusColorDraft)return;
+  if(e.target.matches(".tint-percent-input")){
+    fitStatusColorPercent(e.target);
+    if(e.isComposing||e.target._tintComposing)return;
+    const n=readStatusColorPercent(e.target.value);
+    e.target.setCustomValidity(n===null&&e.target.value.trim()!==""?"請輸入 0–100 的整數":"");
+    e.target.removeAttribute("aria-invalid");
+    if(n===null)return;
+    statusColorDraft.value.alpha=n;
+  }else if(e.target.matches(".tint-range"))statusColorDraft.value.alpha=Number(e.target.value);
+  else if(e.target.matches('input[type="color"]'))statusColorDraft.value.hex=e.target.value;
+  updateStatusColorPanel(e.target.matches(".tint-range"));
+});
+document.addEventListener("pointerdown",e=>{
+  if(statusColorDraft&&!e.target.closest("#tint-panel")&&!e.target.closest("[data-status-color]"))closeStatusColor();
+},true);
+document.addEventListener("click",e=>{
+  const button=e.target.closest("[data-status-color]");if(!button)return;
+  e.preventDefault();e.stopImmediatePropagation();openStatusColor(button.dataset.statusColor,button);
+},true);
+document.addEventListener("keydown",e=>{
+  if(statusColorDraft&&e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();closeStatusColor(true);}
+  else if(e.target.closest("[data-status-color]")&&(e.key==="Enter"||e.key===" ")){e.preventDefault();e.stopImmediatePropagation();e.target.closest("[data-status-color]").click();}
+},true);
+window.addEventListener("resize",()=>{
+  if(!statusColorDraft)return;
+  if(Math.abs(innerWidth-statusColorViewportWidth)>1)closeStatusColor();
+  else positionStatusColorPanel();
+});
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize",positionStatusColorPanel);
+  window.visualViewport.addEventListener("scroll",positionStatusColorPanel);
+}
+
 // 加入自訂選項時:若此值先前被刪除(還在隱藏名單),要一併解除隱藏,否則加了也不會出現在清單
 function unhideOpt(key, v){
   const h = customOpts.hidden[key] || [];
@@ -6599,6 +6967,7 @@ function saveOpts(){ try { localStorage.setItem("customer_app_opts_v1", JSON.str
 // 選項自訂順序(每欄一份):拖曳調整後記住並同步;新選項自動接在後面。
 function loadOptOrder(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_optorder_v1") || "null"); if (s && typeof s === "object") return s; } catch(e){} } return {}; }
 let optOrder = loadOptOrder();
+statusColorsReady = true;
 function saveOptOrder(){ if (storageOK){ try { localStorage.setItem("customer_app_optorder_v1", JSON.stringify(optOrder)); } catch(e){} } }
 function optList(key){
   const hid = new Set((customOpts.hidden[key]||[]).map(String)); const seen = new Set();
@@ -6686,7 +7055,7 @@ function makeOptSel(key, emptyLabel, multi){
   const clearReveal = () => { menu.querySelectorAll(".opt-line.reveal").forEach(x => x.classList.remove("reveal")); };
   menu.addEventListener("pointerdown", e => {
     menu.__lp = false;
-    if (e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag") || e.target.closest(".pri-pin")) return;
+    if (e.target.closest("[data-status-color]") || e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag") || e.target.closest(".pri-pin")) return;
     const row = e.target.closest(".opt-line"); if (!row) return;
     _lpRow = row; _lpX = e.clientX; _lpY = e.clientY; clearTimeout(_lpTimer);
     _lpTimer = setTimeout(() => { menu.__lp = true; _lpRow = null; menu.classList.add("opt-editing"); try { navigator.vibrate && navigator.vibrate(12); } catch(_){} }, 400);
@@ -6697,7 +7066,7 @@ function makeOptSel(key, emptyLabel, multi){
   menu.addEventListener("pointercancel", endLp);
   menu.addEventListener("touchstart", e => {
     menu.__lp = false;
-    if (e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag")) return;
+    if (e.target.closest("[data-status-color]") || e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag")) return;
     const row = e.target.closest(".opt-line"); if (!row) return;
     const tc = e.touches[0]; _lpX = tc.clientX; _lpY = tc.clientY; _lpRow = row; clearTimeout(_lpTimer);
     _lpTimer = setTimeout(() => { menu.__lp = true; _lpRow = null; menu.classList.add("opt-editing"); try { navigator.vibrate && navigator.vibrate(12); } catch(_){} }, 380);
@@ -6832,10 +7201,10 @@ function openForm(id){
   statusPick.set(d ? (d.status || "") : "");
   F.budget.value = d ? (d.budget || "") : "";   // 預算合併為單一欄位:直接吃顯示字串(2000-2500、1500以內、2600以上…)
   roomsPick.set(d ? d.rooms||"" : "");
-  const _pk = d ? ((d.pType != null || d.pNum != null) ? {t:d.pType||"", n:(d.pNum==null?"":String(d.pNum))} : (function(){ const p = parseParking(d.parking); return {t:p.t, n:p.n>0?String(p.n):""}; })()) : {t:"", n:""};
-  ptypePick.set(_pk.t); pnumPick.set(_pk.n);   // 車數自由文字:用原文設回選擇器(「1車」顯示「1車」);舊資料(parking)才轉數字
+  const _pk = d ? ((d.pType != null || d.pNum != null) ? {t:d.pType||"", n:(d.pNum==null?"":d.pNum)} : (function(){ const p = parseParking(d.parking); return {t:p.t, n:p.n>0?String(p.n):""}; })()) : {t:"", n:""};
+  ptypePick.set(_pk.t); pnumPick.set(_pk.n);   // 車數保留原始單值或多選陣列,交由選擇器正規化;舊資料(parking)才轉數字
   F.tel.value     = d ? d.tel||""     : "";
-  F.line.value    = d ? d.line||""    : "";
+  F.line.value    = normalizeLineSymbols(d && d.line);
   F.ask.value     = d ? d.ask||""     : "";
   F.need.innerHTML  = (d && d.need)  ? needToFormHTML(d.need)  : "<div><br></div>";
   F.need2.innerHTML = (d && d.need2) ? needToFormHTML(d.need2) : "<div><br></div>";
@@ -6851,7 +7220,7 @@ function openForm(id){
   const draft=loadFormDraft();
   if(draft && (draft.editingId||null)===(id||null)){
     applyFormDraft(draft.rec||draft);
-    if(draft.base)formBaseRec=draft.base;
+    if(draft.base)formBaseRec={...draft.base,line:normalizeLineSymbols(draft.base.line)};
     toast("已還原未儲存草稿；按儲存才會套用");
   }
   if(!id)setTimeout(()=>F.cust.focus(),50);
@@ -6864,6 +7233,7 @@ function applyPendingMergeIfAny(){
   }
 }
 function closeForm(){
+  closeStatusColor();
   closeNeedOrderUI();
   clearFormDraft();
   modalBg.classList.remove("open"); editingId = null; formBaseRec=null;
@@ -6904,7 +7274,7 @@ function openDetail(id){
   // 客戶資訊(電話/LINE) + 可摺疊的建檔資訊(建檔日/詢問案名)
   const contact = `<div class="dtl-sec">
     <div class="dtl-h">${IC_USER}客戶資訊<button type="button" class="dtl-tg" aria-expanded="false" title="顯示建檔資訊">${IC_CHEV}</button></div>
-    <div class="dtl-card">${cell("電話", d.tel, IC_TEL)}${cell("LINE", d.line)}</div>
+    <div class="dtl-card">${cell("電話", d.tel, IC_TEL)}${cell("LINE", normalizeLineSymbols(d.line))}</div>
     <div class="dtl-meta" id="dtlMeta">
       <div class="dtl-h" style="color:var(--ink-soft);">建檔資訊</div>
       <div class="dtl-card">${cell("建檔日", d.date)}${cell("詢問案名", d.ask)}</div>
@@ -6972,7 +7342,7 @@ function buildFormRec(){
     parking: fmtParking(asFieldVals(pType)[0] || "", asFieldVals(pNum)[0] || ""),
     pType, pNum: pNum || "",
     tel: F.tel.value.trim(),
-    line: F.line.value.trim(),
+    line: normalizeLineSymbols(F.line.value.trim()),
     ask: normAsk(F.ask.value.trim()),
     need: normalizeNeedStorage(editToNeed(F.need)).trim(),
     need2: normalizeNeedStorage(editToNeed(F.need2)).trim(),
@@ -7013,7 +7383,7 @@ function applyFormDraft(d){
   ptypePick.set(d.pType || "");
   pnumPick.set(d.pNum || "");
   F.tel.value = d.tel || "";
-  F.line.value = d.line || "";
+  F.line.value = normalizeLineSymbols(d.line);
   F.ask.value = d.ask || "";
   F.need.innerHTML = d.need ? needToFormHTML(d.need) : "<div><br></div>";
   F.need2.innerHTML = d.need2 ? needToFormHTML(d.need2) : "<div><br></div>";
@@ -7493,6 +7863,7 @@ modalBg.addEventListener("click", e => { if (e.target === modalBg && _mbDownOnBg
 /* TAB 切換「正常 / 編輯」模式:只在列表頁(卡片或表格)且沒有任何浮層/對話框時作用;
    其餘情況(封面、設定頁、表單、日曆、選單…)與 Shift+TAB 一律維持原本的欄位切換 */
 function tabModeToggleAllowed(){
+  const tint=document.getElementById("tint-panel");if(tint&&tint.getClientRects().length)return false;
   if(needOrderBusy)return false;
   const on = (id, cls) => { const el = document.getElementById(id); return !!(el && el.classList.contains(cls)); };
   if (!listView || !listView.classList.contains("active")) return false;   // 只在列表頁
@@ -7549,7 +7920,7 @@ document.addEventListener("keydown", e => {
 // 注意:applySettings 只做「純本機儲存+畫面套用」,不呼叫 onLocalChange——由呼叫端決定要不要觸發同步,避免回授迴圈。
 function collectSettings(){
   const fs = serializeColFilterState();
-  return { density: density, sort: currentSort, colw: colW, theme: theme, opts: customOpts, fltorder: filterOrder, expfocus: expFocus, optorder: optOrder, colFilter: fs.colFilter, fltB: fs.fltB };
+  return { density: density, sort: currentSort, colw: colW, theme: theme, opts: customOpts, statusColors: statusColors, fltorder: filterOrder, expfocus: expFocus, optorder: optOrder, colFilter: fs.colFilter, fltB: fs.fltB };
 }
 function applySettings(s){
   if (!s || typeof s !== "object") return;
@@ -7561,6 +7932,7 @@ function applySettings(s){
   if (s.colw && typeof s.colw === "object"){ colW = {...DEFAULT_COLW, ...s.colw}; saveColW(); }
   if (s.theme === "dark" || s.theme === "light"){ theme = s.theme; saveTheme(); applyTheme(); }
   if (s.opts && typeof s.opts === "object"){ customOpts = normOpts(s.opts); try { localStorage.setItem("customer_app_opts_v1", JSON.stringify(customOpts)); } catch(e){} }
+  if (Object.prototype.hasOwnProperty.call(s,"statusColors")){ statusColors = normalizeStatusColors(s.statusColors); try{localStorage.setItem(STATUS_COLORS_KEY,JSON.stringify(statusColors));}catch(e){} }
   if (s.fltorder && typeof s.fltorder === "object"){ filterOrder = s.fltorder; saveFltOrder(); }
   if (typeof s.expfocus === "boolean"){ expFocus = s.expfocus; saveExpFocus(); applyExpFocus(); }
   if (s.optorder && typeof s.optorder === "object"){ optOrder = s.optorder; saveOptOrder(); }
@@ -8059,6 +8431,7 @@ document.addEventListener("pointercancel", endCatDrag);
   }
 
   document.addEventListener("touchstart", function(e){
+    if(e.target.closest("#tint-panel")){track=false;return;}
     if(e.target.closest(".need-order-handle,.need-order-menu")||needOrderBusy){track=false;return;}
     if (e.touches.length !== 1){ track = false; return; }
     const t = e.touches[0];
@@ -8119,7 +8492,7 @@ const DATA_V6_KEY = "customer_app_state_v6";
 const DataCore = CustomerDataCore;
 const editActor = deviceId + "-" + DataCore.newId();
 let applyingDataState = false;
-function defaultPreferenceView(){return {cats:DataCore.clone(DEFAULT_CATS),settings:{density:"normal",sort:"default",colw:{...DEFAULT_COLW},theme:"light",opts:normOpts(null),fltorder:{},expfocus:false,optorder:{},colFilter:{area:null,cat:null,rooms:null,pType:null,pNum:null,status:null},fltB:{lo:null,hi:null}}};}
+function defaultPreferenceView(){return {cats:DataCore.clone(DEFAULT_CATS),settings:{density:"normal",sort:"default",colw:{...DEFAULT_COLW},theme:"light",opts:normOpts(null),statusColors:{},fltorder:{},expfocus:false,optorder:{},colFilter:{area:null,cat:null,rooms:null,pType:null,pNum:null,status:null},fltB:{lo:null,hi:null}}};}
 function legacyPreferenceView(){
   const all=collectSettings(),settings={};
   for(const key of Object.keys(all))if(bootPreferenceStorage[key]!==null)settings[key]=all[key];
