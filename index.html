@@ -2252,7 +2252,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.10.12D";
+const APP_VERSION = "2026.10.12E";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -5380,7 +5380,13 @@ function setEditMode(on){
 }
 
 // ---- 類別下拉選單 ----
-const catmenu = document.getElementById("catmenu");
+/* menu-scroll-anchor:start */let catMenuAnchorBox=null,optMenuAnchorBox=null;
+function menuAnchorMoved(trigger,box){
+  if(!trigger||!trigger.isConnected||!box)return true;
+  const rect=trigger.getBoundingClientRect();
+  return ["left","top","right","bottom"].some(key=>Math.abs(rect[key]-box[key])>.5);
+}
+/* menu-scroll-anchor:end */const catmenu = document.getElementById("catmenu");
 let catTrigger = null, catMenuIdx = 0;
 // The original event path stays valid when selecting an option rebuilds its DOM.
 function eventWithin(e,root){
@@ -5474,7 +5480,7 @@ function openCatMenu(trigger){
   const it = tFindItem(trigger); if (!it) return;
   catTrigger = trigger;
   renderCatMenu();
-  const r = trigger.getBoundingClientRect();
+  const r = trigger.getBoundingClientRect();/* menu-scroll-anchor:start */catMenuAnchorBox=r;/* menu-scroll-anchor:end */
   catmenu.classList.add("show");
   if (window.refreshLed) window.refreshLed();
   catMenuSyncIdx();
@@ -5486,7 +5492,7 @@ function openCatMenu(trigger){
   setTimeout(()=>document.addEventListener("click", catMenuOutside), 0);
 }
 function catMenuOutside(e){ if (eventWithin(e,catmenu) || e.target.closest(".tcat-trigger")) return; closeCatMenu(); }
-function closeCatMenu(){ document.removeEventListener("click", catMenuOutside); catmenu.classList.remove("show"); catTrigger = null; if (window.refreshLed) window.refreshLed(); }
+function closeCatMenu(){ document.removeEventListener("click", catMenuOutside); catmenu.classList.remove("show"); catTrigger = null;/* menu-scroll-anchor:start */catMenuAnchorBox=null;/* menu-scroll-anchor:end */ if (window.refreshLed) window.refreshLed(); }
 catmenu.addEventListener("click", e=>{
   const pin = e.target.closest(".pri-pin");
   if (pin){ e.stopPropagation(); const opt = pin.closest(".catmenu-opt"); if (opt && catTrigger) applyCatChoice(opt.dataset.key, true); return; }
@@ -5556,7 +5562,7 @@ function openOptMenu(trigger){
   toptmenu.classList.add("show");
   if (window.refreshLed) window.refreshLed();
   toptmenu.style.maxHeight = "";
-  const r = trigger.getBoundingClientRect();
+  const r = trigger.getBoundingClientRect();/* menu-scroll-anchor:start */optMenuAnchorBox=r;/* menu-scroll-anchor:end */
   const w = toptmenu.offsetWidth;
   let left = Math.min(r.left, window.innerWidth - w - 10); left = Math.max(10, left);
   const gap = 6, mgn = 10;
@@ -5575,13 +5581,13 @@ function openOptMenu(trigger){
   setTimeout(() => document.addEventListener("click", toptOutside), 0);
 }
 function toptOutside(e){ if (eventWithin(e,toptmenu) || e.target.closest(".topt-trigger")) return; closeOptMenu(); }
-function closeOptMenu(){ closeStatusColor(); document.removeEventListener("click", toptOutside); toptmenu.classList.remove("show"); toptTrigger = null; if (window.refreshLed) window.refreshLed(); }
+function closeOptMenu(){ closeStatusColor(); document.removeEventListener("click", toptOutside); toptmenu.classList.remove("show"); toptTrigger = null;/* menu-scroll-anchor:start */optMenuAnchorBox=null;/* menu-scroll-anchor:end */ if (window.refreshLed) window.refreshLed(); }
 // 表格滾動時關閉格子下拉(fixed 選單不會跟著移);選單本身內部捲動不關
 document.addEventListener("scroll", e => {
   const t = e.target;
   if (t && t.closest && (t.closest("#tint-panel") || t.closest("#toptmenu") || t.closest("#catmenu"))) return;
-  if (toptmenu && toptmenu.classList.contains("show")) closeOptMenu();
-  if (catmenu && catmenu.classList.contains("show")) closeCatMenu();
+  if (toptmenu && toptmenu.classList.contains("show")/* menu-scroll-anchor:start */&&menuAnchorMoved(toptTrigger,optMenuAnchorBox)/* menu-scroll-anchor:end */) closeOptMenu();
+  if (catmenu && catmenu.classList.contains("show")/* menu-scroll-anchor:start */&&menuAnchorMoved(catTrigger,catMenuAnchorBox)/* menu-scroll-anchor:end */) closeCatMenu();
 }, true);
 // 表格編輯模式:建檔日 → 開共用日曆(與卡片檢視同一個);存檔方式比照 setOptValue(就地更新,不重排)
 function openTableCal(trigger){
@@ -9040,18 +9046,34 @@ let syncConnected = false, syncEmail = null;
   // Display only: existing requests, storage and timers remain owned by the original sync flow.
   let completedCheckState=null,completedCheckEmail=null,checkSession=0;
   let quietCheck=false,displayErrorText=null,paintingCheck=false;
+  // Reuse a successful full comparison only while all of its inputs are unchanged.
+  // Content keys also detect in-place changes to the state and capture's baselines.
+  let completedCheckProof=null;
   function clearSyncCheck(){
     for(const id of ["listLed","coverLed","gDot"]){try{document.getElementById(id)?.classList.remove("sync-complete");}catch(_){}}
   }
-  function resetSyncCheck(){quietCheck=false;completedCheckState=null;completedCheckEmail=null;clearSyncCheck();}
+  function resetSyncCheck(){quietCheck=false;completedCheckState=null;completedCheckEmail=null;completedCheckProof=null;clearSyncCheck();}
   function resetSyncCheckAccount(){checkSession++;displayErrorText=null;resetSyncCheck();}
   function checkHasError(){return needReauth||syncError||snapshotError||window._saveError||window._storageCorrupt||window._autoApplyError;}
   function checkContentMatches(){
     try{
       if(!completedCheckState||completedCheckEmail!==syncEmail||!syncConnected||!navigator.onLine||!syncHasSucceeded||dirty||checkHasError()||displayErrorText||window._pendingMerge||(window.isTableBusy&&window.isTableBusy())||document.querySelector('.tcell[aria-invalid="true"]'))return false;
-      const saved=DataCore.validateState(JSON.parse(localStorage.getItem(DATA_V6_KEY)||"null"));
-      return DataCore.equal(saved,completedCheckState)&&DataCore.equal(dataState,completedCheckState)&&DataCore.equal(captureLocalState(),completedCheckState);
-    }catch(_){return false;}
+      const raw=localStorage.getItem(DATA_V6_KEY),viewKey=JSON.stringify(dataView());
+      const stateKey=JSON.stringify([dataState,savedDataView,savedPreferenceView,savedViewState]);
+      const proof=completedCheckProof;
+      if(proof&&proof.checkState===completedCheckState&&proof.email===syncEmail&&proof.session===checkSession&&
+         proof.state===dataState&&proof.view===savedDataView&&proof.prefs===savedPreferenceView&&proof.viewState===savedViewState&&
+         proof.raw===raw&&proof.viewKey===viewKey&&proof.stateKey===stateKey&&raw===localStorage.getItem(DATA_V6_KEY))return true;
+      completedCheckProof=null;
+      clearSyncCheck();
+      const state=dataState,view=savedDataView,prefs=savedPreferenceView,viewState=savedViewState;
+      const saved=DataCore.validateState(JSON.parse(raw||"null"));
+      if(!DataCore.equal(saved,completedCheckState)||!DataCore.equal(state,completedCheckState)||!DataCore.equal(captureLocalState(),completedCheckState)){resetSyncCheck();return false;}
+      // A different tab may write during the synchronous comparison. Do not certify an old read.
+      if(raw!==localStorage.getItem(DATA_V6_KEY)||state!==dataState||view!==savedDataView||prefs!==savedPreferenceView||viewState!==savedViewState||viewKey!==JSON.stringify(dataView())||stateKey!==JSON.stringify([dataState,savedDataView,savedPreferenceView,savedViewState])){resetSyncCheck();return false;}
+      completedCheckProof={checkState:completedCheckState,email:syncEmail,session:checkSession,state,view,prefs,viewState,raw,viewKey,stateKey};
+      return true;
+    }catch(_){resetSyncCheck();return false;}
   }
   function beginSyncDisplay(){
     // Called only after the original early returns. Once real work appears this run cannot become quiet again.
@@ -9065,7 +9087,7 @@ let syncConnected = false, syncEmail = null;
   function confirmSyncCheck(state,email,session){
     try{
       if(session!==checkSession||email!==syncEmail||dirty||snapshotError||syncError){resetSyncCheck();return;}
-      completedCheckState=DataCore.clone(state);completedCheckEmail=email;
+      completedCheckState=DataCore.clone(state);completedCheckEmail=email;completedCheckProof=null;
     }catch(_){resetSyncCheck();}
   }
   function syncDisplayKind(cls){
