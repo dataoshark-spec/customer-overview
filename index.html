@@ -1447,13 +1447,29 @@
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row)>td{background:var(--status-bg)}
 .ptable tbody tr[data-status-tint] [data-field="status"]::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--status-dot);margin-right:6px;vertical-align:middle;flex-shrink:0}
 @media(hover:hover){
- .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row):hover>td{background:color-mix(in srgb,var(--status-bg) 97%,var(--status-dot) 3%)}
+ .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row):hover>td{background:var(--status-hover-bg)}
  .ptable tbody tr[data-status-tint] .tcell:not([contenteditable="true"]):hover,
  .ptable tbody tr[data-status-tint] .topt-trigger:hover,
  .ptable tbody tr[data-status-tint] .tcat-trigger:hover,
  .ptable.ro tbody tr[data-status-tint] .segcell .seg:hover{background:transparent}
 }
 .ptable tbody tr[data-status-tint] .tcell[contenteditable="false"]:focus{background:transparent}
+/* Derived text colors apply only where the saved status background is visible. */
+.ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) :is(.tcell:not([contenteditable="true"]:focus),.topt-trigger,.tcat-trigger,.tcat-badge){color:var(--status-ink)}
+.ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) :is(.tcell[data-field="date"],.topt-trigger[data-field="date"]):not([contenteditable="true"]:focus){color:var(--status-soft)}
+.ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) .tcell:not([contenteditable="true"]:focus) .need-h{color:var(--status-accent)}
+.ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) .tcell:not([contenteditable="true"]:focus) .seg-plain{color:var(--status-ink)}
+.ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) :is(.tcell:not([contenteditable="true"]:focus),.topt-trigger,.tcat-trigger,.tcat-badge) .opt-orphan,
+.ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) .tneed-ph{color:var(--status-faint)}
+.ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) :is(.tcell:not([contenteditable="true"]:focus),.topt-label,.tcat-label,.tcat-badge):empty::before{color:var(--status-faint)}
+#cards > .card[data-status-tint] :is(.name,.agent-info b){color:var(--status-ink)}
+#cards > .card[data-status-tint] :is(.addr,.addr-sep,.agent-info,.cv-empty,.price .unit,.price-tag small){color:var(--status-soft)}
+#cards > .card[data-status-tint] :is(.price .num,.price-tag){color:var(--status-accent)}
+#cards > .card[data-status-tint] .name .seg-plain{color:var(--status-ink)}
+#cards > .card[data-status-tint] .card-top,
+#cards > .compact-card[data-status-tint] .addr .opt-orphan,
+#cards > .card[data-status-tint] .card-top .opt-orphan{color:var(--status-faint)}
+#cards > .card[data-status-tint] .badge{color:var(--status-badge);opacity:var(--status-badge-opacity)}
 /* Keep hover/selected surfaces separated without reducing the option hit areas. */
 #statusMenu{gap:0}
 #statusMenu>.topt-empty,#toptmenu:has(>.status-color-line)>.topt-empty{margin:3px 4px;width:calc(100% - 8px)}
@@ -2023,11 +2039,11 @@ if(p.syncState){
     for(const [k,c] of Object.entries(s.prefs))if(k.startsWith("setting:"))v.settings[k.slice(8)]=chosen(c);
     return v;
   }
-  function capture(state,view,actor,at=Date.now(),previousPrefs) {
+  function capture(state,view,actor,at=Date.now(),previousPrefs,previousView) {
     const s=clone(state), normalized=normalizeLegacy(state);
     let observed=0;for(const fs of [...Object.values(normalized.records),normalized.prefs])for(const c of Object.values(fs))for(const v of c.choices)observed=Math.max(observed,v.at);
     at=Math.max(at,observed+1);
-    const prev=project(state), old=new Map(prev.items.map(r=>[r.id,r])), now=new Map(view.items.map(r=>[r.id,r]));
+    const prev=previousView||project(state), old=new Map(prev.items.map(r=>[r.id,r])), now=new Map(view.items.map(r=>[r.id,r]));
     for(const r of view.items){
       const before=old.has(r.id)?flat(old.get(r.id)):{},after=flat(r);let changed=false; s.records[r.id]||={};
       for(const k of new Set([...Object.keys(before),...Object.keys(after)]))if(!equal(before[k],after[k])){s.records[r.id][k]=write(s.records[r.id][k],after[k]??null,actor,at);changed=true;}
@@ -2236,7 +2252,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.10.09E";
+const APP_VERSION = "2026.10.12D";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3549,16 +3565,19 @@ function openNeedExp(tr, doFocus){
     ed.innerHTML = v ? (editMode ? needToEditHTML(v) : needToViewHTML(v)) : (editMode ? "<div><br></div>" : '<div class="tneed-ph">（無內容）</div>');
   });
   if (editMode){
-    exp.querySelectorAll("button.nseg-tbtn").forEach(hb => {
-      hb.addEventListener("pointerdown", ev => {
-        ev.preventDefault();                                          // 不搶焦點,選取範圍保留
-        toggleNeedHeading(exp);
+    exp.querySelectorAll("button.nseg-tbtn, button.nseg-sbtn").forEach(button => {
+      button.addEventListener("pointerdown", ev => {
+        if(ev.button===0)ev.preventDefault();                         // 滑鼠操作時保留編輯器選取
       });
-    });
-    exp.querySelectorAll("button.nseg-sbtn").forEach(sb => {
-      sb.addEventListener("pointerdown", ev => {
+      button.addEventListener("click", ev => {
         ev.preventDefault();
-        toggleNeedStrike(exp);
+        ev.stopPropagation();
+        const selection=window.getSelection();
+        const range=selection&&selection.rangeCount?selection.getRangeAt(0):null;
+        const ed=range?needFormatEditor(exp,range):null;
+        if(!ed||ed.dataset.seg!==button.dataset.seg){toast("先選取這一欄要格式化的文字");return;}
+        if(button.classList.contains("nseg-tbtn"))toggleNeedHeading(exp);
+        else toggleNeedStrike(exp);
       });
     });
     if (doFocus){ const f = exp.querySelector('.nseg-ed[data-seg="1"]'); if (f) f.focus(); }
@@ -4516,6 +4535,7 @@ function needNodeText(el){
     if (n.nodeType === 1){
       if (n.classList && n.classList.contains("need-link-chip")){ s += (n.getAttribute("data-url") || ""); return; }
       if (n.classList && n.classList.contains("need-link")){ s += (n.getAttribute("data-url") || n.getAttribute("href") || ""); return; }   // 顯示用「連結」也還原成網址(否則序列化會吐字面「連結」,把存檔網址洗掉)
+      if (n.getAttribute("data-need-hash-heading") === "1"){ s += "# " + needNodeText(n); return; }
       if (isHeadingEl(n)){ s += wrapNeedMark(needNodeText(n), "\u00a7", "\u00a7"); return; }   // inline 標題 → §..§(逐行)
       if (isStrikeEl(n)){ s += wrapNeedMark(needNodeText(n), "~~", "~~"); return; }   // 刪除線 → ~~..~~(逐行,不可包住換行)
       if (n.tagName === "BR"){ s += "\n"; return; }   // 列內 <br> 要保留成換行,否則重開會黏成一團(U 版起的老 bug)
@@ -4532,6 +4552,11 @@ function needNodeText(el){
   return s;
 }
 function editToNeed(ed){
+  if ([...ed.childNodes].some(n => n.nodeType === 3 || (n.nodeType === 1 && !/^(DIV|P)$/.test(n.tagName)))){
+    const copy = ed.cloneNode(true);
+    normalizeNeedInlineRoot(copy);
+    ed = copy;
+  }
   const out = [];
   const pushLine = (t, isH) => { out.push(isH && String(t).trim() ? ("# " + t) : t); };
   const pushMarked = (inner, open, close) => {
@@ -4787,44 +4812,111 @@ function placeNeedCaretEnd(el){
     const r = document.createRange(); r.selectNodeContents(target); r.collapse(false);
     const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch(_){}
 }
-// 單行貼上:用 Range API 直接把內容插到游標處(網址→標籤),不重繪整段、不依賴已廢棄的 execCommand
-// → 避免 innerHTML 重建 DOM 擾動焦點造成「連續貼上第二次沒反應」
-function pasteNeedInline(ed, tx){
-  const sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
-  const rg = sel.getRangeAt(0);
-  if (!sel.isCollapsed) rg.deleteContents();
-  const frag = document.createDocumentFragment();
-  let lastNode = null;
-  needTokens(tx).forEach(tk => {
-    if (tk.t === "url"){
-      const chip = document.createElement("span");
-      chip.className = "need-link-chip"; chip.setAttribute("contenteditable", "false");
-      chip.setAttribute("data-url", tk.v); chip.setAttribute("draggable", "false");
-      chip.textContent = "連結";
-      frag.appendChild(chip);
-      lastNode = document.createTextNode("\u200B"); frag.appendChild(lastNode);   // chip 後的游標錨點
-    } else {
-      lastNode = document.createTextNode(tk.v); frag.appendChild(lastNode);
-    }
-  });
-  if (!lastNode) return;
-  rg.insertNode(frag);
-  // 插入到空列佔位時,清掉後方殘留 <br>,避免 cleanup→expandNeedSoftBreaks 拆出尾端空行、游標掉進空行
-  try {
-    let n = lastNode.nextSibling;
-    while (n && n.nodeType === 3 && !String(n.textContent || "").replace(/\u200B/g, "").trim()) n = n.nextSibling;
-    if (n && n.nodeType === 1 && n.tagName === "BR"){
-      let onlyEmpty = true;
-      for (let x = n.nextSibling; x; x = x.nextSibling){
-        if (x.nodeType === 3 && String(x.textContent || "").replace(/\u200B/g, "").trim()){ onlyEmpty = false; break; }
-        if (x.nodeType === 1 && x.tagName !== "BR"){ onlyEmpty = false; break; }
-      }
-      if (onlyEmpty) n.remove();
-    }
-  } catch(_){}
-  try { const nr = document.createRange(); nr.setStartAfter(lastNode); nr.collapse(true);
-    sel.removeAllRanges(); sel.addRange(nr); } catch(_){}
+// 使用瀏覽器原生編輯交易插入安全片段，保留游標與復原／重做；不重建整欄。
+let needPasteSequence = 0;
+const needPasteRedoMarkers = new WeakMap();
+// 原生插入時先保留普通 span，插入及復原後只補原子連結屬性，不變動文字或節點。
+function sealNeedLinkChips(ed){
+  if (!ed) return;
+  ed.querySelectorAll('.need-link-chip:not([contenteditable="false"])').forEach(chip => chip.setAttribute("contenteditable", "false"));
 }
+document.addEventListener("input", e => sealNeedLinkChips(needContentEditorFrom(e.target)), true);
+document.addEventListener("beforeinput", e => {
+  const ed = needContentEditorFrom(e.target);
+  if (ed && e.inputType === "historyRedo") needPasteRedoMarkers.set(ed, new Set([...ed.querySelectorAll("[data-need-paste-caret]")].map(p => p.dataset.needPasteCaret)));
+}, true);
+document.addEventListener("input", e => {
+  const ed = needContentEditorFrom(e.target);
+  if (!ed || e.inputType !== "historyRedo") return;
+  const before = needPasteRedoMarkers.get(ed); needPasteRedoMarkers.delete(ed);
+  if (!before) return;
+  const point = [...ed.querySelectorAll("[data-need-paste-caret]")].find(p => !before.has(p.dataset.needPasteCaret));
+  if (point){ const caret = document.createRange(); caret.selectNodeContents(point); caret.collapse(false); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(caret); }
+}, true);
+function pasteNeedInline(ed, tx){
+  const sel = window.getSelection();
+  if (!ed || !sel || !sel.rangeCount || !tx) return false;
+  const rg = sel.getRangeAt(0);
+  if (!ed.contains(rg.startContainer) || !ed.contains(rg.endContainer)) return false;
+  const original = rg.cloneRange();
+  const firstLine = lineDivOf(rg.startContainer, ed, rg.startOffset, false);
+  const prefix = document.createRange(); prefix.selectNodeContents(firstLine || ed); prefix.setEnd(rg.startContainer, rg.startOffset);
+  const firstLineEmpty = !prefix.cloneContents().textContent.replace(/\u200B/g, "");
+  if (!rg.collapsed && rg.endContainer.nodeType === 1){
+    const end = rg.endContainer.childNodes[rg.endOffset - 1];
+    const next = end && end.nextSibling;
+    if (end && end.nodeType === 1 && end.classList.contains("need-link-chip") && next && next.nodeType === 3 && next.textContent.startsWith("\u200B")){
+      rg.setEnd(next, 1); sel.removeAllRanges(); sel.addRange(rg);
+    }
+  }
+  let suffix = "", marker = "";
+  if (!rg.collapsed){
+    const startLine = lineDivOf(rg.startContainer, ed, rg.startOffset, false);
+    const endLine = lineDivOf(rg.endContainer, ed, rg.endOffset, true);
+    if (startLine && endLine && startLine !== endLine){
+      const tail = document.createRange();
+      tail.selectNodeContents(endLine); tail.setStart(rg.endContainer, rg.endOffset);
+      const box = document.createElement("div"); box.appendChild(tail.cloneContents());
+      suffix = box.innerHTML;
+      if (suffix){
+        marker = "need-paste-" + (++needPasteSequence);
+        rg.setEnd(endLine, endLine.childNodes.length); sel.removeAllRanges(); sel.addRange(rg);
+      }
+    }
+  }
+  let html = tx.includes("\n")
+    ? tx.split("\n").map((ln, i) => {
+      const heading = !ed.classList.contains("fneed-ed") && (i > 0 || firstLineEmpty) && /^#\s+([\s\S]*)$/.exec(ln);
+      return heading ? `<span class="nh" data-need-hash-heading="1">${editLineInner(heading[1])}</span>` : editLineInner(ln);
+    }).join("<br>")
+    : needTokens(tx).map(tk => tk.t === "url"
+      ? `<span class="need-link-chip" contenteditable="false" data-url="${esc(tk.v)}" draggable="false">連結</span>\u200B`
+      : esc(tk.v)).join("");
+  if (marker) html += `<span data-need-paste-caret="${marker}">\u200B</span>${suffix}`;
+  html = `<span style="font-family:inherit;font-size:inherit">${html}</span>`;
+  const fragment = document.createElement("template"); fragment.innerHTML = html;
+  fragment.content.querySelectorAll(".need-link-chip").forEach(chip => chip.removeAttribute("contenteditable"));
+  html = fragment.innerHTML;
+  try {
+    const ok = document.execCommand("insertHTML", false, html);
+    if (ok) sealNeedLinkChips(ed);
+    if (ok && marker){
+      const point = ed.querySelector(`[data-need-paste-caret="${marker}"]`);
+      if (point){ const caret = document.createRange(); caret.selectNodeContents(point); caret.collapse(false); sel.removeAllRanges(); sel.addRange(caret); }
+    }
+    if (!ok){ sel.removeAllRanges(); sel.addRange(original); }
+    return ok;
+  } catch(_) { sel.removeAllRanges(); sel.addRange(original); return false; }
+}
+// 原子連結及必要的游標錨點一次刪除，原生復原能找回完整網址。
+function deleteNeedChip(ed, key){
+  const sel = window.getSelection();
+  if (!ed || !sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  const rng = sel.getRangeAt(0), node = rng.startContainer, off = rng.startOffset;
+  if (!ed.contains(node)) return false;
+  const isChip = n => !!(n && n.nodeType === 1 && n.classList && n.classList.contains("need-link-chip"));
+  let chip = null;
+  if (key === "Backspace"){
+    if (node.nodeType === 1) chip = isChip(node.childNodes[off - 1]) ? node.childNodes[off - 1] : null;
+    else if (node.nodeType === 3){ let o = off; while (o > 0 && node.textContent[o - 1] === "\u200B") o--; if (o === 0) chip = isChip(node.previousSibling) ? node.previousSibling : null; }
+  } else if (key === "Delete"){
+    if (node.nodeType === 1) chip = isChip(node.childNodes[off]) ? node.childNodes[off] : null;
+    else if (node.nodeType === 3 && off === node.textContent.length) chip = isChip(node.nextSibling) ? node.nextSibling : null;
+  }
+  if (!chip) return false;
+  const original = rng.cloneRange();
+  const deletion = document.createRange();
+  deletion.setStartBefore(chip);
+  const next = chip.nextSibling;
+  if (next && next.nodeType === 3 && next.textContent.startsWith("\u200B")) deletion.setEnd(next, 1);
+  else deletion.setEndAfter(chip);
+  sel.removeAllRanges(); sel.addRange(deletion);
+  try { if (document.execCommand("delete", false)) return true; } catch(_) {}
+  sel.removeAllRanges(); sel.addRange(original);
+  toast("這次未能刪除連結，請重新選取後重試");
+  return true;
+}
+
 tableWrap.addEventListener("paste", e => {
   const nedBody = e.target.closest && e.target.closest('.needexp-ed[contenteditable="true"]');
   const nedTitle = e.target.closest && e.target.closest(".nseg-t[data-titleedit]");
@@ -4840,14 +4932,7 @@ tableWrap.addEventListener("paste", e => {
     tx = normalizeNeedSymbols(tx);
     if (tx && caretAfterChip(nedBody)) tx = " " + tx;
     const w = nedBody.closest(".needexp"), sg = +nedBody.dataset.seg;
-    if (tx.indexOf("\n") < 0){
-      pasteNeedInline(nedBody, tx);   // 單行:Range 直接插入(不重繪/不用 execCommand)→ 連續貼上穩定
-    } else {
-      // 多行:照原樣插入再整段重繪(多行需要拆成多個 div)
-      try { document.execCommand("insertText", false, tx); } catch(err){}
-      nedBody.innerHTML = needToEditHTML(editToNeed(nedBody)) || "<div><br></div>";
-      placeNeedCaretEnd(nedBody);
-    }
+    if (tx && !pasteNeedInline(nedBody, tx)){ toast("這次未能貼上，請重新選取位置後重試"); return; }
     if (w) commitNeedSeg(w.dataset.for, sg, editToNeed(nedBody));
     return;
   }
@@ -4878,18 +4963,8 @@ tableWrap.addEventListener("keydown", e => {
   if (e.key !== "Backspace" && e.key !== "Delete") return;
   const ed = e.target.closest && e.target.closest('.needexp-ed[contenteditable="true"]');
   if (!ed) return;
-  const sel = window.getSelection(); if (!sel || !sel.rangeCount || !sel.isCollapsed) return;
-  const rng = sel.getRangeAt(0), node = rng.startContainer, off = rng.startOffset;
-  const isChip = n => !!(n && n.nodeType === 1 && n.classList && n.classList.contains("need-link-chip"));
-  let chip = null;
-  if (e.key === "Backspace"){
-    if (node.nodeType === 1) chip = isChip(node.childNodes[off-1]) ? node.childNodes[off-1] : null;
-    else if (node.nodeType === 3){ let o = off; while (o > 0 && node.textContent[o-1] === "\u200B") o--; if (o === 0) chip = isChip(node.previousSibling) ? node.previousSibling : null; }   // 跳過 chip 後的零寬錨點,游標在 chip 後按一次 backspace 即刪 chip
-  } else {
-    if (node.nodeType === 1) chip = isChip(node.childNodes[off]) ? node.childNodes[off] : null;
-    else if (node.nodeType === 3 && off === node.textContent.length) chip = isChip(node.nextSibling) ? node.nextSibling : null;
-  }
-  if (chip){ e.preventDefault(); const _zw = chip.nextSibling; chip.remove(); if (_zw && _zw.nodeType === 3){ _zw.textContent = _zw.textContent.replace(/^\u200B/,""); if (!_zw.textContent) _zw.remove(); } const w = ed.closest(".needexp"); if (w) commitNeedSeg(w.dataset.for, +ed.dataset.seg, editToNeed(ed)); }
+  if (e.isComposing || e.keyCode === 229) return;
+  if (deleteNeedChip(ed, e.key)) e.preventDefault();
 }, true);
 // 防線:若格子因故帶進格式(出現子元素),攤平成純文字並把游標移到最後
 tableWrap.addEventListener("input", e => {
@@ -5087,15 +5162,10 @@ tableWrap.addEventListener("click", e=>{
     askConfirm(`刪除「${it.cust || "這筆"}」？`, "將刪除此客戶及三欄需求內容。", ()=>{
       const currentExp = tableWrap.querySelector("tr.needexp");
       if (currentExp) commitAllSegs(currentExp);
-      const previousItems=items,previousDeleted=deleted;
-      items=items.filter(x=>x.id!==it.id);
-      deleted={...deleted,[it.id]:Date.now()};
-      if(saveItems()===false){
-        items=previousItems;deleted=previousDeleted;
+      if(!commitCustomerDeletion([it.id])){
         toast("刪除尚未儲存，原客戶已保留，請稍後重試");
         return;
       }
-      saveDeleted();
       if(openNeedId===it.id)closeNeedExp();
       onLocalChange("data");
       tr.classList.add("trow-removing");setTimeout(()=>applyFilter(),220);
@@ -5312,6 +5382,10 @@ function setEditMode(on){
 // ---- 類別下拉選單 ----
 const catmenu = document.getElementById("catmenu");
 let catTrigger = null, catMenuIdx = 0;
+// The original event path stays valid when selecting an option rebuilds its DOM.
+function eventWithin(e,root){
+  return !!root&&((typeof e.composedPath==="function"&&e.composedPath().includes(root))||root.contains(e.target));
+}
 // 浮層互斥:開任一浮層前先關掉其他所有(類別選單/格子下拉/篩選彈窗/展開/懸浮預覽),同時只留一個
 function closeOtherOverlays(keep){
   if (keep !== "cat" && typeof closeCatMenu === "function") closeCatMenu();
@@ -5411,7 +5485,7 @@ function openCatMenu(trigger){
   catmenu.style.left = left + "px"; catmenu.style.top = top + "px";
   setTimeout(()=>document.addEventListener("click", catMenuOutside), 0);
 }
-function catMenuOutside(e){ if (e.target.closest("#catmenu") || e.target.closest(".tcat-trigger")) return; closeCatMenu(); }
+function catMenuOutside(e){ if (eventWithin(e,catmenu) || e.target.closest(".tcat-trigger")) return; closeCatMenu(); }
 function closeCatMenu(){ document.removeEventListener("click", catMenuOutside); catmenu.classList.remove("show"); catTrigger = null; if (window.refreshLed) window.refreshLed(); }
 catmenu.addEventListener("click", e=>{
   const pin = e.target.closest(".pri-pin");
@@ -5477,10 +5551,7 @@ function openOptMenu(trigger){
   closeOtherOverlays("opt");   // 只留這個下拉,關掉其他浮層
   toptTrigger = trigger; toptField = trigger.dataset.field; toptKey = trigger.dataset.optkey;
   toptmenu.classList.remove("opt-editing");   // 每次開啟先回乾淨狀態(長按才進排序模式)
-  const it = tFindItem(trigger);
-  if (it && toptIsMulti() && stripOrphansFromItem(it, toptField, toptKey)){
-    saveItems(); onLocalChange("data"); paintOptTrigger(trigger, it, toptField);
-  }
+  // Opening a picker is read-only; removed options remain in the customer's saved values.
   renderToptMenu();
   toptmenu.classList.add("show");
   if (window.refreshLed) window.refreshLed();
@@ -5503,7 +5574,7 @@ function openOptMenu(trigger){
   toptMenuSyncIdx();
   setTimeout(() => document.addEventListener("click", toptOutside), 0);
 }
-function toptOutside(e){ if (e.target.closest("#toptmenu") || e.target.closest(".topt-trigger")) return; closeOptMenu(); }
+function toptOutside(e){ if (eventWithin(e,toptmenu) || e.target.closest(".topt-trigger")) return; closeOptMenu(); }
 function closeOptMenu(){ closeStatusColor(); document.removeEventListener("click", toptOutside); toptmenu.classList.remove("show"); toptTrigger = null; if (window.refreshLed) window.refreshLed(); }
 // 表格滾動時關閉格子下拉(fixed 選單不會跟著移);選單本身內部捲動不關
 document.addEventListener("scroll", e => {
@@ -5569,6 +5640,7 @@ toptmenu.addEventListener("click", e => {
       const tr = document.querySelector('tr[data-id="' + String(rowId).replace(/\\/g,"\\\\").replace(/"/g,'\\"') + '"]');
       const trig = tr && tr.querySelector('.topt-trigger[data-field="' + savedField + '"]');
       if (trig){ openOptMenu(trig); if (wasEditing) toptmenu.classList.add("opt-editing"); }
+      else closeOptMenu();
     }
     return; }
   const pin = e.target.closest(".pri-pin");
@@ -5576,14 +5648,25 @@ toptmenu.addEventListener("click", e => {
   const add = e.target.closest(".opt-add");
   if (add){ e.stopPropagation();
     if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = inp.value.trim();
-      if (v){ let ch = unhideOpt(toptKey, v);                                        // 先解除隱藏,否則加了也不會顯示
+      if (v){
+        const rowId=toptTrigger?.closest("tr")?.dataset.id,savedField=toptField,multi=toptIsMulti();
+        const wasEditing=toptmenu.classList.contains("opt-editing");
+        let ch = unhideOpt(toptKey, v);                                        // 先解除隱藏,否則加了也不會顯示
         if (!optList(toptKey).includes(v)){ customOpts[toptKey].push(v); ch = true; }
         if (ch) saveOpts();
         setOptValue(v, true);
         // 選項加回清單後,其他列的灰字也要一併重繪(不能只更新目前這列)
-        if (ch && typeof applyFilter === "function") applyFilter();
-        else if (!toptIsMulti()) closeOptMenu();
-        else { inp.value = ""; renderToptMenu(); }
+        if (ch && typeof applyFilter === "function"){
+          applyFilter();
+          const row=Array.from(tableWrap.querySelectorAll("tr[data-id]")).find(tr=>tr.dataset.id===rowId);
+          const fresh=row?.querySelector('.topt-trigger[data-field="'+savedField+'"]');
+          if(multi&&fresh){
+            openOptMenu(fresh);
+            if(wasEditing)toptmenu.classList.add("opt-editing");
+            toptmenu.querySelector(".opt-add input")?.focus({preventScroll:true});
+          }else{closeOptMenu();fresh?.focus({preventScroll:true});}
+        }else if (!multi){const target=toptTrigger;closeOptMenu();target?.focus({preventScroll:true});}
+        else { renderToptMenu();toptmenu.querySelector(".opt-add input")?.focus({preventScroll:true}); }
       } }
     return; }
   if (toptmenu.__lp){ toptmenu.__lp = false; return; }
@@ -5663,7 +5746,10 @@ function addTableRow(){
   const cat = currentCat || "";
   const now = Date.now();
   const it = { id: uid(), date: "", area:"", cat, status:"", budget:"", rooms:"", parking:"", cust:"", tel:"", line:"", ask:"", need:"", createdAt: now, updatedAt: now };
-  items.push(it); saveItems(); onLocalChange("data");
+  const previousItems=items;
+  items=items.concat(it);
+  if(saveItems()===false){items=previousItems;toast("新增尚未儲存，請稍後重試");return;}
+  onLocalChange("data");
   applyFilter();
   const row = tableWrap.querySelector(`tr[data-id="${it.id}"]`);
   if (row){ const nc = row.querySelector('.tcell[data-field="cust"]'); if (nc) tCellEdit(nc); row.scrollIntoView({behavior:"smooth", block:"nearest"}); }
@@ -5895,6 +5981,7 @@ function fragToNeedText(box){
     if (n.nodeType !== 1) return;
     if (n.classList && n.classList.contains("need-link-chip")){ cur += (n.getAttribute("data-url") || ""); return; }
     if (n.classList && n.classList.contains("need-link")){ cur += (n.getAttribute("data-url") || n.getAttribute("href") || ""); return; }   // 正常模式的「連結」(span data-url;舊 <a> href 相容)也還原成網址
+    if (n.getAttribute("data-need-hash-heading") === "1"){ cur += "# " + needNodeText(n); return; }
     if (isStrikeEl(n)){ cur += wrapNeedMark(needNodeText(n), "~~", "~~"); return; }   // 刪除線 → ~~..~~(逐行,與存檔一致)
     if (n.tagName === "BR"){ flush(); return; }
     const isLine = (n.tagName === "DIV" || n.tagName === "P");
@@ -5916,18 +6003,23 @@ function needClipboardHandler(e, isCut){
   if (!ed) return;
   const box = document.createElement("div");
   box.appendChild(sel.getRangeAt(0).cloneContents());
-  if (!box.querySelector(".need-link-chip, .need-link")) return;   // 選取裡沒有連結:交給系統預設,行為不變
+  const hasLink = !!box.querySelector(".need-link-chip, .need-link");
+  const hasPasteAnchor = !!box.querySelector("[data-need-paste-caret]") ||
+    (!!ed.querySelector("[data-need-paste-caret]") && box.textContent.includes("\u200B"));
+  if (!hasLink && !hasPasteAnchor) return;   // 沒有連結或貼上錨點時保留系統預設複製。
   const txt = fragToNeedText(box);
   const cd = e.clipboardData || window.clipboardData;
   if (!cd || !cd.setData) return;
   try { cd.setData("text/plain", txt); } catch(_){ return; }
   e.preventDefault();
   if (isCut && ed.getAttribute("contenteditable") === "true"){
-    sel.deleteFromDocument();
-    const htmlFn = ed.classList.contains("fneed-ed") ? needToFormHTML : needToEditHTML;
-    ed.innerHTML = htmlFn(editToNeed(ed)) || "<div><br></div>";
-    cleanupNeedEd(ed);   // 剪下後重繪,殘餘網址仍是標籤
-    if (typeof placeNeedCaretEnd === "function") placeNeedCaretEnd(ed);
+    const range = sel.getRangeAt(0);
+    if (!ed.contains(range.startContainer) || !ed.contains(range.endContainer)){
+      toast("請在同一個欄位中選取要剪下的內容"); return;
+    }
+    let ok = false;
+    try { ok = document.execCommand("delete", false); } catch(_) {}
+    if (!ok){ toast("這次未能剪下，請重新選取後重試"); return; }
     if (ed.classList.contains("needexp-ed")){
       const w = ed.closest(".needexp"), sg = +ed.dataset.seg;
       if (w && typeof commitNeedSeg === "function") commitNeedSeg(w.dataset.for, sg, editToNeed(ed));
@@ -6546,32 +6638,14 @@ if (F.line){
 
 // 表單需求欄(contenteditable):貼上網址→「連結」標籤;游標緊鄰標籤時可整顆刪除
 function pasteNeedField(ed, tx){
-  if (!ed) return;
+  if (!ed) return false;
   tx = normalizeNeedSymbols(String(tx == null ? "" : tx));
   if (tx && caretAfterChip(ed)) tx = " " + tx;
-  if (tx.indexOf("\n") < 0){
-    pasteNeedInline(ed, tx);
-    cleanupNeedEd(ed);
-    // cleanup 可能重排 DOM,把游標固定在最後有內容的列末(勿停在尾端空 div,否則下次貼上插到編輯器根層)
-    try {
-      let target = null;
-      for (let i = ed.childNodes.length - 1; i >= 0; i--){
-        const n = ed.childNodes[i];
-        if (n.nodeType === 3 && String(n.textContent || "").replace(/\u200B/g, "").trim()){ target = n; break; }
-        if (n.nodeType === 1 && !(typeof needLineOnlyBr === "function" && needLineOnlyBr(n))){ target = n; break; }
-      }
-      if (target){
-        const r = document.createRange(); r.selectNodeContents(target); r.collapse(false);
-        const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
-      }
-    } catch(_){}
-  } else {
-    try { document.execCommand("insertText", false, tx); } catch(err){}
-    ed.innerHTML = needToFormHTML(editToNeed(ed)) || "<div><br></div>";
-    placeNeedCaretEnd(ed);
-    cleanupNeedEd(ed);
-  }
+  const ok = !tx || pasteNeedInline(ed, tx);
+  if (!ok) toast("這次未能貼上，請重新選取位置後重試");
+  return ok;
 }
+
 [F.need, F.need2, F.need3].forEach(ed => {
   if (!ed) return;
   ed.addEventListener("compositionend", () => { liveNeedSymbolsFix(ed); });
@@ -6589,18 +6663,8 @@ function pasteNeedField(ed, tx){
   });
   ed.addEventListener("keydown", e => {
     if (e.key !== "Backspace" && e.key !== "Delete") return;
-    const sel = window.getSelection(); if (!sel || !sel.rangeCount || !sel.isCollapsed) return;
-    const rng = sel.getRangeAt(0), node = rng.startContainer, off = rng.startOffset;
-    const isChip = n => !!(n && n.nodeType === 1 && n.classList && n.classList.contains("need-link-chip"));
-    let chip = null;
-    if (e.key === "Backspace"){
-      if (node.nodeType === 1) chip = isChip(node.childNodes[off-1]) ? node.childNodes[off-1] : null;
-      else if (node.nodeType === 3){ let o = off; while (o > 0 && node.textContent[o-1] === "\u200B") o--; if (o === 0) chip = isChip(node.previousSibling) ? node.previousSibling : null; }
-    } else {
-      if (node.nodeType === 1) chip = isChip(node.childNodes[off]) ? node.childNodes[off] : null;
-      else if (node.nodeType === 3 && off === node.textContent.length) chip = isChip(node.nextSibling) ? node.nextSibling : null;
-    }
-    if (chip){ e.preventDefault(); const _zw = chip.nextSibling; chip.remove(); if (_zw && _zw.nodeType === 3){ _zw.textContent = _zw.textContent.replace(/^\u200B/,""); if (!_zw.textContent) _zw.remove(); } }
+    if (e.isComposing || e.keyCode === 229) return;
+    if (deleteNeedChip(ed, e.key)) e.preventDefault();
   });
 });
 
@@ -6644,10 +6708,11 @@ function closeCatSel(){ catSel.classList.remove("open"); catSelBtn.setAttribute(
 catSelBtn.addEventListener("click", e => { e.stopPropagation(); catSel.classList.contains("open") ? closeCatSel() : openCatSel(); });
 catSelMenu.addEventListener("click", e => {
   const pin = e.target.closest(".pri-pin");
-  if (pin){ e.stopPropagation(); const o = pin.closest(".cselect-opt"); if (o){ setFormCat(toggleFieldVal(formCats, o.dataset.key, true)); } return; }
+  if (pin){ e.stopPropagation(); const o = pin.closest(".cselect-opt"); if (o){ setFormCat(toggleFieldVal(formCats, o.dataset.key, true)); saveFormDraft(); } return; }
   const o = e.target.closest(".cselect-opt"); if (!o) return;
   const chkClick = !!(e.target.closest(".chk") && formCats.includes(o.dataset.key));
   setFormCat(clickMultiFieldVal(formCats, o.dataset.key, { shiftKey: e.shiftKey, chkClick }));
+  saveFormDraft();
 });
 // ---- 建檔日:自製日曆選擇(民國年顯示 + 西元/民國轉換) ----
 (function(){
@@ -6666,7 +6731,7 @@ catSelMenu.addEventListener("click", e => {
     return String(dt.getFullYear()-1911) + String(dt.getMonth()+1).padStart(2,"0") + String(dt.getDate()).padStart(2,"0");
   }
   let calFmtROC = true;
-  const FORM_TARGET = { get: () => F.date.value, set: v => { F.date.value = v; } };   // 預設目標:表單的建檔日
+  const FORM_TARGET = { get: () => F.date.value, set: v => { F.date.value = v; saveFormDraft(); } };   // 預設目標:表單的建檔日
   let calTarget = FORM_TARGET;
   function render(){
     calTitle.textContent = calFmtROC
@@ -6719,7 +6784,7 @@ catSelMenu.addEventListener("click", e => {
   window.closeCal = closeCal;    // 供 Esc 鍵全域關閉
 })();
 
-document.addEventListener("click", e => { if (!catSel.contains(e.target)) closeCatSel(); });
+document.addEventListener("click", e => { if (!eventWithin(e,catSel)) closeCatSel(); });
 
 // ---- 選項式欄位(區域/房數/車位型式/數量):預設+自訂,自訂會記住 ----
 const DEF_OPTS = {
@@ -6755,17 +6820,73 @@ function statusColorFor(name, preview=true){
   return statusColors[statusColorKey(name)] || null;
 }
 function statusColorBackground(value){ return "color-mix(in srgb,"+value.hex+" "+value.alpha+"%,var(--card))"; }
+// Presentation only: never modify the chosen color, percentage, records, or preferences.
+const statusTextColorCache=new Map();
+const STATUS_ROW_STYLE_KEYS=["--status-bg","--status-dot","--status-hover-bg","--status-ink","--status-soft","--status-faint","--status-accent","--status-badge","--status-badge-opacity"];
+function statusColorRGB(value){
+  const text=String(value).trim();
+  if(/^#[0-9a-f]{6}$/i.test(text))return [1,3,5].map(i=>parseInt(text.slice(i,i+2),16));
+  if(/^#[0-9a-f]{3}$/i.test(text))return [1,2,3].map(i=>parseInt(text[i]+text[i],16));
+  const match=/^rgba?\(([^)]+)\)$/.exec(text);
+  return match?match[1].split(/[,\s]+/).slice(0,3).map(Number):null;
+}
+function statusColorMix(a,b,weight){return a.map((n,i)=>n*weight+b[i]*(1-weight));}
+function statusColorLuminance(rgb){
+  const linear=rgb.map(n=>{const v=n/255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);});
+  return linear[0]*.2126+linear[1]*.7152+linear[2]*.0722;
+}
+function statusColorContrast(a,b){const x=statusColorLuminance(a),y=statusColorLuminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+function statusReadableText(original,backgrounds,opacity=1){
+  const score=rgb=>Math.min(...backgrounds.map(bg=>statusColorContrast(statusColorMix(rgb,bg,opacity),bg)));
+  if(score(original)>=4.5)return {color:null,opacity};
+  const options=[];
+  for(const end of [[0,0,0],[255,255,255]]){
+    const maximum=Math.min(...backgrounds.map(bg=>statusColorContrast(end,bg)));
+    if(maximum<4.55)continue;
+    const target=Math.min(5,maximum-.01);
+    let lo=0,hi=1;
+    for(let i=0;i<22;i++){
+      const mid=(lo+hi)/2, rgb=statusColorMix(end,original,mid);
+      if(Math.min(...backgrounds.map(bg=>statusColorContrast(rgb,bg)))>=target)hi=mid;else lo=mid;
+    }
+    options.push({weight:hi,color:statusColorMix(end,original,hi)});
+  }
+  options.sort((a,b)=>a.weight-b.weight);
+  const chosen=options[0];
+  return {color:chosen?"rgb("+chosen.color.map(n=>n.toFixed(3)).join(",")+")":null,opacity:1};
+}
+function statusTextColors(value){
+  const root=getComputedStyle(document.documentElement),keys=["--card","--ink","--ink-soft","--text-faint","--accent-deep"];
+  const colors=keys.map(key=>root.getPropertyValue(key).trim()),cacheKey=[value.hex,value.alpha,...colors].join("|");
+  if(statusTextColorCache.has(cacheKey))return statusTextColorCache.get(cacheKey);
+  const [card,ink,soft,faint,accent]=colors.map(statusColorRGB),pure=statusColorRGB(value.hex);
+  const background=statusColorMix(pure,card,value.alpha/100);
+  let hover=statusColorMix(pure,background,.03);
+  const maximum=Math.max(...[[0,0,0],[255,255,255]].map(fg=>Math.min(statusColorContrast(fg,background),statusColorContrast(fg,hover))));
+  const keepHover=maximum<4.55;
+  if(keepHover)hover=background;
+  const surfaces=[background,hover],result={"--status-bg":statusColorBackground(value),"--status-dot":value.hex,
+    "--status-hover-bg":keepHover?"var(--status-bg)":"color-mix(in srgb,var(--status-bg) 97%,var(--status-dot) 3%)"};
+  for(const [key,original,variable] of [["ink",ink,"--ink"],["soft",soft,"--ink-soft"],["faint",faint,"--text-faint"],["accent",accent,"--accent-deep"]]){
+    result["--status-"+key]=statusReadableText(original,surfaces).color||"var("+variable+")";
+  }
+  const badge=statusReadableText(faint,surfaces,.72);
+  result["--status-badge"]=badge.color||"var(--text-faint)";
+  result["--status-badge-opacity"]=String(badge.opacity);
+  if(statusTextColorCache.size>=512)statusTextColorCache.clear();
+  statusTextColorCache.set(cacheKey,result);return result;
+}
 function statusColorRowAttrs(d){
   const value=statusColorFor(fieldPrimary(d,"status"));
-  return value&&value.alpha ? ' data-status-tint="1" style="--status-bg:'+statusColorBackground(value)+';--status-dot:'+value.hex+'"' : "";
+  return value&&value.alpha ? ' data-status-tint="1" style="'+Object.entries(statusTextColors(value)).map(([key,v])=>key+":"+v).join(";")+'"' : "";
 }
 function paintStatusColorRows(){
   const map=new Map(items.map(it=>[String(it.id),it]));
   document.querySelectorAll("tr[data-id], #cards > .card[data-id]").forEach(row=>{
     const item=map.get(row.dataset.id), value=item&&statusColorFor(fieldPrimary(item,"status"));
     row.toggleAttribute("data-status-tint",!!(value&&value.alpha));
-    if(value&&value.alpha){ row.style.setProperty("--status-bg",statusColorBackground(value));row.style.setProperty("--status-dot",value.hex); }
-    else { row.style.removeProperty("--status-bg");row.style.removeProperty("--status-dot"); }
+    if(value&&value.alpha){for(const [key,v] of Object.entries(statusTextColors(value)))row.style.setProperty(key,v);}
+    else {for(const key of STATUS_ROW_STYLE_KEYS)row.style.removeProperty(key);}
   });
   document.querySelectorAll("[data-status-color]").forEach(button=>{
     const value=statusColorFor(button.dataset.statusColor), dot=button.querySelector(".status-color-dot");
@@ -6830,7 +6951,9 @@ function updateStatusColorPanel(forcePercent=false){
   fitStatusColorPercent(percent);
   statusColorPanel.querySelector(".tint-range").value=value.alpha;
   statusColorPanel.querySelector('input[type="color"]').value=value.hex;
-  statusColorPanel.querySelector(".tint-preview").style.background=statusColorBackground(value);
+  const preview=statusColorPanel.querySelector(".tint-preview");
+  preview.style.background=statusColorBackground(value);
+  preview.style.color=statusTextColors(value)["--status-ink"];
   statusColorPanel.querySelector(".tint-dot").style.background=value.hex;
   statusColorPanel.querySelectorAll("[data-pure]").forEach(b=>b.classList.toggle("on",b.dataset.pure===value.hex.toLowerCase()));
   statusColorPanel.querySelectorAll("[data-level]").forEach(b=>b.classList.toggle("on",Number(b.dataset.level)===value.alpha));
@@ -7005,10 +7128,11 @@ function makeOptSel(key, emptyLabel, multi){
     else { btn.removeAttribute("data-multifield"); btn.removeAttribute("data-multivals"); btn.removeAttribute("data-optkey"); }
   }
   function set(v){ vals = asFieldVals(v); if (!multi && vals.length > 1) vals = [vals[0]]; show(); }
+  function setFromUser(v){ set(v); saveFormDraft(); }
   function get(){ return packFieldVals(vals); }
   btn.addEventListener("click", e => { e.stopPropagation(); const was = sel.classList.contains("open");
     document.querySelectorAll(".opt-sel.open").forEach(x => x.classList.remove("open")); closeCatSel();
-    if (!was){ menu.classList.remove("opt-editing"); vals = asFieldVals(vals).filter(v => !isOptOrphan(key, v)); show(); renderMenu(); sel.classList.add("open"); } });
+    if (!was){ menu.classList.remove("opt-editing"); renderMenu(); sel.classList.add("open"); } });
   menu.addEventListener("click", e => {
     const del = e.target.closest(".opt-del");
     if (del){ e.stopPropagation(); const dv = del.dataset.del;
@@ -7025,30 +7149,31 @@ function makeOptSel(key, emptyLabel, multi){
       }).length;
       if (typeof toast === "function") toast(still ? ("已從下拉移除；其他 " + still + " 筆仍保留（灰色顯示）") : "已從下拉移除並取消選取");
       renderMenu();
+      saveFormDraft();
       if (typeof applyFilter === "function") applyFilter();
       return; }
     const pin = e.target.closest(".pri-pin");
-    if (pin && multi){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row){ set(toggleFieldVal(vals, row.dataset.v, true)); renderMenu(); } return; }
+    if (pin && multi){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row){ setFromUser(toggleFieldVal(vals, row.dataset.v, true)); renderMenu(); } return; }
     const add = e.target.closest(".opt-add");
     if (add){ e.stopPropagation();
       if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = inp.value.trim();
         if (v){ let ch = unhideOpt(key, v);
           if (!optList(key).includes(v)){ customOpts[key].push(v); ch = true; }
           if (ch) saveOpts();
-          if (multi){ set(toggleFieldVal(vals, v, true)); renderMenu(); inp.value = ""; }
-          else { set(v); sel.classList.remove("open"); }
+          if (multi){ setFromUser(toggleFieldVal(vals, v, true)); renderMenu(); inp.value = ""; }
+          else { setFromUser(v); sel.classList.remove("open"); }
           if (ch && typeof applyFilter === "function") applyFilter();
         } }
       return; }
     const o = e.target.closest(".cselect-opt"); if (o){ if (menu.__lp){ menu.__lp = false; return; }
       if (multi){
-        if (o.dataset.v === "") set("");
+        if (o.dataset.v === "") setFromUser("");
         else {
           const chkClick = !!(e.target.closest(".chk") && vals.includes(o.dataset.v));
-          set(clickMultiFieldVal(vals, o.dataset.v, { shiftKey: e.shiftKey, chkClick }));
+          setFromUser(clickMultiFieldVal(vals, o.dataset.v, { shiftKey: e.shiftKey, chkClick }));
         }
         renderMenu();
-      } else { set(o.dataset.v); sel.classList.remove("open"); }
+      } else { setFromUser(o.dataset.v); sel.classList.remove("open"); }
     }
   });
   menu.addEventListener("keydown", e => { if (e.target.matches(".opt-add input") && e.key === "Enter"){ e.preventDefault(); e.target.closest(".opt-add").querySelector("button").click(); } });
@@ -7126,7 +7251,7 @@ const areaPick = makeOptSel("area","選擇區域", true), roomsPick = makeOptSel
       statusPick = makeOptSel("status","選擇狀態", false);
 // 選項清單就緒後重繪一次,讓「已移除選項」的灰字正確套上(開頁早期 render 時 opts 尚未就緒)
 if (typeof applyFilter === "function") applyFilter();
-document.addEventListener("click", e => { document.querySelectorAll(".opt-sel.open").forEach(el => { if (!el.contains(e.target)) el.classList.remove("open"); }); });
+document.addEventListener("click", e => { document.querySelectorAll(".opt-sel.open").forEach(el => { if (!eventWithin(e,el)) el.classList.remove("open"); }); });
 
 // ---- 預算/車位 結構化 ----
 function numOrNull(v){ if (v == null) return null; v = String(v).replace(/[^\d.]/g,""); if (!v) return null; const n = parseFloat(v); return isNaN(n) ? null : n; }
@@ -7358,7 +7483,10 @@ function buildFormRec(){
 }
 const FORM_DRAFT_KEY = "customer_app_form_draft_v1";
 function formDraftHasContent(rec){
-  return !!(rec.cust || asFieldVals(rec.area).length || rec.budget || rec.need || rec.need2 || rec.need3 || rec.tel || rec.ask || asFieldVals(rec.cat).length || !CustomerDataCore.equal(needOrder(rec),[1,2,3]) || [1,2,3].some(sg => needFontPercent(rec, sg) !== 100));
+  const hasText=["cust","date","budget","need","need2","need3","tel","line","ask"].some(k=>String(rec[k]??"").trim());
+  const hasChoice=["cat","area","status","rooms","pType","pNum"].some(k=>asFieldVals(rec[k]).length);
+  const hasTitle=[1,2,3].some(sg=>String(rec["t"+sg]??needDefTitle(sg))!==needDefTitle(sg));
+  return hasText||hasChoice||hasTitle||!CustomerDataCore.equal(needOrder(rec),[1,2,3])||[1,2,3].some(sg=>needFontPercent(rec,sg)!==100);
 }
 
 function saveFormDraft(){
@@ -7401,6 +7529,7 @@ function applyFormDraft(d){
     clearTimeout(draftT);
     draftT = setTimeout(saveFormDraft, 400);
   });
+  modalBg.addEventListener("change",saveFormDraft);
 })();
 
 function commitFormIfOpen(){
@@ -7412,10 +7541,11 @@ function saveForm(){
   if (!cust){ toast("請輸入客戶稱呼"); F.cust.focus(); return; }
   const isEdit = !!editingId;
   const rec = buildFormRec();
-  clearFormDraft();
+  const previousItems=items;
+  items=items.slice();
   if (editingId){
     const i = items.findIndex(x => x.id === editingId);
-    if (i < 0){ toast("此客戶已不存在，無法儲存"); closeForm(); applyFilter(); return; }
+    if (i < 0){ items=previousItems;toast("此客戶已不存在，無法儲存"); closeForm(); applyFilter(); return; }
 
     const changed={};
     for(const k of Object.keys(rec)){
@@ -7430,19 +7560,25 @@ function saveForm(){
     const now = Date.now();
     items.push({...rec, id: uid(), createdAt: now, updatedAt: now});
   }
-  if(saveItems()===false){saveFormDraft();toast("尚未儲存成功，請先匯出備份");return;}
+  if(saveItems()===false){items=previousItems;saveFormDraft();toast("尚未儲存成功，表單草稿已保留，請稍後重試");return;}
   closeForm();
   applyFilter();
   onLocalChange("data");
   toast(isEdit ? "已更新" : "已新增");
 }
+function commitCustomerDeletion(ids){
+  const targets=new Set(ids),previousItems=items,previousDeleted=deleted;
+  const now=Date.now();
+  items=items.filter(x=>!targets.has(x.id));
+  deleted={...deleted};targets.forEach(id=>{deleted[id]=now;});
+  if(saveItems()===false){items=previousItems;deleted=previousDeleted;return false;}
+  saveDeleted();return true;
+}
 function deleteItem(id){
   const d = items.find(x => x.id === id);
   if (!d) return;
   askConfirm(`刪除「${d.cust || "這筆需求"}」？`, "刪除後將無法復原。", () => {
-    items = items.filter(x => x.id !== id);
-    deleted[id] = Date.now(); saveDeleted();
-    saveItems();
+    if(!commitCustomerDeletion([id])){toast("刪除尚未儲存，原客戶已保留，請稍後重試");return;}
     if (editingId === id) closeForm();
     applyFilter();
     onLocalChange("data");
@@ -7841,11 +7977,8 @@ selDelete.addEventListener("click", () => {
   if (!selected.size) return;
   const n = selected.size;
   askConfirm(`刪除所選 ${n} 筆需求？`, "刪除後無法復原，建議先做雲端備份。", () => {
+    if(!commitCustomerDeletion(selected)){toast("刪除尚未儲存，原客戶與選取已保留，請稍後重試");return;}
     if (openNeedId && selected.has(openNeedId) && typeof closeNeedExp === "function") closeNeedExp();
-    selected.forEach(id => { deleted[id] = Date.now(); });
-    saveDeleted();
-    items = items.filter(d => !selected.has(d.id));
-    saveItems();
     exitSelectMode();
     renderCover();
     applyFilter();
@@ -8099,11 +8232,13 @@ function loadTheme(){ if (storageOK){ try { const t = localStorage.getItem("cust
 function saveTheme(){ if (storageOK){ try { localStorage.setItem("customer_app_theme_v1", theme); } catch(e){} } }
 let theme = loadTheme();
 function applyTheme(){
+  const previousTheme=document.documentElement.getAttribute("data-theme");
   document.documentElement.setAttribute("data-theme", theme);
   document.querySelectorAll("#themePicker button").forEach(b => b.classList.toggle("on", b.dataset.themeVal === theme));
   const m = document.querySelector('meta[name="theme-color"]');
   if (m) m.setAttribute("content", theme === "dark" ? "#0F1519" : "#2B5CA8");   // 瀏覽器最上方=主題藍(對應物件端的飽和綠);原本沿用封面色 #E8EEEC 會顯示成淺綠
   if (typeof sizeNeedExp === "function") requestAnimationFrame(sizeNeedExp);
+  if(statusColorsReady&&previousTheme!==theme){if(statusColorDraft)updateStatusColorPanel();else paintStatusColorRows();}
 }
 document.getElementById("themePicker").addEventListener("click", e=>{
   const b = e.target.closest("button"); if (!b) return;
@@ -8505,15 +8640,41 @@ let dataState = window._bootState || DataCore.fromView(legacyPreferenceView());
 if(window._bootState && !window._storageCorrupt)applySettings({...defaultPreferenceView().settings,...DataCore.project(dataState).settings});
 let savedPreferenceView=DataCore.clone({cats,settings:collectSettings()});
 function dataView(){return {items,cats,deleted,settings:collectSettings()};}
-function captureLocalState(){return DataCore.capture(dataState,dataView(),editActor,Date.now(),savedPreferenceView);}
-function storeCurrentState(){
+let savedDataView=DataCore.clone(dataView()),savedViewState=DataCore.clone(dataState),needsDataPaint=false,pendingLocalBackup=null;
+let autoApplyTimer=null,autoApplyBusy=false;
+// Keep the visible baseline separate from durable data while an editor is open.
+function captureViewState(base=dataState,view=dataView()){
+  const basis=DataCore.epochCmp(base.epoch,savedViewState.epoch)===0?base:savedViewState;
+  return DataCore.capture(basis,view,editActor,Date.now(),savedPreferenceView,savedDataView);
+}
+function captureLocalState(){return DataCore.merge(dataState,captureViewState());}
+function storeCurrentState(observed){
   if(applyingDataState)return true;
   if(window._storageCorrupt)return false;
-  const next=captureLocalState(),nextPrefs=DataCore.clone({cats,settings:collectSettings()});
   try{
     if(!storageOK)throw new Error("本機儲存不可用");
+    const view=DataCore.clone(dataView()),nextPrefs=DataCore.clone({cats:view.cats,settings:view.settings});
+    const raw=localStorage.getItem(DATA_V6_KEY);
+    let base=DataCore.clone(dataState);
+    if(raw!==null){
+      let stored;
+      try{stored=DataCore.validateState(JSON.parse(raw));}
+      catch(e){markCorruptStore(DATA_V6_KEY,raw);throw e;}
+      base=DataCore.merge(base,stored);
+    }
+    if(observed)base=DataCore.merge(base,observed);
+    const local=captureViewState(base,view);
+    if(DataCore.epochCmp(base.epoch,savedViewState.epoch)>0&&!DataCore.equal(local,savedViewState)){
+      queueMergedState(base);scheduleAutoLatest();
+      throw new Error("另一個視窗已完整還原，這份編輯尚未保存");
+    }
+    const next=DataCore.merge(base,local),received=!DataCore.equal(base,dataState);
+    const recoveryBefore=received&&!pendingLocalBackup?DataCore.clone(captureLocalState()):null;
     localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));
     dataState=next;savedPreferenceView=nextPrefs;
+    savedDataView=view;savedViewState=local;
+    if(received){needsDataPaint=true;if(recoveryBefore)pendingLocalBackup=recoveryBefore;}
+    if(needsDataPaint){queueMergedState(next);scheduleAutoLatest();}
     window._saveError=false;updateDataNotice();return true;
   }catch(e){window._saveError=true;updateDataNotice();return false;}
 }
@@ -8530,11 +8691,12 @@ function paintDataState(next){
     window._storageCorrupt=false;window._saveError=false;
     saveItems();saveCats();saveDeleted();applySettings({...defaultPreferenceView().settings,...v.settings});
     savedPreferenceView=DataCore.clone({cats,settings:collectSettings()});
+    savedDataView=DataCore.clone(dataView());savedViewState=DataCore.clone(next);needsDataPaint=false;
     renderCover();renderTabs();renderCatOptions();applyFilter();updateDataNotice();
+    pendingLocalBackup=null;
   }finally{applyingDataState=false;}
 }
 // Apply one deterministic latest value per field, only after durable recovery copies.
-let autoApplyTimer=null,autoApplyBusy=false;
 const autoApplyEditing=()=>window.isTableBusy()||detailBg.classList.contains("open");
 function queueMergedState(incoming){
   window._pendingMerge=window._pendingMerge?DataCore.merge(window._pendingMerge,incoming):DataCore.clone(incoming);
@@ -8548,14 +8710,17 @@ async function acceptMergedState(incoming,guard=()=>{}){
   if(autoApplyBusy||autoApplyEditing()){queueMergedState(incoming);scheduleAutoLatest();return false;}
   autoApplyBusy=true;
   try{
-    if(!storeCurrentState())throw new Error("本機修改尚未安全保存");
-    const before=DataCore.clone(dataState),stored=localStorage.getItem(DATA_V6_KEY);
+    const adoptingRestore=DataCore.epochCmp(incoming.epoch,savedViewState.epoch)>0;
+    if(!adoptingRestore&&!storeCurrentState())throw new Error("本機修改尚未安全保存");
+    const visibleBefore=DataCore.clone(dataView());
+    const baseline=DataCore.clone(dataState),before=adoptingRestore?captureViewState():baseline,stored=localStorage.getItem(DATA_V6_KEY);
     const next=DataCore.autoLatest(DataCore.merge(before,incoming));
-    if(!DataCore.equal(next,before)){
+    if(!DataCore.equal(next,before)||needsDataPaint){
       await CustomerRecovery.put("自動採用較新修改前：本機資料",stateBackup(before));
+      if(pendingLocalBackup&&!DataCore.equal(pendingLocalBackup,before))await CustomerRecovery.put("自動採用較新修改前：原本畫面資料",stateBackup(pendingLocalBackup));
       if(!DataCore.equal(before,incoming))await CustomerRecovery.put("自動採用較新修改前：收到的資料",stateBackup(incoming));
       guard();
-      if(autoApplyEditing()||stored!==localStorage.getItem(DATA_V6_KEY)||!DataCore.equal(before,dataState)||!DataCore.equal(before,captureLocalState())){
+      if(autoApplyEditing()||stored!==localStorage.getItem(DATA_V6_KEY)||!DataCore.equal(baseline,dataState)||(adoptingRestore?!DataCore.equal(visibleBefore,dataView()):!DataCore.equal(before,captureLocalState()))){
         queueMergedState(incoming);scheduleAutoLatest();return false;
       }
       paintDataState(next);
@@ -8582,6 +8747,8 @@ window.addEventListener("storage",e=>{
     const remote=DataCore.validateState(JSON.parse(e.newValue));
     if(DataCore.equal(DataCore.autoLatest(DataCore.merge(dataState,remote)),dataState))return;
     queueMergedState(remote);scheduleAutoLatest();
+    // Preserve received local-tab writes immediately, even while repainting is deferred.
+    if(!storeCurrentState(remote))return;
     if(!autoApplyEditing())applyPendingMergeIfAny();
   }catch(err){toast("另一個視窗的資料無法讀取，請保留目前畫面並匯出備份");}
 });
