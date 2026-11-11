@@ -1344,9 +1344,9 @@
   #needHover.show{display:flex;flex-direction:row;gap:12px;align-items:stretch;}
   #needHover .nh-seg{flex:1;min-width:0;margin:0;display:flex;flex-direction:column;}
   #needHover .nh-tt{font-size:.8rem;font-weight:700;color:var(--accent-deep);margin-bottom:8px;padding:2px 0;}
-  #needHover .nh-bd{flex:1;font-size:.92rem;line-height:1.7;color:var(--ink);white-space:pre-wrap;word-break:break-word;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 14px;min-height:96px;max-height:60vh;overflow:hidden;}
+  #needHover .nh-bd{flex:1;font-size:calc(.92rem * var(--need-font-scale,1));line-height:1.7;color:var(--ink);white-space:pre-wrap;word-break:break-word;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 14px;min-height:96px;max-height:60vh;overflow:hidden;}
   #needHover .nh-bd div{min-height:1.4em;}
-  #needHover .nh-bd .nh{font-weight:800;font-size:1.05em;color:var(--accent-deep);}
+  #needHover .nh-bd .nh{font-weight:800;font-size:1.06em;color:var(--accent-deep);}
   #needHover .nh-empty{color:var(--text-faint);}
   /* 與展開 .nseg-grid 同一斷點:窄螢幕改上中下,寬螢幕維持左中右(.stacked 由 JS 依視窗／表格寬度同步) */
   #needHover.show.stacked{flex-direction:column;align-items:stretch;gap:10px;}
@@ -2280,7 +2280,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.11C";
+const APP_VERSION = "2026.11.12A";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2761,7 +2761,11 @@ headerCountWrap.addEventListener("touchend",e=>{
 },{passive:false});
 headerCountWrap.addEventListener("touchcancel",()=>{headerCountTouch=null;},{passive:true});
 function refreshHeaderCountMetrics(){headerCountWidths=[];scheduleHeaderCountLayout();}
-if(window.ResizeObserver)new ResizeObserver(refreshHeaderCountMetrics).observe(countEl.closest(".topbar"));
+if(window.ResizeObserver){
+  const headerCountObserver=new ResizeObserver(refreshHeaderCountMetrics);
+  headerCountObserver.observe(countEl.closest(".topbar"));
+  headerCountObserver.observe(headerCountProbe);
+}
 else window.addEventListener("resize",refreshHeaderCountMetrics);
 if(document.fonts){document.fonts.ready.then(refreshHeaderCountMetrics);document.fonts.addEventListener("loadingdone",refreshHeaderCountMetrics);}
 /* list-header-count:end */
@@ -2830,6 +2834,7 @@ function syncTableMode(){
   document.getElementById("app").classList.toggle("table-mode", viewMode==="table" && listView.classList.contains("active"));
 }
 function setViewMode(vm){
+  if(!commitOpenNeedEditors())return false;
   viewMode = (vm==="table") ? "table" : "card"; saveViewMode();
   if (viewMode !== "table"){                                     // 離開表格:收合展開,避免殘留的隱藏展開之後把舊內容寫回
     if (typeof closeNeedExp === "function") closeNeedExp();
@@ -3023,6 +3028,7 @@ function trowHTML(d){
   `</tr>`;
 }
 function renderTable(list){
+  if(!commitOpenNeedEditors())return false;
   closeNeedOrderUI();
   const oldScroll = tableWrap.querySelector(".tbody-wrap");
   const sTop = oldScroll ? oldScroll.scrollTop : 0, sLeft = oldScroll ? oldScroll.scrollLeft : 0;
@@ -3345,9 +3351,9 @@ function flushEditing(){
     if (el.classList.contains("tcell") && tCellIsEditing(el)){
       tCellExitEdit(el);                                   // 一般欄位格(案名/電話/預算…)
     } else if (el.classList.contains("nseg-ed") && !el.classList.contains("needexp-view")){
-      const w = el.closest(".needexp"); if (w) commitNeedSeg(w.dataset.for, +el.dataset.seg, editToNeed(el));   // 需求三段內容
+      const w = el.closest(".needexp"); if (w && !commitNeedEditor(el).ok) return false;   // 需求三段內容
     } else if (el.dataset && el.dataset.titleedit){
-      const w = el.closest(".needexp"); if (w) commitNeedTitle(w.dataset.for, +el.dataset.seg, el.textContent); // 需求三段標題
+      const w = el.closest(".needexp"); if (w && !commitNeedTitleEditor(el).ok) return false; // 需求三段標題
     } else {
       return;   // 沒在編輯格,不需 blur
     }
@@ -3644,26 +3650,130 @@ function commitNeedFontSize(id, sg, size){
   if (queued){ queued.needFontSizes = { ...it.needFontSizes }; queued.updatedAt = it.updatedAt; }
   saveItems(); onLocalChange("data");
 }
-function commitNeedSeg(id, sg, val){
-  const it = items.find(x => x.id === id); if (!it) return;
-  val = normalizeNeedStorage((val || "").replace(/\s+$/,""));
-  if (needSeg(it,sg) === val) return;
-  if (sg===2) it.need2 = val; else if (sg===3) it.need3 = val; else it.need = val;
-  it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
-  if (sg===needOrder(it)[0]) refreshNeedSummary(it);
+// A table editor owns its rendered projection until its content actually changes.
+// Keep the opening raw value separate from later successful local edits for native Undo.
+const needEditorBaselines = new WeakMap();
+function isNeedTableEditor(ed){
+ return !!(ed && ed.classList && ed.classList.contains("nseg-ed") && !ed.classList.contains("needexp-view") && ed.getAttribute("contenteditable")==="true" && ed.closest(".needexp"));
 }
-function commitNeedTitle(id, sg, val){
-  const it = items.find(x => x.id === id); if (!it) return;
-  const def = needDefTitle(sg);
-  val = (val || "").replace(/\n/g," ").trim() || def;
-  if (needTitle(it,sg) === val) return;
-  if (sg===2) it.t2 = val; else if (sg===3) it.t3 = val; else it.t1 = val;
-  it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
+function rememberNeedEditorBaseline(ed){
+ if(!isNeedTableEditor(ed))return;
+ const exp=ed.closest(".needexp"),id=exp.dataset.for,sg=+ed.dataset.seg,it=items.find(x=>x.id===id);
+ if(!it)return;
+ const text=editToNeed(ed),raw=it[needFontKey(sg)],baseline=needEditorBaselines.get(ed);
+ if(baseline&&baseline.id===id&&baseline.sg===sg){baseline.text=text;baseline.lastSavedRaw=raw;baseline.failed=false;}
+ else needEditorBaselines.set(ed,{id,sg,text,originText:text,originRaw:raw,lastSavedRaw:raw,originBlocked:false,failed:false});
+}
+function getNeedEditorBaseline(ed){
+ let baseline=needEditorBaselines.get(ed);
+ if(!baseline){
+  const exp=ed.closest(".needexp"),id=exp.dataset.for,sg=+ed.dataset.seg,it=items.find(x=>x.id===id);
+  if(!it)return null;
+  const initial=document.createElement("div");initial.innerHTML=needToEditHTML(needSeg(it,sg));
+  const text=editToNeed(initial),raw=it[needFontKey(sg)];
+  baseline={id,sg,text,originText:text,originRaw:raw,lastSavedRaw:raw,originBlocked:false,failed:false};needEditorBaselines.set(ed,baseline);
+ }
+ return baseline;
+}
+function needEditorHasChanges(ed){
+ if(!isNeedTableEditor(ed))return false;
+ const baseline=getNeedEditorBaseline(ed);
+ return !!baseline && editToNeed(ed)!==baseline.text;
+}
+// Callers may close on a remote no-op, but must not repaint or mark it as saved.
+function commitNeedEditor(ed){
+ if(!isNeedTableEditor(ed))return {ok:true,status:"unchanged"};
+ const exp=ed.closest(".needexp"),id=exp.dataset.for,sg=+ed.dataset.seg,it=items.find(x=>x.id===id);
+ if(!it)return {ok:true,status:"unchanged"};
+ const baseline=getNeedEditorBaseline(ed),value=editToNeed(ed),raw=it[needFontKey(sg)];
+ if(baseline&&raw!==baseline.lastSavedRaw)baseline.originBlocked=true;
+ if(baseline&&value===baseline.text)return {ok:true,status:"unchanged"};
+ const origin=!!baseline&&value===baseline.originText;
+ if(origin&&baseline.originBlocked)return {ok:true,status:"remote"};
+ if(commitNeedSeg(id,sg,value,origin?ed:null)===false){
+  if(baseline&&!baseline.failed){baseline.failed=true;toast("需求內容尚未儲存，請保留編輯內容後重試");}
+  return {ok:false,status:"failed"};
+ }
+ rememberNeedEditorBaseline(ed);
+ return {ok:true,status:"saved"};
+}
+function commitOpenNeedEditors(){
+ const exp=tableWrap&&tableWrap.querySelector("tr.needexp");
+ return !exp||commitAllSegs(exp)!==false;
+}
+function commitNeedSeg(id, sg, val, originEditor){
+  const it = items.find(x => x.id === id); if (!it) return false;
+  const key=needFontKey(sg),origin=originEditor&&needEditorBaselines.get(originEditor);
+  if(originEditor){
+   if(!origin||origin.id!==id||origin.sg!==sg||!isNeedTableEditor(originEditor)||originEditor.closest(".needexp").dataset.for!==id||origin.originBlocked||it[key]!==origin.lastSavedRaw||editToNeed(originEditor)!==origin.originText)return false;
+   val=origin.originRaw; // Only this editor's captured, previously saved raw can bypass normalization.
+  }else val=normalizeNeedStorage((val||"").replace(/\s+$/,""));
+  if (originEditor?it[key]===val:needSeg(it,sg)===val) return true;
+  const hadValue=Object.prototype.hasOwnProperty.call(it,key),previous=it[key];
+  const hadTime=Object.prototype.hasOwnProperty.call(it,"updatedAt"),previousTime=it.updatedAt,time=Date.now();
+  if(val===undefined)delete it[key];else it[key]=val;it.updatedAt=time;
+  let ok=false;try{ok=saveItems()!==false;}catch(_){}
+  if(!ok){
+   if(it[key]===val){if(hadValue)it[key]=previous;else delete it[key];}
+   if(it.updatedAt===time){if(hadTime)it.updatedAt=previousTime;else delete it.updatedAt;}
+   return false;
+  }
+  onLocalChange("data");
+  if (sg===needOrder(it)[0]) refreshNeedSummary(it);
+  return true;
+}
+const needTitleBaselines = new WeakMap();
+function isNeedTableTitle(el){return !!(el&&el.classList&&el.classList.contains("nseg-t")&&el.dataset.titleedit&&el.getAttribute("contenteditable")==="true"&&el.closest(".needexp"));}
+function rememberNeedTitleBaseline(el){
+ if(!isNeedTableTitle(el))return;
+ const exp=el.closest(".needexp"),id=exp.dataset.for,sg=+el.dataset.seg,it=items.find(x=>x.id===id);
+ if(!it)return;
+ const key=sg===2?"t2":sg===3?"t3":"t1",text=el.textContent,raw=it[key],baseline=needTitleBaselines.get(el);
+ if(baseline&&baseline.id===id&&baseline.sg===sg){baseline.text=text;baseline.lastSavedRaw=raw;baseline.failed=false;}
+ else needTitleBaselines.set(el,{id,sg,text,originText:text,originRaw:raw,lastSavedRaw:raw,originBlocked:false,failed:false});
+}
+function commitNeedTitleEditor(el){
+ if(!isNeedTableTitle(el))return {ok:true,status:"unchanged"};
+ const exp=el.closest(".needexp"),id=exp.dataset.for,sg=+el.dataset.seg,it=items.find(x=>x.id===id);
+ if(!it)return {ok:true,status:"unchanged"};
+ const key=sg===2?"t2":sg===3?"t3":"t1",raw=it[key];let baseline=needTitleBaselines.get(el);
+ if(!baseline){const text=needTitle(it,sg);baseline={id,sg,text,originText:text,originRaw:raw,lastSavedRaw:raw,originBlocked:false,failed:false};needTitleBaselines.set(el,baseline);}
+ if(raw!==baseline.lastSavedRaw)baseline.originBlocked=true;
+ if(el.textContent===baseline.text)return {ok:true,status:"unchanged"};
+ const origin=el.textContent===baseline.originText;
+ if(origin&&baseline.originBlocked)return {ok:true,status:"remote"};
+ if(commitNeedTitle(id,sg,el.textContent,origin?el:null)===false){
+  if(!baseline.failed){baseline.failed=true;toast("欄位標題尚未儲存，請保留編輯內容後重試");}
+  return {ok:false,status:"failed"};
+ }
+ rememberNeedTitleBaseline(el);return {ok:true,status:"saved"};
+}
+function commitNeedTitle(id, sg, val, originEditor){
+  const it = items.find(x => x.id === id); if (!it) return false;
+  const key=sg===2?"t2":sg===3?"t3":"t1",origin=originEditor&&needTitleBaselines.get(originEditor);
+  if(originEditor){
+   if(!origin||origin.id!==id||origin.sg!==sg||!isNeedTableTitle(originEditor)||originEditor.closest(".needexp").dataset.for!==id||origin.originBlocked||it[key]!==origin.lastSavedRaw||originEditor.textContent!==origin.originText)return false;
+   val=origin.originRaw;
+  }else val=(val||"").replace(/\n/g," ").trim()||needDefTitle(sg);
+  if (originEditor?it[key]===val:needTitle(it,sg)===val) return true;
+  const hadValue=Object.prototype.hasOwnProperty.call(it,key),previous=it[key];
+  const hadTime=Object.prototype.hasOwnProperty.call(it,"updatedAt"),previousTime=it.updatedAt,time=Date.now();
+  if(val===undefined)delete it[key];else it[key]=val;it.updatedAt=time;
+  let ok=false;try{ok=saveItems()!==false;}catch(_){}
+  if(!ok){
+   if(it[key]===val){if(hadValue)it[key]=previous;else delete it[key];}
+   if(it.updatedAt===time){if(hadTime)it.updatedAt=previousTime;else delete it.updatedAt;}
+   return false;
+  }
+  onLocalChange("data");return true;
 }
 function commitAllSegs(ex){
   // 只提交可編輯段落;唯讀顯示段落(.needexp-view)不該被序列化寫回 —— 它含顯示用「連結」,序列化會把網址洗成字面「連結」
-  ex.querySelectorAll(".nseg-ed:not(.needexp-view)").forEach(ed => commitNeedSeg(ex.dataset.for, +ed.dataset.seg, editToNeed(ed)));
-  ex.querySelectorAll(".nseg-t[data-titleedit]").forEach(t => commitNeedTitle(ex.dataset.for, +t.dataset.seg, t.textContent));
+  let ok=true;
+  ex.querySelectorAll(".nseg-ed:not(.needexp-view)").forEach(ed => {if(!commitNeedEditor(ed).ok)ok=false;});
+  if(!ok)return false;
+  ex.querySelectorAll('.nseg-t[data-titleedit][contenteditable="true"]').forEach(t => {if(!commitNeedTitleEditor(t).ok)ok=false;});
+  return ok;
 }
 let openNeedId = null;
 // 表格批次刪除選取模式的旗標。宣告必須在這裡(首次 renderTable 之前):
@@ -3672,6 +3782,7 @@ let openNeedId = null;
 // 這條初始化路徑會踩 TDZ(Cannot access 'tselMode' before initialization),整份腳本載入即斷。
 let tselMode = false;
 function openNeedExp(tr, doFocus){
+  if(!commitOpenNeedEditors())return false;
   closeNeedOrderUI();
   if (!tr) return;
   closeOtherOverlays("exp");   // 只留展開,關掉類別/下拉/篩選/懸浮
@@ -3703,7 +3814,7 @@ function openNeedExp(tr, doFocus){
   exp.innerHTML = `<td colspan="${nCols}"><div class="needexp-wrap"><div class="nseg-grid">${needOrder(it).map(seg).join("")}</div></div></td>`;
   tr.after(exp); tr.classList.add("exp-open"); tr.classList.toggle("exp-editing", editMode); openNeedId = id;
   initNeedFontControls(exp, () => items.find(x => x.id === id), (sg, size) => commitNeedFontSize(id, sg, size));
-  initNeedOrderControls(exp.querySelector(".nseg-grid"),()=>items.find(x=>x.id===id),order=>{commitAllSegs(exp);return commitNeedOrder(id,order);});
+  initNeedOrderControls(exp.querySelector(".nseg-grid"),()=>items.find(x=>x.id===id),order=>{if(commitAllSegs(exp)===false)return false;return commitNeedOrder(id,order);});
   if (typeof hideNeedHover === "function") hideNeedHover();   // 展開時收掉可能還開著的懸浮預覽
   // 建立當下就同步設定寬度,避免「先錯誤寬度排版、下一影格才跳正」的一影格閃動;rAF 保留作保險
   { const bw0 = tableWrap.querySelector(".tbody-wrap");
@@ -3712,10 +3823,11 @@ function openNeedExp(tr, doFocus){
   [1,2,3].forEach(sg => {
     const ed = exp.querySelector(`.nseg-ed[data-seg="${sg}"]`);
     let v = needSeg(it, sg);
-    // 展開時順便把「刪線後黏下一筆／跨行 ~~」的舊壞資料寫回(normalize 內含 repair)
-    if (v && normalizeNeedStorage(v) !== v){ commitNeedSeg(id, sg, v); v = needSeg(it, sg); }
+    // Display legacy repairs without migrating saved content on open.
     ed.innerHTML = v ? (editMode ? needToEditHTML(v) : needToViewHTML(v)) : (editMode ? "<div><br></div>" : '<div class="tneed-ph">（無內容）</div>');
+    rememberNeedEditorBaseline(ed);
   });
+  exp.querySelectorAll('.nseg-t[contenteditable="true"]').forEach(rememberNeedTitleBaseline);
   if (editMode){
     exp.querySelectorAll("button.nseg-tbtn, button.nseg-sbtn").forEach(button => {
       button.addEventListener("pointerdown", ev => {
@@ -4202,8 +4314,7 @@ function commitNeedFormatChange(scope, ed, value){
     syncNeedEdFromStorage(ed, value);
     saveFormDraft(); // 表單只保存草稿，正式客戶資料由「儲存」統一提交。
   } else {
-    commitNeedSeg(scope.dataset.for, +ed.dataset.seg, value);
-    syncNeedEdFromStorage(ed, value);
+    if(needEditorHasChanges(ed)){const result=commitNeedEditor(ed);if(result.ok&&result.status==="saved")syncNeedEdFromStorage(ed, value);}
   }
 }
 function toggleNeedStrike(exp){
@@ -4470,12 +4581,62 @@ function skipNeedHeadingAnchor(ed){
     node.deleteData(0, offset);
   }
 }
+// Skip only adjacent internal leading-paste anchors. The browser still performs
+// the single native deletion/undo transaction; no note text or DOM is rewritten.
+function skipNeedLeadingDeleteAnchor(ed, backward){
+  const sel = window.getSelection();
+  if (!ed || !needLeadingBreakEditors.has(ed) || ed.isComposing || needHeadingComposing.has(ed) || !sel || !sel.rangeCount || !sel.isCollapsed) return;
+  const original = sel.getRangeAt(0);
+  if (!ed.contains(original.startContainer)) return;
+  const blocked = node => node.nodeType === 1 && (node.matches(".need-link-chip,.need-link,a,[contenteditable='false']") || /^(BR|DIV|P|LI|UL|OL|BLOCKQUOTE|PRE|HR|TABLE|IMG)$/.test(node.tagName));
+  const adjacent = (node, offset) => {
+    if (node.nodeType === 3){
+      const at = backward ? offset - 1 : offset;
+      if (at >= 0 && at < node.data.length) return { node, at };
+    }
+    let current = node, candidate = node.nodeType === 1 ? node.childNodes[backward ? offset - 1 : offset] : null;
+    while (current && current !== ed || candidate){
+      if (candidate){
+        if (blocked(candidate)) return { barrier: candidate };
+        if (candidate.nodeType === 3 && candidate.data.length) return { node: candidate, at: backward ? candidate.data.length - 1 : 0 };
+        const child = backward ? candidate.lastChild : candidate.firstChild;
+        if (child){ candidate = child; continue; }
+        current = candidate; candidate = null;
+      }
+      if (!current || current === ed) break;
+      if (blocked(current)) return { barrier: current };
+      candidate = backward ? current.previousSibling : current.nextSibling;
+      if (!candidate) current = current.parentNode;
+    }
+    return null;
+  };
+  let point = { node: original.startContainer, offset: original.startOffset }, moved = false;
+  while (true){
+    const part = adjacent(point.node, point.offset);
+    if (!part) break;
+    if (part.barrier){
+      if (moved && part.barrier.matches(".need-link-chip")){
+        const parent = part.barrier.parentNode, at = Array.prototype.indexOf.call(parent.childNodes, part.barrier);
+        point = { node: parent, offset: at + (backward ? 1 : 0) };
+      }
+      break;
+    }
+    if (part.node.data[part.at] !== "\u200B") break;
+    point = { node: part.node, offset: part.at + (backward ? 0 : 1) }; moved = true;
+  }
+  if (!moved) return;
+  const caret = original.cloneRange(); caret.setStart(point.node, point.offset); caret.collapse(true);
+  sel.removeAllRanges(); sel.addRange(caret);
+}
 // 組字只在第一次非空輸入時準備取代；開始後立刻取消不改原文或選取。
 const needHeadingComposing = new WeakSet();
 const needHeadingCompositionInput = new WeakSet();
 document.addEventListener("keydown", e => {
   const ed = needContentEditorFrom(e.target);
-  if (e.key === "Backspace" && !e.isComposing && e.keyCode !== 229 && !needHeadingComposing.has(ed)) skipNeedHeadingAnchor(ed);
+  if ((e.key === "Backspace" || e.key === "Delete") && !e.isComposing && e.keyCode !== 229 && !needHeadingComposing.has(ed)){
+    if (e.key === "Backspace") skipNeedHeadingAnchor(ed);
+    skipNeedLeadingDeleteAnchor(ed, e.key === "Backspace");
+  }
 }, true);
 document.addEventListener("beforeinput", e => {
   const ed = needContentEditorFrom(e.target);
@@ -4489,7 +4650,8 @@ document.addEventListener("beforeinput", e => {
     return;
   }
   if (e.isComposing || needHeadingComposing.has(ed)) return;
-  if (e.inputType === "deleteContentBackward") skipNeedHeadingAnchor(ed);
+  if (e.inputType === "deleteContentBackward"){ skipNeedHeadingAnchor(ed); skipNeedLeadingDeleteAnchor(ed, true); }
+  else if (e.inputType === "deleteContentForward") skipNeedLeadingDeleteAnchor(ed, false);
   if (!e.inputType || !e.inputType.startsWith("insert")) return;
   if (e.inputType === "insertText" || e.inputType === "insertReplacementText") prepareNeedHeadingReplacement(ed);
   prepareNeedHeadingInput(ed, e.inputType === "insertParagraph" || e.inputType === "insertLineBreak");
@@ -4524,6 +4686,7 @@ document.addEventListener("paste", e => {
 
 // 收合目前展開的客戶需求(供 ESC 使用):先提交編輯,再移除展開列並清狀態
 function closeNeedExp(){
+  if(!commitOpenNeedEditors())return false;
   closeNeedOrderUI();
   const ex = tableWrap.querySelector("tr.needexp");
   if (!ex){ openNeedId = null; return; }
@@ -4537,6 +4700,7 @@ function closeNeedExp(){
   if (window.refreshLed) window.refreshLed();
 }
 function toggleNeedExp(tr){
+  if(!commitOpenNeedEditors())return false;
   closeNeedOrderUI();
   if (!tr) return;
   const id = tr.dataset.id;
@@ -4915,6 +5079,7 @@ function syncNeedEdFromStorage(ed, val){
   if (ed.classList && ed.classList.contains("needexp-view")) return;
   const htmlFn = ed.classList.contains("fneed-ed") ? needToFormHTML : needToEditHTML;
   ed.innerHTML = htmlFn(val) || "<div><br></div>";
+  rememberNeedEditorBaseline(ed);
 }
 // 邊打邊轉:保留 ~、行首「# 」、正在打的 http(s):// 網址
 function needKeepAsciiPunct(ch, before){
@@ -5040,7 +5205,7 @@ function toggleLineHeading(ed){
   const line = needCurLine(ed); if (!line) return;
   line.classList.toggle("nh");
   ed.focus();
-  const w = ed.closest(".needexp"); if (w) commitNeedSeg(w.dataset.for, +ed.dataset.seg, editToNeed(ed));
+  const w = ed.closest(".needexp"); if (w) commitNeedEditor(ed);
 }
 
 tableWrap.addEventListener("blur", e=>{
@@ -5048,12 +5213,14 @@ tableWrap.addEventListener("blur", e=>{
   if (c.classList && c.classList.contains("tcell") && c.dataset.field && tCellIsEditing(c)) tCellExitEdit(c);
   else if (c.classList && c.classList.contains("nseg-ed") && !c.classList.contains("needexp-view")){
     const w = c.closest(".needexp"); if (!w) return;
+    if(!needEditorHasChanges(c))return;
     const raw = editToNeed(c);
     const norm = normalizeNeedStorage(raw);
-    commitNeedSeg(w.dataset.for, +c.dataset.seg, norm);
+    const result=commitNeedEditor(c);
+    if(!result.ok||result.status!=="saved")return;
     if (norm !== raw) syncNeedEdFromStorage(c, norm);
   }
-  else if (c.dataset && c.dataset.titleedit){ const w = c.closest(".needexp"); if (w) commitNeedTitle(w.dataset.for, +c.dataset.seg, c.textContent); }
+  else if (c.dataset && c.dataset.titleedit){ const w = c.closest(".needexp"); if (w) commitNeedTitleEditor(c); }
 }, true);
 let _tCellTap = { cell: null, t: 0 };
 function tCellEnterEdit(cell, x, y, opts){
@@ -5093,7 +5260,7 @@ tableWrap.addEventListener("compositionend", e => {
   if (!ed) return;
   liveNeedSymbolsFix(ed);
   const w = ed.closest(".needexp");
-  if (w && ed.classList.contains("nseg-ed")) commitNeedSeg(w.dataset.for, +ed.dataset.seg, editToNeed(ed));
+  if (w && ed.classList.contains("nseg-ed")) commitNeedEditor(ed);
 }, true);
 // 游標是否緊鄰「連結」標籤之後(允許中間隔著零寬錨點)——用來決定貼上時要不要補分隔
 function caretAfterChip(ed){
@@ -5245,7 +5412,7 @@ tableWrap.addEventListener("paste", e => {
     if (tx && caretAfterChip(nedBody)) tx = " " + tx;
     const w = nedBody.closest(".needexp"), sg = +nedBody.dataset.seg;
     if (tx && !pasteNeedInline(nedBody, tx)){ toast("這次未能貼上，請重新選取位置後重試"); return; }
-    if (w) commitNeedSeg(w.dataset.for, sg, editToNeed(nedBody));
+    if (w) commitNeedEditor(nedBody);
     return;
   }
   const cell = e.target.closest && e.target.closest(".tcell[data-field]");
@@ -5284,10 +5451,10 @@ tableWrap.addEventListener("input", e => {
     const w = e.target.closest(".needexp");
     const ed = e.target;
     if (!e.isComposing && !ed.isComposing) liveNeedSymbolsFix(ed);
-    if (w) commitNeedSeg(w.dataset.for, +ed.dataset.seg, editToNeed(ed));
+    if (w) commitNeedEditor(ed);
     return;
   }
-  if (e.target.dataset && e.target.dataset.titleedit){ const w = e.target.closest(".needexp"); if (w) commitNeedTitle(w.dataset.for, +e.target.dataset.seg, e.target.textContent); return; }
+  if (e.target.dataset && e.target.dataset.titleedit){ const w = e.target.closest(".needexp"); if (w) commitNeedTitleEditor(e.target); return; }
   const cell = e.target.closest && e.target.closest(".tcell");
   if (!cell || cell.getAttribute("contenteditable") !== "true") return;
   if (cell.querySelector("*")){
@@ -5549,7 +5716,7 @@ function showNeedHover(cell, it){
     const title = needTitle(it, sg) || def;
     const content = needSeg(it, sg);
     const bd = content ? needToViewHTML(content) : '<span class="nh-empty">（無內容）</span>';
-    return `<div class="nh-seg"><div class="nh-tt">${esc(title)}</div><div class="nh-bd">${bd}</div></div>`;
+    return `<div class="nh-seg" data-need-hover-seg="${sg}" style="--need-font-scale:${needFontPercent(it, sg) / 100}"><div class="nh-tt">${esc(title)}</div><div class="nh-bd">${bd}</div></div>`;
   };
   needHover.innerHTML = needOrder(it).map(sg=>seg(sg,needDefTitle(sg))).join("");
   needHover.style.visibility = "hidden";
@@ -5684,6 +5851,7 @@ function copyFieldText(el){
 
 // ---- 編輯 / 正常 模式切換(卡片與表格共用單一狀態) ----
 function setEditMode(on){
+  if(!commitOpenNeedEditors())return false;
   closeNeedOrderUI();
   editMode = !!on; saveEditMode();
   if (!editMode) exitSelectMode();       // 離開編輯模式時取消卡片多選
@@ -6113,7 +6281,7 @@ function commitLink(){
       else { nd.chip.remove(); }
       if (nd.ed && nd.ed.isConnected && nd.ed.classList.contains("needexp-ed")){
         const wx = nd.ed.closest(".needexp");
-        if (wx) commitNeedSeg(wx.dataset.for, +nd.ed.dataset.seg, editToNeed(nd.ed));
+        if (wx) commitNeedEditor(nd.ed);
       }                                           // 表單欄位(.fneed-ed):儲存時才序列化,這裡不用提交
     }
     closeLinkPop(); return;
@@ -6306,6 +6474,13 @@ function fragToNeedText(box){
     const isLine = (n.tagName === "DIV" || n.tagName === "P");
     if (isLine){ if (cur.trim()) flush(); else cur = ""; }   // 行區塊前的殘留:有內容才成行,純空白(HTML 排版縫隙)直接丟棄
     if (isLine && n.classList && n.classList.contains("nh")) cur += "# ";   // 標題列還原成「# 」語法
+    // Copy an empty line once per visible BR; the block boundary is not another empty line.
+    // Spaces and indentation are content: only BRs and zero-width caret text qualify.
+    if (isLine && [...n.childNodes].every(c => c.nodeType === 3 ? !c.textContent.replace(/\u200B/g, "") : c.nodeType !== 1 || c.tagName === "BR")){
+      const breaks = [...n.childNodes].filter(c => c.nodeType === 1 && c.tagName === "BR").length;
+      for (let i = 0; i < Math.max(1, breaks); i++) flush();
+      return;
+    }
     n.childNodes.forEach(walk);
     if (isLine) flush();
   };
@@ -6342,7 +6517,7 @@ function needClipboardHandler(e, isCut){
     if (!ok){ toast("這次未能剪下，請重新選取後重試"); return; }
     if (ed.classList.contains("needexp-ed")){
       const w = ed.closest(".needexp"), sg = +ed.dataset.seg;
-      if (w && typeof commitNeedSeg === "function") commitNeedSeg(w.dataset.for, sg, editToNeed(ed));
+      if (w && typeof commitNeedEditor === "function") commitNeedEditor(ed);
     }
   }
 }
@@ -6356,6 +6531,7 @@ document.getElementById("coverVT").addEventListener("click", e=>{
   openList("");                       // 進入「全部」;openList 內會一律恢復正常模式
 });
 document.getElementById("viewBtn").addEventListener("click", () => {
+  if(!commitOpenNeedEditors())return;
   const vm = (viewMode === "table") ? "card" : "table";   // 一顆按鈕:在卡片/表格之間切換
   editMode = false; saveEditMode();     // 切換檢視一律恢復正常模式
   exitSelectMode();                      // 並退出卡片多選(避免刪除列殘留浮在表格上)
@@ -6650,6 +6826,7 @@ function updateLH(){
 }
 window.addEventListener("resize", function(){ requestAnimationFrame(function(){ updateLH(); if (typeof syncTableChrome==="function") syncTableChrome(); if (typeof sizeNeedExp==="function") sizeNeedExp(); }); });
 function openList(cat){
+  if(!commitOpenNeedEditors())return false;
   headerCountIndex=0;headerCountPage=0; // A fresh list navigation starts at the first count page.
   exitSelectMode();
   editMode = false; saveEditMode();     // 進入列表一律預設「正常」模式;要編輯需先選檢視再點編輯
@@ -6664,6 +6841,7 @@ function openList(cat){
   requestAnimationFrame(updateLH);
 }
 function showCover(){
+  if(!commitOpenNeedEditors())return false;
   saveNav("cover");
   exitSelectMode();
   if (typeof closeColFlt === "function") closeColFlt();
@@ -7637,6 +7815,7 @@ function normAsk(s){
   return out;
 }
 function openForm(id){
+  if(!commitOpenNeedEditors())return false;
   closeNeedOrderUI();
   editingId = id || null;
   const d = id ? items.find(x => x.id === id) : null;
@@ -8543,6 +8722,7 @@ function restoreSettingsReturnScroll(saved){
   window.scrollTo(saved.windowX, saved.windowY);
 }
 function openSettings(){
+  if(!commitOpenNeedEditors())return false;
   if (settingsView.classList.contains("active")) return;
   cancelSettingsReturnFrame();
   settingsReturnView = captureSettingsReturnView();
