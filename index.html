@@ -412,27 +412,29 @@
   .back:hover{background:var(--surface-2);}
   /* list-header-count:start */
   .topbar .ttl{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.18rem;flex:0 1 auto;min-width:36px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .header-count{margin-left:auto;display:flex;align-items:stretch;flex:0 0 auto;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:999px;overflow:hidden;font-variant-numeric:tabular-nums;touch-action:pan-y;}
-  .topbar .ct{appearance:none;display:flex;align-items:center;min-width:0;flex:1 1 auto;border:0;background:none;border-radius:0;padding:5px 10px;font:inherit;font-size:.8rem;line-height:1.5;color:var(--ink-soft);white-space:nowrap;cursor:pointer;}
-  .list-count-values{display:flex;align-items:center;gap:10px;min-width:0;}
-  .count-item{display:flex;align-items:center;gap:5px;min-width:0;}
-  .count-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .count-amount{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;flex:none;}
+  .header-count{margin-left:auto;display:flex;align-items:stretch;flex:0 0 auto;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-variant-numeric:tabular-nums;touch-action:pan-y;}
+  .topbar .ct{appearance:none;display:block;min-width:0;flex:1 1 auto;border:0;background:none;border-radius:0;padding:0;font:inherit;font-size:.8rem;line-height:1.5;color:var(--ink-soft);white-space:nowrap;cursor:pointer;}
+  .list-count-values{display:flex;align-items:center;justify-content:center;gap:0;min-width:0;width:100%;height:32px;overflow:hidden;}
+  .count-item{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;min-width:0;max-width:100%;height:32px;padding:0 8px;}
+  .count-item+.count-item::before{content:"";position:absolute;left:0;top:6px;bottom:6px;border-left:1px solid var(--line);pointer-events:none;}
+  .count-name{min-width:0;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .count-amount{display:inline-flex;align-items:baseline;gap:3px;white-space:nowrap;flex:none;}
   .count-amount b{font-weight:700;color:#0B7D65;}
   [data-theme="dark"] .count-amount b{color:#72D1AF;}
-  .header-count:not(.is-all) .count-item:not([data-active="true"]){display:none;}
-  .header-count.is-all .count-item+.count-item,.list-count-probe .count-item+.count-item{border-left:1px solid var(--line);padding-left:10px;}
-  .header-count .ct:focus-visible,.header-count .count-next:focus-visible{box-shadow:var(--focus-ring-inset);}
+  .header-count:not(.is-detail) .list-count-values{padding:0 10px;}
+  .header-count .ct:focus-visible,.header-count .count-arrow:focus-visible{box-shadow:var(--focus-ring-inset);}
   .topbar .ct:disabled{cursor:default;}
-  .count-next{appearance:none;display:grid;place-items:center;flex:none;width:28px;min-height:32px;padding:0;border:0;border-left:1px solid var(--line);background:none;color:var(--ink-soft);cursor:pointer;}
-  .count-next[hidden]{display:none;}
-  .count-next svg{width:14px;height:14px;}
-  .count-next:hover,.topbar .ct:not(:disabled):hover{background:var(--surface-2);}
-  .list-count-probe{position:absolute!important;left:auto;right:100%;top:0;visibility:hidden;pointer-events:none;width:max-content!important;max-width:none!important;flex:none!important;}
+  .count-arrow{appearance:none;display:grid;place-items:center;flex:0 0 24px;width:24px;min-height:32px;padding:0;border:0;background:none;color:var(--ink-soft);cursor:pointer;}
+  .count-arrow[hidden]{display:none;}
+  .count-arrow:disabled{opacity:.3;cursor:default;}
+  .count-arrow svg{width:13px;height:13px;}
+  .count-arrow:not(:disabled):hover,.topbar .ct:not(:disabled):hover{background:var(--surface-2);}
+  .list-count-probe{position:absolute!important;left:auto;right:100%;top:0;visibility:hidden;pointer-events:none;display:flex;align-items:center;gap:0;width:max-content!important;max-width:none!important;flex:none!important;font-size:.8rem;line-height:1.5;}
   .list-gear{appearance:none;display:grid;place-items:center;flex:none;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--card);color:var(--ink-soft);cursor:pointer;}
   .list-gear svg{width:19px;height:19px;}
   .list-gear:hover{background:var(--surface-2);border-color:var(--border-2);color:var(--ink);}
-  @media(max-width:480px){.topbar{gap:7px;padding-left:12px;padding-right:12px;}.topbar .ct{padding-left:8px;padding-right:8px;}}
+  @media(max-width:480px){.topbar{gap:7px;padding-left:12px;padding-right:12px;}}
+  @media(max-width:360px){.header-count .count-item,.list-count-probe .count-item{padding-left:3px;padding-right:3px;gap:3px;}}
   /* list-header-count:end */
 
   .search{display:flex;align-items:center;gap:10px;padding:12px 18px 0;}
@@ -1460,6 +1462,9 @@
 .compact-card .sub-row .addr{flex:1 1 160px;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
 .compact-card .sub-row .price-tag{margin-left:auto}
 .compact-card .cv.card-rooms{display:inline}
+/* Keep compact-card metadata on one text baseline; retain the multi-value dot layout. */
+.compact-card .sub-row .addr .cv{vertical-align:baseline}
+.compact-card .sub-row .addr .cv.multi-wrap{display:inline-flex}
 
 </style>
 <style id="status-row-colors">
@@ -1593,7 +1598,7 @@
       <header class="topbar">
         <button class="back" id="backBtn" aria-label="返回">←</button>
         <span class="ttl" id="listTitle">全部需求</span>
-        <div class="header-count" id="listCountWrap"><button class="ct" id="listCount" type="button" aria-label="顯示類型筆數" aria-pressed="false"><span class="list-count-values" id="listCountValues"></span></button><button class="count-next" id="listCountNext" type="button" aria-label="下一個客戶類型" title="下一個類型・可左右滑動" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg></button></div>
+        <div class="header-count" id="listCountWrap"><button class="count-arrow count-prev" id="listCountPrev" type="button" aria-label="上一頁客戶類型" title="上一頁類型・可左右滑動" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 3-5 5 5 5"/></svg></button><button class="ct" id="listCount" type="button" aria-label="顯示類型筆數" aria-pressed="false"><span class="list-count-values" id="listCountValues" aria-live="polite" aria-atomic="true"></span></button><button class="count-arrow count-next" id="listCountNext" type="button" aria-label="下一頁客戶類型" title="下一頁類型・可左右滑動" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg></button></div>
         <button class="list-gear" id="listGear" type="button" aria-label="設定" title="設定"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg></button>
         <button class="sync-led" id="listLed" type="button" aria-label="同步" title="點一下立即同步・長按進入設定"><span class="led"></span></button>
       </header>
@@ -2275,7 +2280,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.11B";
+const APP_VERSION = "2026.11.11C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2650,13 +2655,31 @@ const searchEl = document.getElementById("search");
 // Only the display mode is local; counts use the exact list already filtered by applyFilter.
 const HEADER_COUNT_KEY="customer_app_header_count_v1";
 let headerCountMode=(()=>{try{return storageOK&&localStorage.getItem(HEADER_COUNT_KEY)==="types"?"types":"total";}catch(_){return "total";}})();
-let headerCountIndex=0,headerCountRows=[],headerCountEntries=[],headerCountMarkup="",headerCountFrame=0;
-const headerCountWrap=document.getElementById("listCountWrap"),headerCountValues=document.getElementById("listCountValues"),headerCountNext=document.getElementById("listCountNext");
-const headerCountProbe=document.createElement("span");headerCountProbe.className="ct list-count-probe";headerCountProbe.setAttribute("aria-hidden","true");headerCountProbe.inert=true;
+let headerCountIndex=0,headerCountRows=[],headerCountEntries=[],headerCountPages=[],headerCountPage=0;
+let headerCountDataKey="",headerCountWidths=[],headerCountMarkup="",headerCountFrame=0;
+const headerCountWrap=document.getElementById("listCountWrap"),headerCountValues=document.getElementById("listCountValues"),headerCountPrev=document.getElementById("listCountPrev"),headerCountNext=document.getElementById("listCountNext");
+const headerCountProbe=document.createElement("span");headerCountProbe.className="list-count-probe";headerCountProbe.setAttribute("aria-hidden","true");headerCountProbe.inert=true;
 countEl.closest(".topbar").appendChild(headerCountProbe);
 function scheduleHeaderCountLayout(){
   if(headerCountFrame)return;
   headerCountFrame=requestAnimationFrame(()=>{headerCountFrame=0;layoutHeaderCounts();});
+}
+function headerCountPartHTML(entry){
+  return '<span class="count-item"><span class="count-name">'+esc(entry.key)+'</span><span class="count-amount"><b>'+entry.count+'</b>筆</span></span>';
+}
+function makeHeaderCountPages(widths,budget){
+  const pages=[];let start=0,used=0;
+  for(let i=0;i<widths.length;i++){
+    if(i>start&&used+widths[i]>budget){pages.push({start,end:i,width:used});start=i;used=0;}
+    used+=widths[i];
+  }
+  if(widths.length)pages.push({start,end:widths.length,width:used});
+  return pages;
+}
+function paintHeaderCount(html,label){
+  if(html!==headerCountMarkup){headerCountMarkup=html;headerCountValues.innerHTML=html;}
+  if(countEl.title!==label)countEl.title=label;
+  if(countEl.getAttribute("aria-label")!==label)countEl.setAttribute("aria-label",label);
 }
 function layoutHeaderCounts(){
   const bar=countEl.closest(".topbar");
@@ -2665,26 +2688,39 @@ function layoutHeaderCounts(){
   const width=bar.clientWidth-(parseFloat(style.paddingLeft)||0)-(parseFloat(style.paddingRight)||0);
   const peers=[document.getElementById("backBtn"),document.getElementById("listGear"),document.getElementById("listLed")];
   const fixed=peers.reduce((sum,el)=>sum+(el?el.getBoundingClientRect().width:0),0)+gap*4;
-  const preferredTitle=Math.min(200,Math.max(36,titleEl.scrollWidth));
+  const available=Math.max(0,Math.floor(width-fixed-36)),border=2;
   const detail=headerCountMode==="types"&&headerCountEntries.length>0;
-  const fullWidth=headerCountProbe.getBoundingClientRect().width+2;
-  const all=detail&&Math.ceil(fullWidth)<=Math.max(0,Math.floor(width-fixed-preferredTitle));
-  headerCountWrap.classList.toggle("is-all",all);
-  headerCountNext.hidden=!detail||all||headerCountEntries.length<2;
-  const items=headerCountValues.querySelectorAll(".count-item");
-  items.forEach((el,i)=>{const active=all||i===headerCountIndex;if(el.dataset.active!==String(active))el.dataset.active=String(active);});
-  const maxWidth=Math.max(0,Math.floor(width-fixed-36));
-  let desired=fullWidth;
-  if(detail&&!all&&items[headerCountIndex]){
-    const item=items[headerCountIndex],padding=getComputedStyle(countEl);
-    const name=Math.min(160,item.querySelector(".count-name").scrollWidth);
-    const amount=item.querySelector(".count-amount").getBoundingClientRect().width;
-    desired=name+amount+5+(parseFloat(padding.paddingLeft)||0)+(parseFloat(padding.paddingRight)||0)+(headerCountNext.hidden?0:28)+2;
+  if(headerCountWrap.classList.contains("is-detail")!==detail)headerCountWrap.classList.toggle("is-detail",detail);
+  countEl.disabled=!headerCountEntries.length;
+  if(countEl.getAttribute("aria-pressed")!==String(detail))countEl.setAttribute("aria-pressed",String(detail));
+  let desired=0;
+  if(detail){
+    if(headerCountWidths.length!==headerCountEntries.length)headerCountWidths=Array.from(headerCountProbe.children,el=>el.getBoundingClientRect().width);
+    const full=headerCountWidths.reduce((sum,value)=>sum+value,0),paged=headerCountEntries.length>1&&Math.ceil(full)+border>available;
+    headerCountPrev.hidden=headerCountNext.hidden=!paged;
+    const arrows=paged?headerCountPrev.getBoundingClientRect().width+headerCountNext.getBoundingClientRect().width:0;
+    headerCountPages=makeHeaderCountPages(headerCountWidths,Math.max(0,available-border-arrows));
+    headerCountPage=headerCountPages.findIndex(group=>group.end>headerCountIndex);
+    if(headerCountPage<0)headerCountPage=Math.max(0,headerCountPages.length-1);
+    const group=headerCountPages[headerCountPage];headerCountIndex=group.start;
+    headerCountPrev.disabled=headerCountPage===0;headerCountNext.disabled=headerCountPage===headerCountPages.length-1;
+    const selectedEntries=headerCountEntries.slice(group.start,group.end);
+    const description=selectedEntries.map(entry=>entry.key+" "+entry.count+" 筆").join("；");
+    const pageHint=headerCountPages.length>1?"・第 "+(headerCountPage+1)+" 頁，共 "+headerCountPages.length+" 頁":"";
+    paintHeaderCount(selectedEntries.map(headerCountPartHTML).join(""),description+pageHint+"・點一下顯示總筆數");
+    desired=group.width+arrows+border;
+  }else{
+    headerCountPages=[];headerCountPage=0;headerCountIndex=0;
+    headerCountPrev.hidden=headerCountNext.hidden=true;
+    paintHeaderCount('<span class="count-amount"><b>'+headerCountRows.length+'</b>筆</span>',headerCountRows.length+" 筆・點一下顯示類型筆數");
+    desired=headerCountValues.firstElementChild.getBoundingClientRect().width+20+border;
   }
-  const targetWidth=Math.min(maxWidth,Math.ceil(desired))+"px";
+  const all=detail&&headerCountPages.length===1;
+  if(headerCountWrap.classList.contains("is-all")!==all)headerCountWrap.classList.toggle("is-all",all);
+  const targetWidth=Math.min(available,Math.ceil(desired))+"px";
   if(headerCountWrap.style.width!==targetWidth)headerCountWrap.style.width=targetWidth;
-  if(headerCountWrap.style.maxWidth!==maxWidth+"px")headerCountWrap.style.maxWidth=maxWidth+"px";
-  titleEl.title=titleEl.textContent;
+  if(headerCountWrap.style.maxWidth!==available+"px")headerCountWrap.style.maxWidth=available+"px";
+  if(titleEl.title!==titleEl.textContent)titleEl.title=titleEl.textContent;
 }
 function updateListCounts(list){
   if(Array.isArray(list))headerCountRows=list;
@@ -2692,30 +2728,21 @@ function updateListCounts(list){
   for(const item of headerCountRows)for(const key of fieldVals(item,"cat"))if(counts.has(key))counts.set(key,counts.get(key)+1);
   headerCountEntries=cats.map(c=>({key:c.key,count:counts.get(c.key)||0}));
   headerCountIndex=headerCountEntries.length?Math.min(headerCountIndex,headerCountEntries.length-1):0;
-  const detail=headerCountMode==="types"&&headerCountEntries.length>0;
-  const itemHTML=entry=>'<span class="count-item"><span class="count-name">'+esc(entry.key)+'</span><span class="count-amount"><b>'+entry.count+'</b>筆</span></span>';
-  const html=detail?headerCountEntries.map(itemHTML).join(""):'<span class="count-amount"><b>'+headerCountRows.length+'</b>筆</span>';
-  if(html!==headerCountMarkup){
-    headerCountMarkup=html;headerCountValues.innerHTML=html;
-    headerCountProbe.innerHTML='<span class="list-count-values">'+html+'</span>';
-  }
-  countEl.disabled=!headerCountEntries.length;
-  countEl.setAttribute("aria-pressed",String(detail));
-  const description=detail?headerCountEntries.map(c=>c.key+" "+c.count+" 筆").join("；"):headerCountRows.length+" 筆";
-  countEl.title=description+(detail?"・點一下顯示總筆數":"・點一下顯示類型筆數");
-  countEl.setAttribute("aria-label",countEl.title);
+  const key=JSON.stringify(headerCountEntries);
+  if(key!==headerCountDataKey){headerCountDataKey=key;headerCountWidths=[];headerCountProbe.innerHTML=headerCountEntries.map(headerCountPartHTML).join("");}
   layoutHeaderCounts();scheduleHeaderCountLayout();
 }
 function advanceHeaderCount(direction){
-  if(headerCountMode!=="types"||headerCountEntries.length<2)return;
-  headerCountIndex=(headerCountIndex+direction+headerCountEntries.length)%headerCountEntries.length;
-  layoutHeaderCounts();
+  if(headerCountMode!=="types"||headerCountPages.length<2)return;
+  headerCountPage=Math.max(0,Math.min(headerCountPages.length-1,headerCountPage+direction));
+  headerCountIndex=headerCountPages[headerCountPage].start;layoutHeaderCounts();
 }
 countEl.addEventListener("click",()=>{
-  headerCountMode=headerCountMode==="types"?"total":"types";headerCountIndex=0;
+  headerCountMode=headerCountMode==="types"?"total":"types";headerCountIndex=0;headerCountPage=0;
   try{if(storageOK)localStorage.setItem(HEADER_COUNT_KEY,headerCountMode);}catch(_){}
   updateListCounts();
 });
+headerCountPrev.addEventListener("click",()=>advanceHeaderCount(-1));
 headerCountNext.addEventListener("click",()=>advanceHeaderCount(1));
 headerCountWrap.addEventListener("keydown",e=>{
   if(headerCountMode!=="types"||!['ArrowLeft','ArrowRight'].includes(e.key))return;
@@ -2728,14 +2755,15 @@ headerCountWrap.addEventListener("touchend",e=>{
   const start=headerCountTouch;headerCountTouch=null;
   const touch=e.changedTouches[0];if(!touch)return;
   const dx=touch.clientX-start.x,dy=touch.clientY-start.y;
-  if(headerCountMode==="types"&&!headerCountNext.hidden&&Math.abs(dx)>25&&Math.abs(dx)>Math.abs(dy)){
+  if(headerCountMode==="types"&&headerCountPages.length>1&&Math.abs(dx)>25&&Math.abs(dx)>Math.abs(dy)){
     e.preventDefault();advanceHeaderCount(dx<0?1:-1);
   }
 },{passive:false});
 headerCountWrap.addEventListener("touchcancel",()=>{headerCountTouch=null;},{passive:true});
-if(window.ResizeObserver)new ResizeObserver(scheduleHeaderCountLayout).observe(countEl.closest(".topbar"));
-else window.addEventListener("resize",scheduleHeaderCountLayout);
-if(document.fonts){document.fonts.ready.then(scheduleHeaderCountLayout);document.fonts.addEventListener("loadingdone",scheduleHeaderCountLayout);}
+function refreshHeaderCountMetrics(){headerCountWidths=[];scheduleHeaderCountLayout();}
+if(window.ResizeObserver)new ResizeObserver(refreshHeaderCountMetrics).observe(countEl.closest(".topbar"));
+else window.addEventListener("resize",refreshHeaderCountMetrics);
+if(document.fonts){document.fonts.ready.then(refreshHeaderCountMetrics);document.fonts.addEventListener("loadingdone",refreshHeaderCountMetrics);}
 /* list-header-count:end */
 
 // ---- 記住上次畫面(封面或列表+分類) ----
@@ -4684,7 +4712,7 @@ function editLineInner(text){
 }
 // 唯讀顯示用:逐行渲染(保留 # 標題),並把網址轉成「連結」
 function needDisplayText(t){
-  return repairNeedCrossLineMarks(t||"");
+  return repairNeedCrossLineMarks(normalizeNeedSymbols(t || "", true));
 }
 function needToViewHTML(t){
   const lines = needDisplayText(t).split("\n");
@@ -4796,14 +4824,49 @@ function editToNeed(ed){
 // 2) 行首「# 」整行標題標記
 // 3) http(s):// 網址(連結標籤／linkify 只認 ASCII)
 // 不做英文字母大寫(與案名 normAsk 不同),避免動到一般內文。
-function normalizeNeedSymbols(s){
-  s = String(s == null ? "" : s);
+// Normalize platform line endings before any line-sensitive note processing.
+function normalizeNeedNewlines(value){ return String(value == null ? "" : value).replace(/\r\n?/g, "\n"); }
+// Find decimal/grouping marks between visible digits without rebuilding HTML.
+// Only existing paired inline markers are skipped; unmatched markers stay text.
+function needNumericPunctuationPositions(text){
+  if (!/[.,\uFF0E\uFF0C]/.test(text)) return null;
+  const skip = new Set(), ranges = [[0, text.length]];
+  while (ranges.length){
+    const bounds = ranges.pop(); let from = bounds[0], end = bounds[1];
+    while (from < end){
+      let h = text.indexOf("\u00a7", from), s = text.indexOf("~~", from);
+      if (h >= end) h = -1; if (s >= end) s = -1;
+      if (h < 0 && s < 0) break;
+      const heading = h >= 0 && (s < 0 || h < s), start = heading ? h : s, mark = heading ? "\u00a7" : "~~";
+      const close = text.indexOf(mark, start + mark.length);
+      if (close < 0 || close >= end) break;
+      for (let i = 0; i < mark.length; i++){ skip.add(start + i); skip.add(close + i); }
+      if (start + mark.length < close) ranges.push([start + mark.length, close]);
+      from = close + mark.length;
+    }
+  }
+  const positions = new Set(); let previous = "", pending = -1;
+  for (let i = 0; i < text.length; i++){
+    if (skip.has(i) || text[i] === "\u200B") continue;
+    const ch = text[i], digit = /[0-9\uFF10-\uFF19]/.test(ch);
+    if (pending >= 0 && digit) positions.add(pending);
+    pending = /[.,\uFF0E\uFF0C]/.test(ch) && /[0-9\uFF10-\uFF19]/.test(previous) ? i : -1;
+    previous = ch;
+  }
+  return positions;
+}
+function normalizeNeedSymbols(s, numbersOnly=false){
+  s = normalizeNeedNewlines(s);
+  if (numbersOnly && !/[\uFF0E\uFF0C]/.test(s)) return s;
   if (!s) return s;
   const URL_RE = /https?:\/\/[A-Za-z0-9\-._~:\/?#\[\]@!$&'()*+,;=%]+/g;
   function convChunk(chunk){
-    let out = "";
+    let out = "", offset = 0;
+    const numberMarks = needNumericPunctuationPositions(chunk);
     for (const ch of chunk){
-      if (ch === "~"){ out += ch; continue; }
+      const position = offset; offset += ch.length;
+      if (numberMarks && numberMarks.has(position)){ out += (ch === "." || ch === "\uFF0E") ? "." : ","; continue; }
+      if (numbersOnly || ch === "~"){ out += ch; continue; }
       if (ch >= "!" && ch <= "~" && !((ch >= "0" && ch <= "9") || (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z"))){
         out += String.fromCharCode(ch.charCodeAt(0) + 0xFEE0);
       } else out += ch;
@@ -4841,7 +4904,7 @@ function repairNeedCrossLineMarks(t){
 }
 function normalizeNeedStorage(t){
   // 只清「同一行內」的空 ~~ / 零寬字;不可用 \\s(含換行),否則相鄰兩行 ~~\\n~~ 會被刪掉、多行刪線黏成一大段
-  const masked = maskNeedURLs(String(t == null ? "" : t).replace(/\u200B/g, ""));
+  const masked = maskNeedURLs(normalizeNeedNewlines(t).replace(/\u200B/g, ""));
   t = masked.restore(masked.text.replace(/~~[\u200B\t ]*~~/g, ""));
   t = repairNeedCrossLineMarks(t);
   return normalizeNeedSymbols(t);
@@ -4865,16 +4928,47 @@ function needKeepAsciiPunct(ch, before){
   if (ch === " " && /(^|\n)#$/.test(tail)) return true;
   return false;
 }
-function needFwInsertText(data, before){
-  let out = "", base = String(before || "");
-  for (const ch of String(data == null ? "" : data)){
+function needFwInsertText(data, before, after=""){
+  let out = "", base = String(before || ""), offset = 0;
+  const input = String(data == null ? "" : data);
+  for (const ch of input){
+    offset += ch.length;
     if (ch.length !== 1){ out += ch; continue; }
+    const following = input.slice(offset).replace(/^\u200B+/, "")[0] || after;
+    const previous = (base + out).slice(-1);
     if (needKeepAsciiPunct(ch, base + out)){ out += ch; continue; }
+    if (/[.,\uFF0E\uFF0C]/.test(ch) && /[0-9\uFF10-\uFF19]/.test(previous) && (!following || /[0-9\uFF10-\uFF19]/.test(following))){
+      out += (ch === "." || ch === "\uFF0E") ? "." : ","; continue;
+    }
     if (ch >= "!" && ch <= "~" && !((ch >= "0" && ch <= "9") || (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z"))){
       out += String.fromCharCode(ch.charCodeAt(0) + 0xFEE0);
     } else out += ch;
   }
   return out;
+}
+// Read only the next visible character across inline spans; blocks/chips stop it.
+function nextNeedSymbolChar(node, offset, ed){
+  let current = node, start = offset;
+  while (current && current !== ed){
+    if (current.nodeType === 3){
+      for (let i = start; i < current.data.length; i++) if (current.data[i] !== "\u200B") return current.data[i];
+    } else if (current.nodeType === 1){
+      if (current.tagName === "BR") return "\n";
+      if (current.classList.contains("need-link-chip")) return "\uFFFC";
+      if (current.firstChild){ current = current.firstChild; start = 0; continue; }
+    }
+    while (current && current !== ed){
+      if (current.parentNode === ed && current.nodeType === 1 && /^(DIV|P)$/.test(current.tagName)) return current.nextSibling ? "\n" : "";
+      if (current.nextSibling){
+        current = current.nextSibling; start = 0;
+        if (current.nodeType === 1 && current.parentNode === ed && /^(DIV|P)$/.test(current.tagName)) return "\n";
+        break;
+      }
+      current = current.parentNode;
+    }
+    if (!current || current === ed) return "";
+  }
+  return "";
 }
 function needContentEditorFrom(el){
   if (!el || !el.closest) return null;
@@ -4902,7 +4996,8 @@ function liveNeedSymbolsFix(ed){
       for (let i = 0; i < raw.length; i++){
         const ch = raw[i];
         if (ch === "\u200B"){ out += ch; continue; }
-        const nw = needFwInsertText(ch, prefix);
+        const following = /[.,\uFF0E\uFF0C]/.test(ch) ? nextNeedSymbolChar(n, i + 1, ed) : "";
+        const nw = needFwInsertText(ch, prefix, following);
         if (nw !== ch){
           changed = true;
           if (cNode === n && i < cOff) cOff += (nw.length - ch.length);
@@ -5028,6 +5123,7 @@ function placeNeedCaretEnd(el){
 // 使用瀏覽器原生編輯交易插入安全片段，保留游標與復原／重做；不重建整欄。
 let needPasteSequence = 0;
 const needPasteRedoMarkers = new WeakMap();
+const needLeadingBreakEditors = new WeakSet();
 // 原生插入時先保留普通 span，插入及復原後只補原子連結屬性，不變動文字或節點。
 function sealNeedLinkChips(ed){
   if (!ed) return;
@@ -5047,6 +5143,7 @@ document.addEventListener("input", e => {
   if (point){ const caret = document.createRange(); caret.selectNodeContents(point); caret.collapse(false); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(caret); }
 }, true);
 function pasteNeedInline(ed, tx){
+  tx = normalizeNeedNewlines(tx);
   const sel = window.getSelection();
   if (!ed || !sel || !sel.rangeCount || !tx) return false;
   const rg = sel.getRangeAt(0);
@@ -5085,6 +5182,7 @@ function pasteNeedInline(ed, tx){
     : needTokens(tx).map(tk => tk.t === "url"
       ? `<span class="need-link-chip" contenteditable="false" data-url="${esc(tk.v)}" draggable="false">連結</span>\u200B`
       : esc(tk.v)).join("");
+  if (tx.startsWith("\n")) html = "\u200B" + html;
   if (marker) html += `<span data-need-paste-caret="${marker}">\u200B</span>${suffix}`;
   html = `<span style="font-family:inherit;font-size:inherit">${html}</span>`;
   const fragment = document.createElement("template"); fragment.innerHTML = html;
@@ -5093,6 +5191,7 @@ function pasteNeedInline(ed, tx){
   try {
     const ok = document.execCommand("insertHTML", false, html);
     if (ok) sealNeedLinkChips(ed);
+    if (ok && tx.startsWith("\n")) needLeadingBreakEditors.add(ed);
     if (ok && marker){
       const point = ed.querySelector(`[data-need-paste-caret="${marker}"]`);
       if (point){ const caret = document.createRange(); caret.selectNodeContents(point); caret.collapse(false); sel.removeAllRanges(); sel.addRange(caret); }
@@ -6225,7 +6324,8 @@ function needClipboardHandler(e, isCut){
   box.appendChild(sel.getRangeAt(0).cloneContents());
   const hasLink = !!box.querySelector(".need-link-chip, .need-link");
   const hasPasteAnchor = !!box.querySelector("[data-need-paste-caret]") ||
-    (!!ed.querySelector("[data-need-paste-caret]") && box.textContent.includes("\u200B"));
+    (!!ed.querySelector("[data-need-paste-caret]") && box.textContent.includes("\u200B")) ||
+    (needLeadingBreakEditors.has(ed) && box.textContent.includes("\u200B"));
   if (!hasLink && !hasPasteAnchor) return;   // 沒有連結或貼上錨點時保留系統預設複製。
   const txt = fragToNeedText(box);
   const cd = e.clipboardData || window.clipboardData;
@@ -6550,6 +6650,7 @@ function updateLH(){
 }
 window.addEventListener("resize", function(){ requestAnimationFrame(function(){ updateLH(); if (typeof syncTableChrome==="function") syncTableChrome(); if (typeof sizeNeedExp==="function") sizeNeedExp(); }); });
 function openList(cat){
+  headerCountIndex=0;headerCountPage=0; // A fresh list navigation starts at the first count page.
   exitSelectMode();
   editMode = false; saveEditMode();     // 進入列表一律預設「正常」模式;要編輯需先選檢視再點編輯
   currentCat = cat || "";
