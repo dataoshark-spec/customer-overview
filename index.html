@@ -574,6 +574,7 @@
   .meta > span{font-size:.8rem;font-weight:700;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);padding:5px 10px;border-radius:8px;}
   .meta .ml{color:var(--text-faint);font-style:normal;font-weight:600;}
   .card-top{display:flex;flex-wrap:wrap;align-items:center;font-size:.78rem;color:var(--text-faint);margin-bottom:6px;font-variant-numeric:tabular-nums;}
+  .card-top .card-source{max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .card-top .dot{margin:0 1px;opacity:.6;}
   .ask-faint{font-size:.82rem;color:var(--text-faint);min-width:0;}
   .ask-faint .seg{color:var(--text-faint);font-weight:600;}
@@ -1205,6 +1206,11 @@
   .tcell.saved{animation:tSaved .7s ease;}
   /* 建檔日欄「生成買方名稱」面板:滑到該格最左窄感應帶,面板從左滑入覆蓋整格,點任一處生成並複製 */
   td.datewrap{position:relative;}
+  .ptable thead th[data-field="date"]{padding-inline:2px;}
+  th[data-field="date"] .gen-caret{margin-left:2px;}
+  .date-probe{position:absolute;inset-inline-start:0;top:0;display:block;visibility:hidden;pointer-events:none;
+    width:max-content;padding:0;border:0;white-space:nowrap;font:inherit;letter-spacing:inherit;font-variant-numeric:inherit;}
+  .date-probe::before{content:attr(data-text);}
   .gen-edge{position:absolute;left:0;top:0;bottom:0;width:14px;z-index:3;}
   .gen-btn{position:absolute;left:0;top:-1px;bottom:-1px;width:calc(100% + 1px);display:inline-flex;align-items:center;justify-content:center;
     border:none;border-right:1px solid var(--accent-tint-bd);background:var(--accent-tint);color:var(--accent-deep);cursor:pointer;
@@ -1430,7 +1436,9 @@
 .data-dialog h2{font-size:20px;margin:0}.data-dialog-body{padding:16px;overflow:auto}.data-choice{border:1px solid var(--line,#ccd);border-radius:10px;padding:12px;margin-bottom:14px}
 .data-choice h3{margin:0 0 10px;font-size:16px}.data-choice pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;padding:10px;background:#8881;max-height:260px;overflow:auto}
 .data-history-row{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line,#ddd)}
-.data-history-row span{overflow-wrap:anywhere;min-width:0}.data-history-row button{flex-shrink:0}.data-import-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.data-history-row span{overflow-wrap:anywhere;min-width:0}.backup-row-info{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;color:var(--ink-soft);font-size:.88em}
+.backup-history-title,.backup-source-preview{overflow-wrap:anywhere}.backup-history-title{margin-top:0}.backup-source-preview summary{cursor:pointer}.backup-source-preview p{max-height:8em;overflow:auto;margin:.5em 0}
+.data-history-row button{flex-shrink:0}.data-import-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
 /* 每位客戶的三欄交換：只加入小把手，保留原標題及工具列。 */
 .need-order-title{display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:100%}
 .fneed-head .need-order-title{flex:1;min-width:76px}
@@ -1666,7 +1674,7 @@
       </div>
 
       <div class="set-card">
-        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。請將同一帳號使用的裝置更新至 2026.09.05J 或更新版本。</p>
+        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。使用自訂選項或完整還原前，請將同一帳號的手機和電腦都更新至 2026.11.14E 或更新版本。</p>
         <p class="set-card-desc">變更會自動儲存在此瀏覽器。建議定期備份，或匯入先前的備份檔。</p>
         <div class="set-actions">
           <button class="s-btn" id="historyBtn">依日期還原備份</button>
@@ -1712,9 +1720,8 @@
         <button class="x" id="modalClose" aria-label="關閉">✕</button>
       </div>
       <div class="modal-body">
-        <div class="row3">
+        <div class="row2">
           <label>建檔日<input id="f_date" inputmode="numeric" readonly></label>
-          <label>詢問案名<input id="f_ask"></label>
           <label>需求類型
           <div class="cselect" id="catSel">
             <button type="button" class="cselect-btn" id="catSelBtn" aria-haspopup="listbox" aria-expanded="false">
@@ -1724,6 +1731,12 @@
             <div class="cselect-menu" id="catSelMenu" role="listbox"></div>
           </div>
         </label>
+        </div>
+        <div class="row2">
+          <label>來源
+            <div class="cselect opt-sel" id="sourceSel"><button type="button" class="cselect-btn" id="sourceBtn" aria-haspopup="listbox" aria-label="選擇客戶來源"><span class="cselect-txt" id="sourceTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="sourceMenu" role="listbox"></div></div>
+          </label>
+          <label>詢問案名<input id="f_ask"></label>
         </div>
         <div class="row3">
           <label>客戶稱呼<input id="f_cust"></label>
@@ -1893,9 +1906,20 @@
   const own = (x,k) => Object.prototype.hasOwnProperty.call(x,k);
   const badKeys = new Set(["__proto__","prototype","constructor"]);
   const idOK = x => typeof x === "string" && /^[A-Za-z0-9_-]{1,160}$/.test(x) && !badKeys.has(x);
-  function fail(message) { throw new Error(message || "資料格式不正確"); }
+  function fail(message) {
+    if(message==="同步設定格式不正確")unsupported("此同步設定");
+    throw new Error(message||"資料格式不正確");
+  }
+  function unsupported(detail){
+    throw Object.assign(new Error("此版本無法讀取" + detail + "，請更新客戶總覽"), {code:"unsupported_format"});
+  }
+  const settingNames = new Set(["density","sort","colw","theme","opts","statusColors","fltorder","expfocus","optorder","colFilter","fltB","_updatedAt"]);
+  const optionFields = new Set(["area","rooms","ptype","pnum","status","source"]);
+  function supportedKeys(value,known,label){
+    if(object(value)&&Object.keys(value).some(key=>!known.includes(key)))unsupported(label+"中的額外欄位");
+  }
   function safeTree(x, depth=0) {
-    if (depth > 24) fail("資料層級過深");
+    if (depth > 24) unsupported("超過可讀層級的資料");
     if (typeof x === "number" && !Number.isFinite(x)) fail();
     if (x && typeof x === "object") for (const k of Object.keys(x)) {
       if (badKeys.has(k)) fail("資料含有不允許的欄位");
@@ -1915,8 +1939,8 @@
   function hash(s) { let a=2166136261,b=5381; for(let i=0;i<s.length;i++){a=Math.imul(a^s.charCodeAt(i),16777619); b=Math.imul(b,33)^s.charCodeAt(i);} return (a>>>0).toString(36)+(b>>>0).toString(36); }
   const textFields = new Set(["cust","date","budget","parking","tel","line","ask","need","need2","need3","t1","t2","t3","url591","urlLeju","urlI"]);
   const multiFields = new Set(["cat","area","status","rooms","pType","pNum"]);
-  function str(x,max=300000){ if(typeof x!=="string" || x.length>max) fail("文字欄位格式不正確"); }
-  function strings(x){ if(!Array.isArray(x)||x.length>500) fail("選項必須是文字清單"); x.forEach(v=>str(v,2000)); }
+  function str(x,max=300000){ if(typeof x!=="string") fail("文字欄位格式不正確"); if(x.length>max)unsupported("超過長度上限的文字"); }
+  function strings(x){ if(!Array.isArray(x)) fail("選項必須是文字清單"); if(x.length>500)unsupported("超過上限的選項清單"); x.forEach(v=>str(v,2000)); }
   const validNeedOrder = value => Array.isArray(value) && value.length===3 && [1,2,3].every(n=>value.includes(n));
   function needOrder(value){return validNeedOrder(value)?value.slice():[1,2,3];}
   function record(r, allowMissingId=false) {
@@ -1925,59 +1949,103 @@
     for(const k of Object.keys(r)){
       const v=r[k];
       if(textFields.has(k)) str(v);
+      else if(k==="source") str(v,2000);
       else if(multiFields.has(k)){ if(Array.isArray(v)) strings(v); else if(k==="pNum" && typeof v==="number" && Number.isFinite(v)) {} else str(v,2000); }
       else if(["updatedAt","createdAt","bMin","bMax"].includes(k)){ if(v!==null && (typeof v!=="number"||!Number.isFinite(v)||v<0)) fail("數值欄位不正確"); }
       else if(k==="needFontSizes"){ if(!object(v)) fail("字級格式不正確"); for(const f of Object.keys(v)) if(!["need","need2","need3"].includes(f)||typeof v[f]!=="number"||v[f]<70||v[f]>180) fail("字級須介於 70% 與 180%"); }
       else if(k==="needOrder"){ if(!validNeedOrder(v)) fail("需求欄位順序必須包含 1、2、3，且不可重複"); }
-      else if(k!=="id") fail("不支援的客戶欄位：" + k);
+      else if(k!=="id") unsupported("客戶欄位「" + k + "」");
     }
   }
   function categories(cs) {
-    if(!Array.isArray(cs)||cs.length>200) fail("類別格式不正確");
+    if(!Array.isArray(cs)) fail("類別格式不正確"); if(cs.length>200)unsupported("超過上限的類別清單");
     const keys=new Set();
     cs.forEach(c=>{if(!object(c)) fail("類別格式不正確"); str(c.key,100); str(c.label,100); if(!c.key||keys.has(c.key)) fail("類別名稱重複或空白"); keys.add(c.key); if(typeof c.color!=="string"||!/^#[0-9a-f]{6}$/i.test(c.color)) fail("類別顏色不正確");});
   }
+  // One distinct source per synced record, plus custom/default choices or a blank filter.
+  // Other fields and the source custom/hidden lists keep their existing 500-entry limit.
+  function optionSettingList(setting, field, values){
+    if(field!=="source")return strings(values);
+    const limit=setting==="optorder"?50503:setting==="colFilter"?50001:50000;
+    if(!Array.isArray(values))fail("來源篩選或排序格式不正確"); if(values.length>limit)unsupported("超過上限的來源篩選或排序");
+    values.forEach(value=>str(value,2000));
+  }
   function arrayMap(x){ if(!object(x)) fail("選項設定格式不正確"); Object.values(x).forEach(strings); }
-  function settings(s) {
+  function optionList(values,merged){
+    if(!merged)return strings(values);
+    if(!Array.isArray(values)||values.length>50000)fail("合併後的自訂選項清單超過上限或格式不正確");
+    for(const value of values)str(value,2000);
+  }
+  function settings(s,mergedOptions=false) {
     if(!object(s)) fail("設定格式不正確");
     for(const [k,v] of Object.entries(s)) {
+      if(!settingNames.has(k))unsupported("設定「"+k+"」");
       if(k==="density"&&!["compact","normal"].includes(v)) fail("密度設定不正確");
       if(k==="theme"&&!["light","dark"].includes(v)) fail("主題設定不正確");
       if(k==="sort") str(v,100);
       if(k==="expfocus"&&typeof v!=="boolean") fail();
       if(k==="colw"){if(!object(v))fail();Object.values(v).forEach(n=>{if(typeof n!=="number"||!Number.isFinite(n)||n<20||n>4000)fail("欄寬設定不正確");});}
-      if(["fltorder","optorder"].includes(k)) arrayMap(v);
-      if(k==="colFilter"){if(!object(v))fail();Object.values(v).forEach(x=>{if(x!==null)strings(x);});}
+      if(["fltorder","optorder"].includes(k)){if(!object(v))fail("選項設定格式不正確");for(const [field,values] of Object.entries(v))optionSettingList(k,field,values);}
+      if(k==="colFilter"){if(!object(v))fail();for(const [field,values] of Object.entries(v))if(values!==null)optionSettingList(k,field,values);}
       if(k==="statusColors"){
-        if(!object(v)||Object.keys(v).length>500)fail("狀態底色設定不正確");
+        if(!object(v))fail("狀態底色設定不正確"); if(Object.keys(v).length>500)unsupported("超過上限的狀態底色");
         for(const [name,color] of Object.entries(v)){
           if(!name.startsWith("s:")||name.length<3||name.length>2002||!object(color)||Object.keys(color).some(k=>!["hex","alpha"].includes(k))||typeof color.hex!=="string"||!/^#[0-9a-f]{6}$/i.test(color.hex)||!Number.isInteger(color.alpha)||color.alpha<0||color.alpha>100)fail("狀態底色設定不正確");
         }
       }
-      if(k==="opts"){if(!object(v))fail(); for(const [f,values] of Object.entries(v)){if(f==="hidden")arrayMap(values);else strings(values);}}
+      if(k==="opts"&&object(v)){
+        for(const field of Object.keys(v))if(field!=="hidden"&&!optionFields.has(field))unsupported("自訂選項「"+field+"」");
+        if(object(v.hidden))for(const field of Object.keys(v.hidden))if(!optionFields.has(field))unsupported("隱藏選項「"+field+"」");
+      }
+      if(k==="opts"){if(!object(v))fail(); for(const [f,values] of Object.entries(v)){if(f==="hidden"){if(!object(values))fail("選項設定格式不正確");for(const list of Object.values(values))optionList(list,mergedOptions);}else optionList(values,mergedOptions);}}
       if(k==="fltB"){if(!object(v))fail(); for(const f of ["lo","hi"])if(v[f]!=null&&(typeof v[f]!=="number"||!Number.isFinite(v[f])||v[f]<0))fail("預算篩選不正確");}
     }
   }
-  function normalizeBackup(input, makeId) {
+  function normalizeBackup(input, makeId, legacyCloud=false) {
     safeTree(input);
     const p=Array.isArray(input)?{items:input}:input;
     if(!object(p)||!Array.isArray(p.items)) fail("備份缺少客戶清單");
     if(own(p,"app")&&p.app!=="customer") fail("wrong_app");
+    if(p.version!=null&&(!Number.isSafeInteger(Number(p.version))||Number(p.version)>6))unsupported("此備份版本");
+    if(p.syncState || Number(p.version)===6){
+      const known=["version","app","exportedAt","deviceId","items","deleted","cats","settings","syncState","theme","opts","colw"];
+      supportedKeys(p,known,"備份");
+    }
     if(p.items.length>5000) fail("too_many");
     if(!own(p,"app")&&p.items.length && !p.items.every(r=>object(r)&&own(r,"cust"))) fail("wrong_app");
     const out={app:"customer",version:6,items:clone(p.items),deleted:{}}, ids=new Set();
     out.items.forEach((r,i)=>{ record(r,true); if(r.id==null) r.id=makeId?makeId():("import-"+i+"-"+hash(stable(r))); if(ids.has(r.id))fail("客戶識別碼重複"); ids.add(r.id); });
     if(own(p,"cats")){categories(p.cats);out.cats=clone(p.cats);}
-    if(own(p,"deleted")){if(!object(p.deleted))fail("刪除記錄不正確");for(const [id,t] of Object.entries(p.deleted)){if(!idOK(id)||typeof t!=="number"||!Number.isFinite(t)||t<0)fail("刪除記錄不正確");out.deleted[id]=t;}}
+    if(own(p,"deleted")){
+      if(!object(p.deleted))fail("刪除記錄不正確");
+      for(const [id,t] of Object.entries(p.deleted)){
+        if(!idOK(id)||typeof t!=="number"||!Number.isFinite(t)||t<0)fail("刪除記錄不正確");
+        out.deleted[id]=t;
+      }
+    }
+    if(!p.syncState && !legacyCloud && out.items.some(row=>own(out.deleted,row.id) && out.deleted[row.id]>=(row.updatedAt||0))){
+      fail("備份中的同一位客戶同時列為現有及已刪除，請確認備份檔");
+    }
     const s=p.settings || Object.fromEntries(["colw","theme","opts"].filter(k=>own(p,k)).map(k=>[k,p[k]]));
-    settings(s);out.settings=clone(s);
+    const mergedOptions=Object.keys(p.syncState?.prefs||{}).some(key=>key.startsWith(optionPrefix));
+    settings(s,mergedOptions);out.settings=clone(s);
     
-if(p.syncState){
-  validateState(p.syncState);
-  const projected=project(p.syncState), sortRows=xs=>xs.map(r=>({id:r.id,...flat(r)})).sort((a,b)=>a.id.localeCompare(b.id));
-  if(!equal(sortRows(out.items),sortRows(projected.items)) || (out.cats&&!equal(out.cats,projected.cats)) || Object.entries(out.settings).some(([k,v])=>!equal(v,projected.settings[k])))fail("備份內容與同步記錄不一致");
-  out.syncState=clone(p.syncState);
-}
+    if(p.syncState){
+      validateState(p.syncState);
+      const projected=project(p.syncState);
+      const sortRows=xs=>xs.map(r=>({id:r.id,...flat(r)})).sort((a,b)=>a.id.localeCompare(b.id));
+      if(!equal(sortRows(out.items),sortRows(projected.items)) || (out.cats&&!equal(out.cats,projected.cats)) || Object.entries(out.settings).some(([k,v])=>!equal(v,projected.settings[k])))fail("備份內容與同步記錄不一致");
+      if(own(p,"deleted") && !equal(out.deleted,projected.deleted))fail("備份的客戶清單、刪除記錄與同步記錄不一致");
+      // Some older exports omit these fields. Use the validated projection when absent.
+      if(!own(p,"deleted"))out.deleted=projected.deleted;
+      const updatedById=new Map(projected.items.map(r=>[r.id,r.updatedAt]));
+      for(const row of out.items){
+        const updated=updatedById.get(row.id);
+        if(row.updatedAt!=null && row.updatedAt!==updated)fail("備份的客戶更新時間與同步記錄不一致");
+        row.updatedAt=updated;
+      }
+      out.syncState=clone(p.syncState);
+    }
     return out;
   }
   function empty(epoch) {return {version:6,app:"customer-state",epoch:clone(epoch||{generation:0,id:"initial"}),records:{},prefs:{}};}
@@ -2006,7 +2074,7 @@ if(p.syncState){
     for(const [k,val] of Object.entries(v.settings||{}))if(k!=="_updatedAt")s.prefs["setting:"+k]=baseline(val,"setting:"+k,v.settingsAt);
     return s;
   }
-  function fromLegacy(p){if(!p||!p.data||!Array.isArray(p.data.properties))fail("舊版雲端資料格式不正確");const b=normalizeBackup({app:"customer",items:p.data.properties,cats:p.cats?.list||[],settings:p.settings||{},deleted:p.deleted||{}});return fromView({...b,catsAt:p.cats?._updatedAt,settingsAt:p.settings?._updatedAt});}
+  function fromLegacy(p){if(!p||!p.data||!Array.isArray(p.data.properties))fail("舊版雲端資料格式不正確");const b=normalizeBackup({app:"customer",items:p.data.properties,cats:p.cats?.list||[],settings:p.settings||{},deleted:p.deleted||{}},null,true);return fromView({...b,catsAt:p.cats?._updatedAt,settingsAt:p.settings?._updatedAt});}
   function epochCmp(a,b){return a.generation-b.generation || a.id.localeCompare(b.id,"en",{numeric:true});}
   // Timestamp-qualified legacy dots distinguish repeated values from separate old saves.
   function normalizeLegacy(state){
@@ -2031,26 +2099,227 @@ if(p.syncState){
     for(const [k,c] of Object.entries(s.prefs))convert(c,k);
     return s;
   }
-  function latestChoice(c,key){
-    const cmp=(a,b)=>a.at-b.at||(key==="$alive"?Number(a.value===false)-Number(b.value===false):0)||(stable(a.value)<stable(b.value)?-1:stable(a.value)>stable(b.value)?1:0)||(a.actor<b.actor?-1:a.actor>b.actor?1:0)||a.n-b.n;
-    return [...c.choices].sort(cmp).pop();
+  // A copied its entire options menu on each change. B reused that snapshot's
+  // actor and counter when deriving each source. Real B/C per-source edits
+  // have their own dots; their actor never wrote the legacy options register.
+  function sourceEditChoices(cell, key, legacyOptions){
+    if(cell.choices.length < 2 || !legacyOptions || !key.startsWith('option:["source",'))return cell.choices;
+    const explicit=cell.choices.filter(v=>(legacyOptions.clock[v.actor]||0)<v.n);
+    // Concurrent snapshots cannot establish that the old client edited this
+    // particular source. A directly observed per-source edit is authoritative.
+    return explicit.length ? explicit : cell.choices;
+  }
+  // A per-source decision remains readable by B/C. It carries the selected
+  // edit's counter and original time, with an actor distinct from either
+  // loser's or winner's old dot. Replays of those dots cannot erase it.
+  const sourceDecisionPrefix = "source-decision-";
+  const decisionActor = actor => sourceDecisionPrefix + (actor.length<=144 ? actor : hash(actor));
+  function mergeSourceCell(left,right,legacyOptions){
+    const combined=mergeCell(left,right);
+    if(!left||!right||!legacyOptions)return combined;
+    const inherited=v=>(legacyOptions.clock[v.actor]||0)>=v.n;
+    const isDecision=v=>v.actor.startsWith(sourceDecisionPrefix);
+    // An old device can make a real, causally later edit without knowing
+    // the decision alias. Honor that observation when it returns.
+    // The register clock also includes independently merged branches. A write
+    // made after seeing the original decision has a strictly later timestamp
+    // (capture advances past every observed edit). An older or tied choice
+    // cannot discard the decision just because its register now covers it.
+    const supersedes=(other,v)=>other.choices.some(w=>
+      !isDecision(w) && !inherited(w) && w.at>v.at && Object.keys(other.clock).some(actor=>
+        decisionActor(actor)===v.actor && other.clock[actor]>=v.n &&
+        !(w.actor===actor && w.n===v.n)));
+    combined.choices=combined.choices.filter(v=>!isDecision(v) ||
+      !(supersedes(left,v)||supersedes(right,v)));
+    // B and C can carry the same clock but opposite winners. The generic
+    // register join then discards both. Recover only maximal dots, keeping
+    // older counters out of the result.
+    const fork=combined.choices.length===0;
+    const observed=left.choices.concat(right.choices).filter(v=>
+      combined.clock[v.actor]===v.n && (!isDecision(v)||!(supersedes(left,v)||supersedes(right,v))));
+    const oldWinner=combined.choices.length>0 && combined.choices.every(inherited) &&
+      observed.some(v=>!inherited(v) && combined.choices.some(w=>w.value!==v.value));
+    // A previously saved D result may have suppressed the newer decision.
+    // If its original write is still on another device, its recorded alias
+    // identifies it even when the older result already covers the raw dot.
+    const lostDecision=combined.choices.length>0 && observed.some(v=>
+      !inherited(v) && !isDecision(v) && combined.clock[decisionActor(v.actor)]===v.n &&
+      combined.choices.every(w=>!inherited(w) && w.value!==v.value && compareChoices(v,w)>0));
+    const original=fork||oldWinner||lostDecision ? observed : combined.choices;
+    const inheritedChoices=original.filter(inherited), explicit=original.filter(v=>!inherited(v));
+    if(!explicit.length)return combined;
+    // A C checkpoint can already have discarded the B winner. If the same
+    // inherited event returns separately, upgrade the old decision too,
+    // but leave ordinary causally superseded source edits alone.
+    const oldResolution=(selected,old)=>selected.choices.some(v=>!inherited(v) &&
+      old.choices.some(w=>inherited(w) && !w.actor.startsWith("legacy-") &&
+        selected.clock[w.actor]===w.n && w.value!==v.value && (old.clock[v.actor]||0)<v.n));
+    if(!inheritedChoices.length&&!fork&&!lostDecision&&!oldResolution(left,right)&&!oldResolution(right,left))return combined;
+    // Preserve each explicit contender's order/time across unrelated joins
+    // and use the same alias on every device that observes this decision.
+    const result=new Map();
+    for(const choice of explicit){
+      const actor=isDecision(choice)?choice.actor:decisionActor(choice.actor);
+      if((combined.clock[actor]||0)>choice.n)continue;
+      combined.clock[actor]=choice.n;
+      result.set(actor,{...choice,actor});
+    }
+    combined.choices=[...result.values()].sort((a,b)=>a.actor<b.actor?-1:a.actor>b.actor?1:0);
+    return combined;
+  }
+  // A repaired source may already match the aggregate found on Drive even
+  // though separately stored B/C results are still incompatible. Complete
+  // the existing verified publish/backup/compaction path in that case.
+  function needsSourceCheckpoint(loaded,state){
+    if(loaded.length<2)return false;
+    for(const [key,cell] of Object.entries(state.prefs)){
+      if(!key.startsWith('option:["source",')||!Object.keys(cell.clock).some(a=>a.startsWith(sourceDecisionPrefix)))continue;
+      if(loaded.some(({state:old})=>epochCmp(old.epoch,state.epoch)===0 && old.prefs[key] &&
+        !equal(cell,old.prefs[key])))return true;
+    }
+    return false;
+  }
+  function compareChoices(a,b,key){
+    return a.at-b.at||(key==="$alive"?Number(a.value===false)-Number(b.value===false):0)||(stable(a.value)<stable(b.value)?-1:stable(a.value)>stable(b.value)?1:0)||(a.actor<b.actor?-1:a.actor>b.actor?1:0)||a.n-b.n;
+  }
+  function latestChoice(c,key,legacyOptions){
+    return [...sourceEditChoices(c,key,legacyOptions)].sort((a,b)=>compareChoices(a,b,key)).pop();
   }
   function autoLatest(state){
     const s=normalizeLegacy(state);
-    for(const fs of [...Object.values(s.records),s.prefs])for(const [k,c] of Object.entries(fs))c.choices=[latestChoice(c,k)];
+    for(const fs of [...Object.values(s.records),s.prefs])for(const [k,c] of Object.entries(fs))c.choices=[latestChoice(c,k,s.prefs["setting:opts"])];
     return s;
   }
+  // Each edit updates one menu entry, so unrelated offline edits keep their own clocks.
+  // The original setting:opts cell remains the baseline for existing backups and clients.
+  const optionGroups = ["area","rooms","ptype","pnum","status","source"];
+  const optionPrefix = "option:";
+  const optionKey = (field,name) => optionPrefix + JSON.stringify([field,name]);
+  function readOptionKey(key){
+    let pair;
+    try { pair=JSON.parse(key.slice(optionPrefix.length)); } catch(e) { fail("自訂選項識別碼不正確"); }
+    if(!Array.isArray(pair)||pair.length!==2||!optionGroups.includes(pair[0])||
+       typeof pair[1]!=="string"||pair[1].length>2000||optionKey(pair[0],pair[1])!==key)fail("自訂選項識別碼不正確");
+    return pair;
+  }
+  function optionMembership(opts,field){
+    const values=new Map();
+    for(const name of opts?.[field]||[])values.set(name,1);
+    for(const name of opts?.hidden?.[field]||[])values.set(name,(values.get(name)||0)|2);
+    return values;
+  }
+  function captureOptions(s,before,after,actor,at){
+    let changed=false;
+    for(const field of optionGroups){
+      for(const [prior,next] of [[before?.[field],after?.[field]],[before?.hidden?.[field],after?.hidden?.[field]]]){
+        if((next?.length||0)>500&&(next?.length||0)>(prior?.length||0))fail("單一裝置的自訂或隱藏選項已達 500 個");
+      }
+      const was=optionMembership(before,field), now=optionMembership(after,field);
+      for(const name of new Set([...was.keys(),...now.keys()])){
+        const next=now.get(name)||0;
+        if(next===(was.get(name)||0))continue;
+        const key=optionKey(field,name);
+        s.prefs[key]=write(s.prefs[key],next,actor,at);
+        changed=true;
+      }
+    }
+    return changed;
+  }
+  function optionShape(opts){
+    const shape={};
+    for(const [field,list] of Object.entries(opts||{})){
+      if(field==="hidden")shape.hidden=Object.fromEntries(Object.keys(list).map(key=>[key,[]]));
+      else shape[field]=[];
+    }
+    return shape;
+  }
+  // A source-aware client's snapshot distinguishes a real removal from a release
+  // which simply never knew the source field. Migrate just source membership;
+  // choose the same actor and clock deterministically on every upgraded device.
+  function legacySourceHistory(s){
+    const known=new Map(), opts=s.prefs["setting:opts"];
+    const remember=(name,c)=>{
+      if(!known.has(name))known.set(name,[]);
+      known.get(name).push(c);
+    };
+    for(const c of opts?.choices||[])for(const name of optionMembership(c.value,"source").keys())remember(name,c);
+    for(const [key,cell] of Object.entries(s.prefs)){
+      if(!key.startsWith('option:["source",'))continue;
+      const [,name]=readOptionKey(key);
+      for(const c of cell.choices)if(c.value)remember(name,c);
+    }
+    return known;
+  }
+  function protectLegacySources(s,otherHistory){
+    const opts=s.prefs["setting:opts"];
+    if(!opts)return;
+    const existing=new Set(Object.keys(s.prefs));
+    for(const choice of opts.choices){
+      if(!own(choice.value,"source")&&!own(choice.value.hidden||{},"source"))continue;
+      const membership=optionMembership(choice.value,"source");
+      // Only a source-aware release can intentionally remove a known value.
+      // A snapshot that never saw an addition cannot create its deletion.
+      for(const [name,history] of otherHistory){
+        if(!membership.has(name)&&history.some(c=>(opts.clock[c.actor]||0)>=c.n))membership.set(name,0);
+      }
+      for(const [name,bits] of membership){
+        const key=optionKey("source",name);
+        if(existing.has(key))continue;
+        const seed={clock:{...opts.clock},choices:[{...choice,value:bits}]};
+        // Concurrent legacy alternatives share a whole-cell clock. Keep only
+        // this alternative's dot so merging their derived cells retains both.
+        for(const alt of opts.choices)if(alt.actor!==choice.actor)delete seed.clock[alt.actor];
+        s.prefs[key]=mergeCell(s.prefs[key],seed);
+      }
+    }
+  }
+  function projectOptions(prefs,base){
+    const byField=new Map();
+    for(const [key,cell] of Object.entries(prefs)){
+      if(!key.startsWith(optionPrefix))continue;
+      const [field,name]=readOptionKey(key);
+      if(!byField.has(field))byField.set(field,[]);
+      const choice=latestChoice(cell,key);
+      byField.get(field).push({name,choice});
+    }
+    if(!byField.size)return base===undefined?undefined:clone(base);
+    const opts=clone(base||{});
+    opts.hidden||={};
+    for(const [field,entries] of byField){
+      // Retain the original order and append concurrently added values consistently.
+      entries.sort((a,b)=>a.choice.at-b.choice.at || (a.choice.actor<b.choice.actor?-1:a.choice.actor>b.choice.actor?1:0) ||
+        a.choice.n-b.choice.n || (a.name<b.name?-1:a.name>b.name?1:0));
+      for(const [group,bit] of [[opts,1],[opts.hidden,2]]){
+        const flags=new Map(entries.map(({name,choice})=>[name,choice.value]));
+        const list=(group[field]||[]).filter(name=>!flags.has(name)||(flags.get(name)&bit));
+        const present=new Set(list);
+        const additions=entries.filter(({name,choice})=>(choice.value&bit)&&!present.has(name));
+        for(const {name} of additions)list.push(name);
+        if(list.length||own(group,field))group[field]=list;
+      }
+    }
+    return opts;
+  }
+
   function merge(a,b) {
     a=normalizeLegacy(a);b=normalizeLegacy(b);
     if(!a)return clone(b);if(!b)return clone(a);
     const cmp=epochCmp(a.epoch,b.epoch);if(cmp)return clone(cmp>0?a:b);
+    const seenA=legacySourceHistory(a), seenB=legacySourceHistory(b);
+    protectLegacySources(a,seenB);protectLegacySources(b,seenA);
     const out=empty(a.epoch);
     for(const id of new Set([...Object.keys(a.records),...Object.keys(b.records)])){
       const x=a.records[id]||{},y=b.records[id]||{},r={};
       for(const k of new Set([...Object.keys(x),...Object.keys(y)]))r[k]=mergeCell(x[k],y[k]);
       out.records[id]=r;
     }
-    for(const k of new Set([...Object.keys(a.prefs),...Object.keys(b.prefs)]))out.prefs[k]=mergeCell(a.prefs[k],b.prefs[k]);
+    const prefs=new Set([...Object.keys(a.prefs),...Object.keys(b.prefs)]);
+    const optsKey="setting:opts";
+    if(prefs.delete(optsKey))out.prefs[optsKey]=mergeCell(a.prefs[optsKey],b.prefs[optsKey]);
+    for(const key of prefs){
+      const left=a.prefs[key],right=b.prefs[key];
+      out.prefs[key]=key.startsWith('option:["source",') ? mergeSourceCell(left,right,out.prefs[optsKey]) : mergeCell(left,right);
+    }
     return out;
   }
   function project(s) {
@@ -2065,6 +2334,7 @@ if(p.syncState){
     }
     v.items.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)||(a.id<b.id?-1:a.id>b.id?1:0));
     for(const [k,c] of Object.entries(s.prefs))if(k.startsWith("setting:"))v.settings[k.slice(8)]=chosen(c);
+    const opts=projectOptions(s.prefs,v.settings.opts);if(opts!==undefined)v.settings.opts=opts;
     return v;
   }
   function capture(state,view,actor,at=Date.now(),previousPrefs,previousView) {
@@ -2082,7 +2352,11 @@ if(p.syncState){
     const previous=previousPrefs?{cats:previousPrefs.cats,...Object.fromEntries(Object.entries(previousPrefs.settings||{}).map(([k,v])=>["setting:"+k,v]))}:null;
     for(const [k,v] of Object.entries(prefs)){
       if(v===undefined || (previous&&preferenceEqual(k,previous[k],v)))continue;
-      if(!preferenceEqual(k,chosen(s.prefs[k]),v))s.prefs[k]=write(s.prefs[k],v,actor,at);
+      if(k==="setting:opts"){
+        const before=previous?previous[k]:prev.settings.opts;
+        protectLegacySources(s,new Map());
+        if(captureOptions(s,before,v,actor,at)&&!s.prefs[k])s.prefs[k]=baseline(before||optionShape(v),k,0);
+      }else if(!preferenceEqual(k,chosen(s.prefs[k]),v))s.prefs[k]=write(s.prefs[k],v,actor,at);
     }
     return s;
   }
@@ -2094,7 +2368,26 @@ if(p.syncState){
     return out;
   }
   function resolve(s,c,value,actor){const out=clone(s),fs=c.scope==="record"?out.records[c.id]:out.prefs;fs[c.field]=write(fs[c.field],value,actor,Date.now());return out;}
-  function restore(current,view,uuid){const s=fromView(view);s.epoch={generation:current.epoch.generation+1,id:uuid};return s;}
+  function restore(current,view,uuid){
+    const s=fromView(view);
+    if(view.syncState&&Object.keys(view.syncState.prefs).some(key=>key.startsWith(optionPrefix))){
+      // Preserve the per-option history and its original baseline inside the new epoch.
+      delete s.prefs["setting:opts"];
+      for(const [key,c] of Object.entries(view.syncState.prefs)){
+        if(key!=="setting:opts"&&!key.startsWith(optionPrefix))continue;
+        const restored=clone(c);
+        // An explicit full replacement restores the displayed backup values.
+        // Its new epoch keeps earlier devices' pending operations separate.
+        if(restored.choices.length>1){
+          const projected=key==="setting:opts"?chosen(restored):undefined;
+          restored.choices=[key==="setting:opts"
+            ? restored.choices.find(v=>equal(v.value,projected))
+            : latestChoice(restored,key)];
+        }
+        s.prefs[key]=restored;
+      }
+    }
+    s.epoch={generation:current.epoch.generation+1,id:uuid};return s;}
   function importMerge(current,view,uuid) {
     const base=fromView({items:view.items,cats:undefined,settings:{},deleted:{}});
     // An older backup remains older when merged; explicit full restore uses a new epoch.
@@ -2120,14 +2413,24 @@ if(p.syncState){
   }
   function validateState(s) {
     safeTree(s);
+    if(object(s)&&s.app==="customer-state"){
+      if(s.version!==6)unsupported("此同步檔案版本");
+      supportedKeys(s,["version","app","epoch","records","prefs"],"同步資料");
+      supportedKeys(s.epoch,["generation","id"],"同步還原紀錄");
+    }
     if(!object(s)||s.app!=="customer-state"||s.version!==6||!object(s.records)||!object(s.prefs)||!object(s.epoch)||!Number.isSafeInteger(s.epoch.generation)||s.epoch.generation<0||!idOK(s.epoch.id))fail("同步檔案格式不正確");
-    if(Object.keys(s.records).length>50000)fail("同步資料超過上限");
-    for(const [id,fs] of Object.entries(s.records)){if(!idOK(id)||!object(fs)||!fs["$alive"])fail("同步客戶識別碼不正確");for(const [k,c] of Object.entries(fs)){validateCell(c);for(const v of c.choices){if(k==="$alive"){if(typeof v.value!=="boolean")fail();}else if(v.value!==null){const r={id};if(k.startsWith("font:"))r.needFontSizes={[k.slice(5)]:v.value};else r[k]=v.value;record(r);}}}}
-    for(const [k,c] of Object.entries(s.prefs)){validateCell(c);for(const v of c.choices){if(k==="cats")categories(v.value);else if(k.startsWith("setting:"))settings({[k.slice(8)]:v.value});else fail("同步設定格式不正確");}}
+    if(Object.keys(s.records).length>50000)unsupported("超過上限的同步資料");
+    for(const [id,fs] of Object.entries(s.records)){if(!idOK(id)||!object(fs)||!fs["$alive"])fail("同步客戶識別碼不正確");for(const [k,c] of Object.entries(fs)){
+      if(k!=="$alive"&&!textFields.has(k)&&!multiFields.has(k)&&!["source","createdAt","updatedAt","bMin","bMax","needFontSizes","needOrder","font:need","font:need2","font:need3"].includes(k))unsupported("同步欄位「"+k+"」");
+      validateCell(c);for(const v of c.choices){if(k==="$alive"){if(typeof v.value!=="boolean")fail();}else if(v.value!==null){const r={id};if(k.startsWith("font:"))r.needFontSizes={[k.slice(5)]:v.value};else r[k]=v.value;record(r);}}}}
+    for(const [k,c] of Object.entries(s.prefs)){validateCell(c);for(const v of c.choices){if(k==="cats")categories(v.value);else if(k.startsWith(optionPrefix)){readOptionKey(k);if(![0,1,2,3].includes(v.value))fail("自訂選項狀態不正確");}else if(k.startsWith("setting:"))settings({[k.slice(8)]:v.value});else fail("同步設定格式不正確");}}
+    if(Object.keys(s.prefs).some(key=>key.startsWith(optionPrefix))){
+      settings({opts:projectOptions(s.prefs,chosen(s.prefs["setting:opts"]))},true);
+    }
     return s;
   }
   const newId=()=>globalThis.crypto?.randomUUID?.() || ("id-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
-  return {newId,clone,stable,equal,preferenceEqual,needOrder,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,autoLatest,conflicts,resolve,restore,importMerge,validateState,epochCmp};
+  return {newId,clone,stable,equal,needsSourceCheckpoint,preferenceEqual,needOrder,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,autoLatest,conflicts,resolve,restore,importMerge,validateState,epochCmp};
 });
 
 </script>
@@ -2172,10 +2475,15 @@ function create(fetcher,core,uuid){
     if(!core.equal(verified,obj))throw new Error("雲端回讀驗證失敗");
     return {id:data.id,name};
   }
+  async function checkpointFiles(){
+    const files=(await list("name contains 'customer-state-v'")).filter(f=>/^customer-state-v\d+-.*\.json$/.test(f.name));
+    if(files.some(f=>!f.name.startsWith(PREFIX)))throw new Error("雲端含有此版本無法讀取的同步檔，請先更新客戶總覽");
+    return files;
+  }
   async function pull(ignoreIds=[]){
     for(let attempt=0;attempt<3;attempt++){
       try{
-        const files=(await list("name contains '"+PREFIX+"'")).filter(f=>f.name.startsWith(PREFIX)&&f.name.endsWith(".json")&&!ignoreIds.includes(f.id));
+        const files=(await checkpointFiles()).filter(f=>!ignoreIds.includes(f.id));
         let state=null;const loaded=[];
         for(const f of files){
           const s=memo.get(f.id)||core.validateState(await read(f.id));
@@ -2192,19 +2500,36 @@ function create(fetcher,core,uuid){
     }
   }
 
+  // Only unreadable JSON is eligible for quarantine. A valid JSON file outside
+  // this client's schema or limits may still be intact on a newer device.
+  async function inspectRestoreFile(f){
+    const response=await checked(API+"/"+encodeURIComponent(f.id)+"?alt=media");
+    const raw=await response.text();
+    let parsed;
+    try{parsed=JSON.parse(raw);}
+    catch(error){if(!(error instanceof SyntaxError))throw error;return {damaged:{id:f.id,name:f.name,raw}};}
+    try{return {state:f.name==="customer-sync-main.json"?core.fromLegacy(parsed):core.validateState(parsed)};}
+    catch(error){throw new Error("保留雲端原檔：此版本無法確認其格式，請先更新客戶總覽（"+error.message+"）");}
+  }
   async function prepareRestore(){
-    const files=(await list("name contains '"+PREFIX+"'")).filter(f=>f.name.startsWith(PREFIX)&&f.name.endsWith(".json"));
+    const files=await checkpointFiles();
     const candidates=files.length?files:await list("name='customer-sync-main.json'");
     let state=null;const damaged=[];
-    for(const f of candidates){
-      // Network failures stop preparation. Only successfully read, invalid contents may be quarantined.
-      const res=await checked(API+"/"+encodeURIComponent(f.id)+"?alt=media"),raw=await res.text();
-      try{
-        const obj=JSON.parse(raw),s=files.length?core.validateState(obj):core.fromLegacy(obj);
-        state=state?core.merge(state,s):s;
-      }catch(e){damaged.push({id:f.id,name:f.name,raw});}
+    for(const file of candidates){
+      const result=await inspectRestoreFile(file);
+      if(result.damaged)damaged.push(result.damaged);
+      else state=state?core.merge(state,result.state):result.state;
     }
     return {state,damaged};
+  }
+  // Earlier releases also quarantined readable but unsupported files. Verify an
+  // outstanding repair against the immutable sources before skipping any of them.
+  async function checkPendingRepair(files){
+    for(const file of files){
+      try{
+        if((await inspectRestoreFile(file)).state)throw new Error("舊版待修復的雲端檔仍可讀取，已保留。請在新版確認備份後重新執行完整還原");
+      }catch(error){if(error.status!==404)throw error;}
+    }
   }
   async function removeDamaged(ids){
     for(const id of ids){try{await checked(API+"/"+encodeURIComponent(id),{method:"DELETE"});}catch(e){if(e.status!==404)throw e;}}
@@ -2214,10 +2539,11 @@ function create(fetcher,core,uuid){
     const f=await put(PREFIX+uuid()+".json",state);memo.set(f.id,core.clone(state));return f;
   }
   async function compact(loaded,published,state){
-    // Delete only checkpoints already read and fully included in the verified new checkpoint.
-    // Never touch legacy files, snapshots, unknown apps, or a concurrent writer's new files.
+    // Retire only strictly older content. Another device may be keeping any
+    // identical checkpoint, even if our two Drive listings arrived in different orders.
     for(const {file,state:old} of loaded){
-      if(file.id===published.id||core.epochCmp(old.epoch,state.epoch)!==0||!core.equal(core.merge(old,state),state))continue;
+      if(file.id===published.id||core.epochCmp(old.epoch,state.epoch)!==0||core.equal(old,state))continue;
+      if(!core.equal(core.merge(old,state),state))continue;
       try{await checked(API+"/"+encodeURIComponent(file.id),{method:"DELETE"});memo.delete(file.id);}catch(e){/* Extra immutable copies are safe; retry on a later successful publication. */}
     }
   }
@@ -2247,7 +2573,7 @@ function create(fetcher,core,uuid){
     const stamp=cutoff.getFullYear()+"-"+String(cutoff.getMonth()+1).padStart(2,"0")+"-"+String(cutoff.getDate()).padStart(2,"0");
     for(const f of files)if(f.name.slice(21,31)<stamp){try{await checked(API+"/"+encodeURIComponent(f.id),{method:"DELETE"});}catch(e){}}
   }
-  return {list,read,put,pull,publish,compact,snapshots,snapshotView,daily,prepareRestore,removeDamaged};
+  return {list,read,put,pull,publish,compact,snapshots,snapshotView,daily,prepareRestore,checkPendingRepair,removeDamaged};
 }
 return {create};
 });
@@ -2266,8 +2592,8 @@ return {create};
     });
     return dbPromise;
   }
-  async function put(label,data){
-    const d=await db(),row={id:Date.now()+"-"+CustomerDataCore.newId(),at:Date.now(),label,data};
+  async function put(label,data,sourceId){
+    const d=await db(),row={id:sourceId||Date.now()+"-"+CustomerDataCore.newId(),at:Date.now(),label,data};
     await new Promise((resolve,reject)=>{const tx=d.transaction("copies","readwrite");tx.objectStore("copies").put(row);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error("安全備份未完成"));});
     return row;
   }
@@ -2280,7 +2606,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.12A";
+const APP_VERSION = "2026.11.14E";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2427,6 +2753,7 @@ function cardHTML(d){
   }
   const topBits = [];
   if (d.date) topBits.push(`<span class="ct-item">建檔 <span class="cv" data-copy="${esc(d.date)}">${esc(d.date)}</span></span>`);
+  if (d.source) topBits.push(`<span class="ct-item card-source" title="${esc(d.source)}">來源 <span class="cv" data-copy="${esc(d.source)}">${esc(d.source)}</span></span>`);
   if (areaPri) topBits.push(`<span class="multi-wrap" data-copy="${esc(areaPri)}" title="${esc(areaOrphan ? areaTip + "（已從下拉移除）" : areaTip)}"><span class="multi-pri${areaOrphan?" opt-orphan":""}">${esc(areaPri)}</span>${areaDot}</span>`);
   const topHTML = topBits.length ? `<div class="card-top">${topBits.join('<span class="dot">／</span>')}</div>` : "";
   return `<article class="card${sel}" data-id="${esc(d.id)}"${statusColorRowAttrs(d)}><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
@@ -2464,6 +2791,7 @@ const DELETED_KEY = "customer_app_deleted_v1";
 const DEVICE_KEY = "customer_app_deviceid_v1";
 const BASE_TS = 1700000000000; // 舊/示範資料的預設時間戳(2023);任何實際新增或編輯都會比它新
 // 範例僅供使用者明確還原預設資料及辨識舊版誤注入；新安裝保持空白。
+let onlyStatusWriteFailed = false;
 const storageOK = (() => {
   try { localStorage.setItem("__probe","1"); localStorage.removeItem("__probe"); return true; }
   catch (e) { return false; }
@@ -2487,18 +2815,19 @@ function loadDeviceId(){
 const deviceId = loadDeviceId();
 
 
-function markCorruptStore(key,raw){window._storageCorrupt=true;(window._corruptRaw ||= {})[key]=raw;}
+function markCorruptStore(key,raw,error){
+  if(error&&(error.code==="unsupported_format"||error.message==="too_many"))window._unreadableFormat=true;window._storageCorrupt=true;(window._corruptRaw ||= {})[key]=raw;}
 function loadItems(){
   if(!storageOK){window._saveError=true;return [];}
   const stateRaw=localStorage.getItem("customer_app_state_v6");
   if(stateRaw!==null){
     try{window._bootState=CustomerDataCore.validateState(JSON.parse(stateRaw));return CustomerDataCore.project(window._bootState).items;}
-    catch(e){markCorruptStore("customer_app_state_v6",stateRaw);return [];}
+    catch(e){markCorruptStore("customer_app_state_v6",stateRaw,e);return [];}
   }
   const raw=localStorage.getItem(STORE_KEY);
   if(raw!==null){
     try{return CustomerDataCore.normalizeBackup({app:"customer",items:JSON.parse(raw)},uid).items;}
-    catch(e){markCorruptStore(STORE_KEY,raw);return [];}
+    catch(e){markCorruptStore(STORE_KEY,raw,e);return [];}
   }
   try{localStorage.setItem(STORE_KEY,"[]");}catch(e){window._saveError=true;}
   return [];
@@ -2561,7 +2890,7 @@ function loadCats(){
   catch(e){markCorruptStore(CATS_KEY,raw);}
   return DEFAULT_CATS.map(c=>({...c}));
 }
-function saveCats(){if(window._storageCorrupt||!storageOK)return;try{localStorage.setItem(CATS_KEY,JSON.stringify(cats));}catch(e){window._saveError=true;}}
+function saveCats(){if(window._storageCorrupt||!storageOK)return;try{localStorage.setItem(CATS_KEY,JSON.stringify(cats));}catch(e){onlyStatusWriteFailed=false;window._saveError=true;}}
 
 let cats = loadCats();
 
@@ -2876,6 +3205,7 @@ function isOptOrphan(optKey, value){
   if (!optKey || value == null || value === "") return false;
   try {
     if (typeof optList !== "function") return false;
+    if (optKey === "source") return customOpts.hidden.source.includes(String(value));
     return !optList(optKey).includes(String(value));
   } catch (e) {
     return false;
@@ -2942,14 +3272,27 @@ function buildOptMenuRowHTML(v, { multi, curArr, curSingle }){
   const pri = multi && on && curArr[0] === v;
   return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}" data-v="${esc(v)}"><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span>${multi&&on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}${multi?`<span class="chk">✓</span>`:""}<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`;
 }
+function canAddSourceOption(key, value){
+  if (key !== "source") return true;
+  if (value.length > 2000){ toast("來源名稱最多 2000 字"); return false; }
+  const known = DEF_OPTS.source.includes(value) || customOpts.source.includes(value) || items.some(d => d.source === value);
+  if (!known && customOpts.source.length >= 500){
+    toast("自訂來源已達 500 個"); return false;
+  }
+  return true;
+}
+function canRemoveSourceOption(key, value){
+  if (key !== "source" || customOpts.hidden.source.includes(value) || customOpts.hidden.source.length < 500) return true;
+  toast("已移除的來源已達 500 個"); return false;
+}
 function buildOptMenuHTML(optKey, curArr, multi, emptyOn, curSingle){
   return `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>`
     + optList(optKey).map(v => optKey === "status" && !multi ? buildStatusColorMenuRow(v, curSingle) : buildOptMenuRowHTML(v, { multi, curArr, curSingle })).join("")
     + `<div class="opt-add"><input placeholder="自訂…"><button type="button">加入</button></div>`;
 }
-const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","詢問","客戶需求"];
-const T_FIELDS = ["date","status","area","cat","budget","rooms","pType","pNum","cust","tel","line","ask","need"];
-const DEFAULT_COLW = {date:84,area:120,cat:80,budget:112,rooms:88,pType:96,pNum:64,status:88,cust:120,tel:104,line:96,ask:116};
+const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","來源","詢問","客戶需求"];
+const T_FIELDS = ["date","status","area","cat","budget","rooms","pType","pNum","cust","tel","line","source","ask","need"];
+const DEFAULT_COLW = {date:84,area:120,cat:80,budget:112,rooms:88,pType:96,pNum:64,status:88,cust:120,tel:104,line:96,source:88,ask:116};
 const COLW_MIN = 48, COLW_MAX = 640, NEED_MIN = 240, DEL_W = 40;
 function loadColW(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_colw_v1") || "null"); if (s && typeof s === "object") return {...DEFAULT_COLW, ...s}; } catch(e){} } return {...DEFAULT_COLW}; }
 function saveColW(){ if (storageOK){ try { localStorage.setItem("customer_app_colw_v1", JSON.stringify(colW)); } catch(e){} } }
@@ -2978,6 +3321,52 @@ function buildBuyerName(d){
   const head = ["買方", ask, cust].filter(x => x !== "").join("-");
   return tail ? head + "（" + tail : head;
 }
+// The stored date is the authority for copying, sorting, editing and backup.
+// Compact only valid ROC dates; preserve blank and legacy values as supplied.
+function tableDateLabelHTML(raw){
+  const full = String(raw ?? "");
+  if (!/^\d{5,7}$/.test(full)) return esc(full);
+  const year = Number(full.slice(0,-4)), month = Number(full.slice(-4,-2)), day = Number(full.slice(-2));
+  const date = new Date(Date.UTC(1911 + year, month - 1, day));
+  if (!year || date.getUTCFullYear() !== 1911 + year || date.getUTCMonth() + 1 !== month || date.getUTCDate() !== day) return esc(full);
+  return '<span class="date-shown">' + full + '</span><span class="date-probe" aria-hidden="true" data-text="' + full + '"></span>';
+}
+// Read the actual digit string in its rendered font. Gather reads before writes,
+// so resizing a long table never forces a separate layout for each row.
+function fitTableDateCells(cells){
+  const changes = [];
+  for (const cell of cells){
+    const probe = cell.querySelector(".date-probe");
+    if (!probe || cell.clientWidth === 0) continue;
+    const style = getComputedStyle(cell);
+    const available = cell.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const full = cell.dataset.fullDate;
+    const shown = probe.getBoundingClientRect().width > available + 0.5 ? full.slice(-4) : full;
+    const label = cell.querySelector(".date-shown");
+    if (label.textContent !== shown) changes.push([label, shown]);
+  }
+  for (const [label, shown] of changes) label.textContent = shown;
+}
+const tableDateObserver = window.ResizeObserver ? new ResizeObserver(entries => {
+  const cells = new Set();
+  for (const {target} of entries){
+    const cell = target.closest("[data-full-date]");
+    if (cell && cell.isConnected) cells.add(cell);
+  }
+  fitTableDateCells(cells);
+}) : null;
+function observeTableDate(cell){
+  const probe = cell.querySelector(".date-probe");
+  if (!probe || !tableDateObserver) return;
+  tableDateObserver.observe(cell);
+  tableDateObserver.observe(probe);
+}
+function bindTableDates(){
+  tableDateObserver?.disconnect();
+  const cells = tableWrap.querySelectorAll(".tbody-wrap [data-full-date]");
+  cells.forEach(observeTableDate);
+  fitTableDateCells(cells);
+}
 function trowHTML(d){
   const catVals = fieldVals(d, "cat");
   const catPri = catVals[0] || "";
@@ -3005,9 +3394,11 @@ function trowHTML(d){
       ? `<td><button type="button" class="topt-trigger" data-field="${f}" data-optkey="${optKey}"${multiAttr}><span class="topt-label">${m.html}</span></button></td>`
       : `<td><div class="tcell" data-field="${f}" data-optkey="${optKey}"${multiAttr}>${m.html}</div></td>`;
   };
+  const dateAttrs = `data-full-date="${esc(d.date)}" title="${esc(d.date)}" aria-label="建檔日 ${esc(d.date)}"`;
+  const dateLabel = tableDateLabelHTML(d.date);
   const dateInner = editMode                                   // 編輯模式:建檔日改為日曆選擇(與卡片檢視同一個日曆)
-    ? `<button type="button" class="topt-trigger" data-field="date" data-cal="1"><span class="topt-label">${esc(d.date)}</span></button>`
-    : `<div class="tcell tdate" data-field="date" title="${esc(d.date)}">${esc(d.date)}</div>`;
+    ? `<button type="button" class="topt-trigger" data-field="date" data-cal="1" ${dateAttrs}><span class="topt-label">${dateLabel}</span></button>`
+    : `<div class="tcell tdate" data-field="date" ${dateAttrs}>${dateLabel}</div>`;
   const dateCell = `<td class="datewrap"><span class="gen-edge"></span><button type="button" class="gen-btn" tabindex="-1" data-gen="1" title="生成買方名稱並複製" aria-label="生成買方名稱並複製">${GEN_ICON}<span class="gen-label">生成</span></button>${dateInner}</td>`;
   // 重繪時直接帶上列狀態:展開列(首次排版即為淡化樣式,聚焦轉場不會重播)+ 批次選取列(同步重繪不掉選取)
   const _trCls = ((openNeedId === d.id) ? ("exp-open" + (editMode ? " exp-editing" : "") + " ") : "") + ((tselMode && selected.has(d.id)) ? "tsel-row" : "");
@@ -3022,6 +3413,7 @@ function trowHTML(d){
     segCell("cust","tname")+
     cell("tel")+
     cell("line")+
+    optCell("source","source")+
     segCell("ask")+
     `<td class="tneedcell"><div class="tcell tneed" data-need="1"${editMode ? ' tabindex="0"' : ""}>${needSummaryHTML(d)}</div></td>`+
     delCell+
@@ -3033,7 +3425,7 @@ function renderTable(list){
   const oldScroll = tableWrap.querySelector(".tbody-wrap");
   const sTop = oldScroll ? oldScroll.scrollTop : 0, sLeft = oldScroll ? oldScroll.scrollLeft : 0;
   const T = T_COLS.concat("");
-  const FILTERABLE = {area:1, cat:1, budget:1, rooms:1, pType:1, pNum:1, status:1};
+  const FILTERABLE = {area:1, cat:1, budget:1, rooms:1, pType:1, pNum:1, status:1, source:1};
   const head = T_COLS.map((h,i) => {
     const f = T_FIELDS[i];
     const rz = (f && f !== "need") ? `<span class="col-resize" data-field="${f}"></span>` : "";
@@ -3057,6 +3449,7 @@ function renderTable(list){
     `<div class="tbody-wrap"><table class="ptable ${cls}" style="min-width:${mw}px"><colgroup>${cols}</colgroup><tbody>${rows}</tbody></table></div>`;
   const headWrap = tableWrap.querySelector(".thead-wrap");
   const bodyWrap = tableWrap.querySelector(".tbody-wrap");
+  bindTableDates();
   if (headWrap && bodyWrap) bindTableScrollSync(headWrap, bodyWrap);
   // 切模式/重繪後還原原本展開的那一列(不搶焦點)
   if (openNeedId && bodyWrap){
@@ -3289,7 +3682,7 @@ function tGetFieldEl(tr, field){
   if (!tr || !tr.dataset.id) return null;
   if (field === "cat") return tr.querySelector(".tcat-trigger");
   if (field === "date") return tr.querySelector('.topt-trigger[data-field="date"]');
-  if (["status","area","rooms","pType","pNum"].includes(field)) return tr.querySelector(`.topt-trigger[data-field="${field}"]`);
+  if (["status","source","area","rooms","pType","pNum"].includes(field)) return tr.querySelector(`.topt-trigger[data-field="${field}"]`);
   if (field === "need") return tr.querySelector(".tneed[data-need]");
   return tr.querySelector(`.tcell[data-field="${field}"]`);
 }
@@ -5509,11 +5902,11 @@ function autoFitColumn(field){
   // 內容:量每格「文字實際寬度」(不受目前欄寬影響) + tcell 內距
   bodyTbl.querySelectorAll("tbody tr").forEach(tr => {
     const td = tr.children[idx]; if (!td) return;
-    const cell = td.querySelector(".tcell");
+    const cell = td.querySelector('.tcell, [data-full-date], .topt-trigger[data-field="source"]');
     if (cell){
       const cs = getComputedStyle(cell);
       const pad = (parseFloat(cs.paddingLeft)||0) + (parseFloat(cs.paddingRight)||0);
-      const w = _measText(cell.textContent, cell) + pad;
+      const w = _measText(cell.dataset.fullDate ?? cell.textContent, cell) + pad;
       if (w > maxW) maxW = w;
     } else {
       const badge = td.querySelector(".tcat-badge, .tcat-trigger");
@@ -5529,6 +5922,10 @@ function autoFitColumn(field){
   onLocalChange("settings"); // 自適應後的欄寬也同步/備份
 }
 let _rz = null, _lastRzField = null, _lastRzTime = 0;
+let dateGripGesture = false;
+tableWrap.addEventListener("pointerdown", e => {
+  dateGripGesture = !!e.target.closest('.col-resize[data-field="date"]');
+}, true);
 tableWrap.addEventListener("pointerdown", e => {
   const h = e.target.closest(".col-resize"); if (!h) return;
   e.preventDefault(); e.stopPropagation();
@@ -5656,6 +6053,7 @@ tableWrap.addEventListener("click", e=>{
   if (openTr){ e.stopPropagation(); hideNeedHover(); closeNeedExp(); return; }
   // 手機:點「建檔日」表頭 → 切換所有列的生成面板(桌機維持滑到左緣才出現)
   const dateHead = e.target.closest('th[data-field="date"]');
+  if (dateHead && dateGripGesture){ dateGripGesture = false; return; }
   if (dateHead && !e.target.closest(".col-resize") && window.matchMedia && window.matchMedia("(hover: none)").matches){
     closeCatMenu(); closeLinkPop(); tableWrap.classList.toggle("gen-open"); return;
   }
@@ -5812,7 +6210,7 @@ if (window.matchMedia && window.matchMedia("(hover: hover)").matches){
 
 // ---- 正常模式:點格子複製內容 ----
 function copyCellText(cell){
-  const text = (cell.textContent || "").replace(/\s+/g, " ").trim();
+  const text = (cell.dataset.fullDate ?? cell.textContent ?? "").replace(/\s+/g, " ").trim();
   if (!text) return;
   const ok = () => {
     cell.classList.remove("saved"); void cell.offsetWidth; cell.classList.add("saved");
@@ -6007,7 +6405,7 @@ function onToptMenuKey(e){
     e.preventDefault(); e.stopPropagation();
     const opt = opts[toptMenuIdx]; if (!opt) return;
     if (toptIsMulti()){ setOptValue(opt.dataset.v, { shiftKey: e.shiftKey }); }
-    else { setOptValue(opt.dataset.v); const trig = toptTrigger; closeOptMenu(); if (trig && trig.isConnected) trig.focus(); }
+    else { if (setOptValue(opt.dataset.v) === false) return; const trig = toptTrigger; closeOptMenu(); if (trig && trig.isConnected) trig.focus(); }
   }
   else if (e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); const trig = toptTrigger; closeOptMenu(); if (trig) trig.focus(); }
   else if (e.key === "Tab"){
@@ -6035,6 +6433,7 @@ function renderToptMenu(){
   toptmenu.innerHTML = buildOptMenuHTML(toptKey, curArr, multi, emptyOn, curSingle);
 }
 function openOptMenu(trigger){
+  if (toptTrigger && toptTrigger !== trigger) closeOptMenu();
   closeOtherOverlays("opt");   // 只留這個下拉,關掉其他浮層
   toptTrigger = trigger; toptField = trigger.dataset.field; toptKey = trigger.dataset.optkey;
   toptmenu.classList.remove("opt-editing");   // 每次開啟先回乾淨狀態(長按才進排序模式)
@@ -6062,7 +6461,9 @@ function openOptMenu(trigger){
   setTimeout(() => document.addEventListener("click", toptOutside), 0);
 }
 function toptOutside(e){ if (eventWithin(e,toptmenu) || e.target.closest(".topt-trigger")) return; closeOptMenu(); }
-function closeOptMenu(){ closeStatusColor(); document.removeEventListener("click", toptOutside); toptmenu.classList.remove("show"); toptTrigger = null;/* menu-scroll-anchor:start */optMenuAnchorBox=null;/* menu-scroll-anchor:end */ if (window.refreshLed) window.refreshLed(); }
+function closeOptMenu(){
+  if (toptField === "status" && toptTrigger) verifyAbandonedStatus();
+  closeStatusColor(); document.removeEventListener("click", toptOutside); toptmenu.classList.remove("show"); toptTrigger = null;/* menu-scroll-anchor:start */optMenuAnchorBox=null;/* menu-scroll-anchor:end */ if (window.refreshLed) window.refreshLed(); }
 // 表格滾動時關閉格子下拉(fixed 選單不會跟著移);選單本身內部捲動不關
 document.addEventListener("scroll", e => {
   const t = e.target;
@@ -6080,14 +6481,95 @@ function openTableCal(trigger){
     set: v => {
       const nv = String(v||"").trim();
       if ((it.date||"") === nv) return;
-      it.date = nv; it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
+      const previousItems = items;
+      items = items.map(row => row === it ? {...row, date:nv, updatedAt:Date.now()} : row);
+      if (saveItems() === false){
+        items = previousItems;
+        toast("建檔日未儲存，請稍後重試");
+        return;
+      }
+      window.scheduleSync();
       const lbl = trigger.querySelector(".topt-label");
-      if (lbl) lbl.textContent = nv;
+      const oldProbe = trigger.querySelector(".date-probe");
+      if (oldProbe) tableDateObserver?.unobserve(oldProbe);
+      if (lbl) lbl.innerHTML = tableDateLabelHTML(nv);
+      trigger.dataset.fullDate = nv;
+      trigger.title = nv;
+      trigger.setAttribute("aria-label", "建檔日 " + nv);
+      observeTableDate(trigger);
+      fitTableDateCells([trigger]);
     }
   });
 }
+function clearStatusFailureToast(){
+  if (["狀態未儲存，請稍後重試","狀態與選項未儲存，請稍後重試"].includes(toastEl.textContent))
+    toastEl.classList.remove("show");
+}
+function verifyAbandonedStatus(){
+  if (!onlyStatusWriteFailed || !window._saveError) return true;
+  // All failed status menu actions rolled back. Recheck the saved view without applying any draft.
+  if (!storeCurrentState(null, {}, {verifyOnly:true})) return false;
+  clearStatusFailureToast();
+  return true;
+}
+function commitTableStatus(it, value, previousOpts, remove){
+  if (!it){
+    if (previousOpts) customOpts = previousOpts;
+    toast("客戶資料已變更，請重新開啟選單");
+    return false;
+  }
+  const changed = !DataCore.equal(it.status || "",value || "");
+  const edit = changed || remove !== undefined ? {id:it.id,value,remove,changed,updatedAt:Date.now()} : null;
+  const retrying = onlyStatusWriteFailed;
+  if (previousOpts){
+    // Save both the option and its assignment in the same v6 envelope.
+    if (!saveOpts(previousOpts, edit || {id:it.id, verifyOnly:true})) return false;
+  } else if (edit){
+    if (!storeCurrentState(null, {}, edit)){
+      toast("狀態未儲存，請稍後重試");
+      return false;
+    }
+    window.scheduleSync();
+  } else if (!verifyAbandonedStatus()){
+    toast("狀態未儲存，請稍後重試");
+    return false;
+  }
+  if (retrying) clearStatusFailureToast();
+  if (edit){
+    if (edit.value === undefined) delete it.status;
+    else it.status = edit.value;
+    it.updatedAt = edit.updatedAt;
+    // The v6 envelope is authoritative; keep the legacy mirror on a best-effort basis.
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(DataCore.project(dataState).items)); } catch(e){}
+    paintOptTrigger(toptTrigger, it, "status");
+    paintStatusColorRows();
+  }
+  return edit?.changed ? "changed" : true;
+}
 function setOptValue(v, opts){
-  const it = tFindItem(toptTrigger); if (!it) return;
+  const it = tFindItem(toptTrigger);
+  if (toptField === "status") return commitTableStatus(it,v);
+  if (!it) return;
+  if (toptField === "source"){
+    if ((it.source || "") === v) return;
+    const previousItems = items;
+    items = items.map(record => record === it ? {...it, source:v, updatedAt:Date.now()} : record);
+    if (saveItems() === false){
+      items = previousItems;
+      toast("來源尚未儲存，請稍後重試");
+      return;
+    }
+    onLocalChange("data");
+    if (colFilterOn("source") || searchEl.value.trim()){
+      applyFilter();
+      const row = Array.from(tableWrap.querySelectorAll("tr[data-id]")).find(tr => tr.dataset.id === it.id);
+      toptTrigger = row?.querySelector('.topt-trigger[data-field="source"]') || tableWrap.querySelector('[data-flt="source"]');
+      toptTrigger?.focus({preventScroll:true});
+    } else {
+      paintOptTrigger(toptTrigger, {source:v}, "source");
+    }
+    return;
+  }
   const multi = toptIsMulti();
   const forcePri = opts === true || (opts && opts.asPrimary);
   if (multi){
@@ -6101,23 +6583,31 @@ function setOptValue(v, opts){
   }
   it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
   paintOptTrigger(toptTrigger, it, toptField);
-  if (toptField === "status") paintStatusColorRows();
   if (multi) renderToptMenu();
 }
 toptmenu.addEventListener("click", e => {
   const del = e.target.closest(".opt-del");
   if (del){ e.stopPropagation(); const dv = del.dataset.del;
+    if (!canRemoveSourceOption(toptKey,dv)) return;
+    const previous = DataCore.clone(customOpts);
     customOpts[toptKey] = customOpts[toptKey].filter(x => String(x) !== dv);
-    if (DEF_OPTS[toptKey].map(String).includes(dv)){
+    if (toptKey === "source" || DEF_OPTS[toptKey].map(String).includes(dv)){
       customOpts.hidden[toptKey] = customOpts.hidden[toptKey] || [];
       if (!customOpts.hidden[toptKey].map(String).includes(dv)) customOpts.hidden[toptKey].push(dv);
     }
-    saveOpts();
     const it = tFindItem(toptTrigger);
-    const curPurged = it && toptField && purgeOptFromItem(it, toptField, dv);
-    if (curPurged){ saveItems(); onLocalChange("data"); paintOptTrigger(toptTrigger, it, toptField); }
-    const still = items.filter(x => x !== it && asFieldVals(x[toptField]).includes(String(dv))).length;
-    if (typeof toast === "function") toast(still ? ("已從下拉移除；其他 " + still + " 筆仍保留（灰色顯示）") : (curPurged ? "已從下拉移除並取消此列選取" : "已從下拉移除選項"));
+    let curPurged;
+    if (toptField === "status"){
+      const result = commitTableStatus(it, it?.status, previous, dv);
+      if (result === false) return;
+      curPurged = result === "changed";
+    } else {
+      if (!saveOpts(previous)) return;
+      curPurged = it && toptField && toptField !== "source" && purgeOptFromItem(it, toptField, dv);
+      if (curPurged){ saveItems(); onLocalChange("data"); paintOptTrigger(toptTrigger, it, toptField); }
+    }
+    const still = items.filter(x => (toptField === "source" || x !== it) && asFieldVals(x[toptField]).includes(String(dv))).length;
+    if (typeof toast === "function") toast(still ? ((toptField === "source" ? "已從下拉移除；" : "已從下拉移除；其他 ") + still + " 筆仍保留（灰色顯示）") : (curPurged ? "已從下拉移除並取消此列選取" : "已從下拉移除選項"));
     const menuOpen = toptmenu.classList.contains("show");
     const rowId = toptTrigger && toptTrigger.closest("tr") && toptTrigger.closest("tr").dataset.id;
     const savedField = toptField;
@@ -6136,12 +6626,18 @@ toptmenu.addEventListener("click", e => {
   if (add){ e.stopPropagation();
     if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = inp.value.trim();
       if (v){
+        if (!canAddSourceOption(toptKey,v)) return;
         const rowId=toptTrigger?.closest("tr")?.dataset.id,savedField=toptField,multi=toptIsMulti();
         const wasEditing=toptmenu.classList.contains("opt-editing");
+        const previous = DataCore.clone(customOpts);
         let ch = unhideOpt(toptKey, v);                                        // 先解除隱藏,否則加了也不會顯示
         if (!optList(toptKey).includes(v)){ customOpts[toptKey].push(v); ch = true; }
-        if (ch) saveOpts();
-        setOptValue(v, true);
+        if (toptField === "status"){
+          if (!commitTableStatus(tFindItem(toptTrigger),v,ch ? previous : null)) return;
+        } else {
+          if (ch && !saveOpts(previous)) return;
+          setOptValue(v, true);
+        }
         // 選項加回清單後,其他列的灰字也要一併重繪(不能只更新目前這列)
         if (ch && typeof applyFilter === "function"){
           applyFilter();
@@ -6164,7 +6660,7 @@ toptmenu.addEventListener("click", e => {
         const chkClick = !!(e.target.closest(".chk") && o.classList.contains("sel"));
         setOptValue(o.dataset.v, { shiftKey: e.shiftKey, chkClick });
       }
-    } else { setOptValue(o.dataset.v); closeOptMenu(); }
+    } else { if (setOptValue(o.dataset.v) !== false) closeOptMenu(); }
   }
 });
 toptmenu.addEventListener("keydown", e => { if (e.target.matches(".opt-add input") && e.key === "Enter"){ e.preventDefault(); e.target.closest(".opt-add").querySelector("button").click(); } });
@@ -6556,13 +7052,13 @@ document.getElementById("modeBtn").addEventListener("click", () => setEditMode(!
 document.getElementById("fltClearAll").addEventListener("click", () => {
   if (!anyColFilter()) return;
   if (typeof closeOtherOverlays === "function") closeOtherOverlays("");   // 先關掉篩選彈窗/下拉/展開
-  clearAllColFilters();
+  const saved = clearAllColFilters();
   applyFilter();
-  toast("已清除所有欄位篩選");
+  if (saved) toast("已清除所有欄位篩選");
 });
 
 // ---- 表格欄位篩選(區域/類型/預算/車位) ----
-const colFilter = { area:null, cat:null, rooms:null, pType:null, pNum:null, status:null };
+const colFilter = { area:null, cat:null, rooms:null, pType:null, pNum:null, status:null, source:null };
 // 是否有任何欄位篩選生效(含預算上下限);供工具列的「清除所有欄位篩選」鈕顯示與清除
 function anyColFilter(){
   if (typeof fltB !== "undefined" && (fltB.lo != null || fltB.hi != null)) return true;
@@ -6571,7 +7067,7 @@ function anyColFilter(){
 function clearAllColFilters(){
   Object.keys(colFilter).forEach(k => colFilter[k] = null);
   if (typeof fltB !== "undefined"){ fltB.lo = null; fltB.hi = null; }
-  saveColFilterState();
+  return commitColFilterState();
 }
 function resetListFilters(){
   if (searchEl) searchEl.value = "";
@@ -6600,6 +7096,20 @@ function saveColFilterState(){
   if (!storageOK) return;
   try { localStorage.setItem(FILTER_STATE_KEY, JSON.stringify(serializeColFilterState())); } catch(e){}
 }
+function commitColFilterState(){
+  const filters = serializeColFilterState(), previous = savedPreferenceView.settings;
+  if (DataCore.equal(filters.colFilter,previous.colFilter) && DataCore.equal(filters.fltB,previous.fltB)) return true;
+  if (!storeCurrentState(null,filters)){
+    applyColFilterState(previous);
+    if (fltField) renderFltBody();
+    toast("篩選未儲存，已恢復原設定");
+    return false;
+  }
+  saveColFilterState();
+  window.touchSettings();
+  window.scheduleSync();
+  return true;
+}
 function loadColFilterState(){
   if (!storageOK) return;
   try {
@@ -6626,14 +7136,14 @@ function orderedFilterVals(f){
 const fltB = { lo:null, hi:null };
 loadColFilterState();
 let fltField = null;
-const FLT_NAME = { area:"區域", cat:"類型", budget:"預算（萬）", rooms:"房數", pType:"車類", pNum:"車數", status:"狀態" };
+const FLT_NAME = { area:"區域", cat:"類型", budget:"預算（萬）", rooms:"房數", pType:"車類", pNum:"車數", status:"狀態", source:"來源" };
 function colFilterOn(f){ return f === "budget" ? (fltB.lo != null || fltB.hi != null) : !!(colFilter[f] && colFilter[f].size); }
 function applyColFilters(list){
-  ["area","cat","rooms","pType","pNum","status"].forEach(f => {
+  ["area","cat","rooms","pType","pNum","status","source"].forEach(f => {
     const st = colFilter[f]; if (!st || !st.size) return;
     list = list.filter(d => {
       const vals = MULTI_OPT_FIELDS[f] ? fieldVals(d, f) : [String(d[f]||"").trim()].filter(Boolean);
-      if (!vals.length) return st.has("__EMPTY__");
+      if (!vals.length) return st.has(f === "source" ? "" : "__EMPTY__");
       return vals.some(v => st.has(v));
     });
   });
@@ -6660,7 +7170,7 @@ function renderFltBody(){
     body.innerHTML = `<div class="fbud-hint">顯示預算區間與此範圍有重疊的客戶</div>
       <div class="fbud"><input id="fltLo" inputmode="numeric" placeholder="下限" value="${fltB.lo != null ? fltB.lo : ""}"><span class="bsep">–</span><input id="fltHi" inputmode="numeric" placeholder="上限" value="${fltB.hi != null ? fltB.hi : ""}"></div>`;
     const lo = document.getElementById("fltLo"), hi = document.getElementById("fltHi");
-    const upd = () => { fltB.lo = numOrNull(lo.value); fltB.hi = numOrNull(hi.value); saveColFilterState(); applyFilter(); };
+    const upd = () => { fltB.lo = numOrNull(lo.value); fltB.hi = numOrNull(hi.value); commitColFilterState(); applyFilter(); };
     lo.addEventListener("input", upd); hi.addEventListener("input", upd);
     return;
   }
@@ -6668,14 +7178,20 @@ function renderFltBody(){
   const vals = orderedFilterVals(f);
   const hasEmpty = items.some(d => !(MULTI_OPT_FIELDS[f] ? fieldVals(d, f).length : String(d[f]||"").trim()));
   const st = colFilter[f];
+  const blank = f === "source" ? "" : "__EMPTY__";
+  const present = new Set(vals);
+  // A checked condition can outlive its last matching customer. Keep it available to uncheck.
+  const missing = st ? [...st].filter(v => v !== blank && !present.has(v)) : [];
   const GRIP = `<span class="fopt-drag" aria-label="拖曳排序" title="拖曳排序"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span>`;
   const row = (v, label, drag) => `<div class="fopt${drag ? " fopt-draggable" : ""}" data-val="${esc(v)}">${drag ? GRIP : `<span class="fopt-drag-sp"></span>`}<label class="fopt-main"><input type="checkbox" value="${esc(v)}"${st && st.has(v) ? " checked" : ""}><span>${esc(label)}</span></label></div>`;
-  body.innerHTML = vals.map(v => row(v, v, true)).join("") + (hasEmpty ? row("__EMPTY__","（空白）", false) : "");
+  body.innerHTML = vals.map(v => row(v, v, true)).join("")
+    + missing.map(v => row(v, v, false)).join("")
+    + (hasEmpty || st?.has(blank) ? row(blank, "（空白）", false) : "");
   body.querySelectorAll("input[type=checkbox]").forEach(cb => cb.addEventListener("change", () => {
     let stt = colFilter[f] || new Set();
     if (cb.checked) stt.add(cb.value); else stt.delete(cb.value);
     colFilter[f] = stt.size ? stt : null;
-    saveColFilterState();
+    commitColFilterState();
     applyFilter();
   }));
 }
@@ -6684,7 +7200,7 @@ document.getElementById("fltDone").addEventListener("click", closeColFlt);
 document.getElementById("fltClear").addEventListener("click", () => {
   if (document.getElementById("fltBody").classList.contains("editing")){ exitFltEditing(); return; }   // 排序模式:此鈕為「返回」→ 退出排序模式
   if (fltField === "budget"){ fltB.lo = null; fltB.hi = null; } else if (fltField){ colFilter[fltField] = null; }
-  saveColFilterState();
+  commitColFilterState();
   renderFltBody(); applyFilter();
 });
 fltBg.addEventListener("click", e => { if (e.target === fltBg) closeColFlt(); });
@@ -6771,7 +7287,7 @@ document.addEventListener("pointercancel", endFltDrag);
 //   · undefined + "北屯區"   → 得到 "undefined北屯區",搜「und」誤中
 // 這裡一律先轉成字串;欄位之間夾一個使用者打不出來的分隔字元(US, U+001F),
 // 避免相鄰欄位頭尾相接湊出不存在的字串而假命中。
-const SEARCH_FIELDS = ["cust","area","budget","rooms","parking","pType","pNum","ask","need","need2","need3","t1","t2","t3","cat","status","tel","line"];
+const SEARCH_FIELDS = ["cust","area","budget","rooms","parking","pType","pNum","source","ask","need","need2","need3","t1","t2","t3","cat","status","tel","line"];
 // ("parking" 是車位欄拆分前的舊鍵,舊資料仍帶著 → 保留相容;拆分後的新資料寫在 pType/pNum,補進來才搜得到「平面/機械」等字)
 const SEARCH_NEED_KEYS = { need:1, need2:1, need3:1 };
 const SEARCH_URL_RE = /https?:\/\/[A-Za-z0-9\-._~:\/?#\[\]@!$&'()*+,;=%]+/gi;   // 與 linkify 同一套;搜尋略過連結網址
@@ -7292,6 +7808,7 @@ const DEF_OPTS = {
   rooms:["1房","2房","3房","4房","5房","6房"],
   ptype:["平面車位","機械車位"],
   pnum:["1","2","3","4","5"],
+  source:["591","轉介紹","來店"],
   status:[]   // 客戶分級/狀態:不給預設,選項全由使用者在下拉的「自訂…」自行新增(例:A級、要帶看、無效客)
 };
 let customOpts = loadOpts();
@@ -7586,9 +8103,19 @@ function unhideOpt(key, v){
   });
   if (ch){ try { localStorage.setItem("customer_app_opts_v1", JSON.stringify(customOpts)); } catch(e){} }
 })();
-function normOpts(o){ o = o || {}; const h = o.hidden || {}; return {area:o.area||[],rooms:o.rooms||[],ptype:o.ptype||[],pnum:o.pnum||[],status:o.status||[],hidden:{area:h.area||[],rooms:h.rooms||[],ptype:h.ptype||[],pnum:h.pnum||[],status:h.status||[]}}; }
+function normOpts(o){ o = o || {}; const h = o.hidden || {}; return {area:o.area||[],rooms:o.rooms||[],ptype:o.ptype||[],pnum:o.pnum||[],status:o.status||[],source:o.source||[],hidden:{area:h.area||[],rooms:h.rooms||[],ptype:h.ptype||[],pnum:h.pnum||[],status:h.status||[],source:h.source||[]}}; }
 function loadOpts(){ try { return normOpts(JSON.parse(localStorage.getItem("customer_app_opts_v1")||"{}")); } catch(e){ return normOpts(null); } }
-function saveOpts(){ try { localStorage.setItem("customer_app_opts_v1", JSON.stringify(customOpts)); } catch(e){} if (typeof touchSettings === "function") touchSettings(); onLocalChange("settings"); }
+function saveOpts(previous, statusEdit){
+  if (!storeCurrentState(null, {opts:customOpts}, statusEdit)){
+    customOpts = previous;
+    toast(statusEdit ? "狀態與選項未儲存，請稍後重試" : "選項未儲存，請稍後重試");
+    return false;
+  }
+  try { localStorage.setItem("customer_app_opts_v1", JSON.stringify(customOpts)); } catch(e){}
+  window.touchSettings();
+  window.scheduleSync();
+  return true;
+}
 // 選項自訂順序(每欄一份):拖曳調整後記住並同步;新選項自動接在後面。
 function loadOptOrder(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_optorder_v1") || "null"); if (s && typeof s === "object") return s; } catch(e){} } return {}; }
 let optOrder = loadOptOrder();
@@ -7596,7 +8123,9 @@ statusColorsReady = true;
 function saveOptOrder(){ if (storageOK){ try { localStorage.setItem("customer_app_optorder_v1", JSON.stringify(optOrder)); } catch(e){} } }
 function optList(key){
   const hid = new Set((customOpts.hidden[key]||[]).map(String)); const seen = new Set();
-  const present = DEF_OPTS[key].concat(customOpts[key]).map(String).filter(v => { if (!v || seen.has(v) || hid.has(v)) return false; seen.add(v); return true; });
+  // 已填的來源可能來自備份或另一台裝置；清單偏好沒有這個名稱時仍可選用。
+  const candidates = DEF_OPTS[key].concat(customOpts[key], key === "source" ? items.map(d => d.source || "") : []);
+  const present = candidates.map(String).filter(v => { if (!v || seen.has(v) || hid.has(v)) return false; seen.add(v); return true; });
   const ord = optOrder[key];
   if (ord && ord.length){
     const inOrd = ord.filter(v => present.includes(v));
@@ -7636,18 +8165,20 @@ function makeOptSel(key, emptyLabel, multi){
   menu.addEventListener("click", e => {
     const del = e.target.closest(".opt-del");
     if (del){ e.stopPropagation(); const dv = del.dataset.del;
+      if (!canRemoveSourceOption(key,dv)) return;
+      const previous = DataCore.clone(customOpts);
       customOpts[key] = customOpts[key].filter(x => String(x) !== dv);
-      if (DEF_OPTS[key].map(String).includes(dv)){
+      if (key === "source" || DEF_OPTS[key].map(String).includes(dv)){
         customOpts.hidden[key] = customOpts.hidden[key] || [];
         if (!customOpts.hidden[key].map(String).includes(dv)) customOpts.hidden[key].push(dv);
       }
-      saveOpts();
-      if (vals.includes(String(dv))){ vals = asFieldVals(toggleFieldVal(vals, dv, false)); show(); }
+      if (!saveOpts(previous)) return;
+      if (vals.includes(String(dv))){ if (key !== "source") vals = asFieldVals(toggleFieldVal(vals, dv, false)); show(); }
       const still = items.filter(it => {
-        const f = ({area:"area",rooms:"rooms",ptype:"pType",pnum:"pNum",status:"status"})[key];
+        const f = ({area:"area",rooms:"rooms",ptype:"pType",pnum:"pNum",status:"status",source:"source"})[key];
         return f && asFieldVals(it[f]).includes(String(dv));
       }).length;
-      if (typeof toast === "function") toast(still ? ("已從下拉移除；其他 " + still + " 筆仍保留（灰色顯示）") : "已從下拉移除並取消選取");
+      if (typeof toast === "function") toast(still ? ((key === "source" ? "已從下拉移除；" : "已從下拉移除；其他 ") + still + " 筆仍保留（灰色顯示）") : "已從下拉移除選項");
       renderMenu();
       saveFormDraft();
       if (typeof applyFilter === "function") applyFilter();
@@ -7657,9 +8188,12 @@ function makeOptSel(key, emptyLabel, multi){
     const add = e.target.closest(".opt-add");
     if (add){ e.stopPropagation();
       if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = inp.value.trim();
-        if (v){ let ch = unhideOpt(key, v);
+        if (v){
+          if (!canAddSourceOption(key,v)) return;
+          const previous = DataCore.clone(customOpts);
+          let ch = unhideOpt(key, v);
           if (!optList(key).includes(v)){ customOpts[key].push(v); ch = true; }
-          if (ch) saveOpts();
+          if (ch && !saveOpts(previous)) return;
           if (multi){ setFromUser(toggleFieldVal(vals, v, true)); renderMenu(); inp.value = ""; }
           else { setFromUser(v); sel.classList.remove("open"); }
           if (ch && typeof applyFilter === "function") applyFilter();
@@ -7748,7 +8282,7 @@ function makeOptSel(key, emptyLabel, multi){
 }
 const areaPick = makeOptSel("area","選擇區域", true), roomsPick = makeOptSel("rooms","選擇房數", true),
       ptypePick = makeOptSel("ptype","選擇車位", true), pnumPick = makeOptSel("pnum","數量", true),
-      statusPick = makeOptSel("status","選擇狀態", false);
+      statusPick = makeOptSel("status","選擇狀態", false), sourcePick = makeOptSel("source","選擇來源", false);
 // 選項清單就緒後重繪一次,讓「已移除選項」的灰字正確套上(開頁早期 render 時 opts 尚未就緒)
 if (typeof applyFilter === "function") applyFilter();
 document.addEventListener("click", e => { document.querySelectorAll(".opt-sel.open").forEach(el => { if (!eventWithin(e,el)) el.classList.remove("open"); }); });
@@ -7827,6 +8361,7 @@ function openForm(id){
   F.date.value    = d ? d.date||""    : "";
   areaPick.set(d ? d.area||"" : "");
   statusPick.set(d ? (d.status || "") : "");
+  sourcePick.set(d?.source || "");
   F.budget.value = d ? (d.budget || "") : "";   // 預算合併為單一欄位:直接吃顯示字串(2000-2500、1500以內、2600以上…)
   roomsPick.set(d ? d.rooms||"" : "");
   const _pk = d ? ((d.pType != null || d.pNum != null) ? {t:d.pType||"", n:(d.pNum==null?"":d.pNum)} : (function(){ const p = parseParking(d.parking); return {t:p.t, n:p.n>0?String(p.n):""}; })()) : {t:"", n:""};
@@ -7848,7 +8383,7 @@ function openForm(id){
   const draft=loadFormDraft();
   if(draft && (draft.editingId||null)===(id||null)){
     applyFormDraft(draft.rec||draft);
-    if(draft.base)formBaseRec={...draft.base,line:normalizeLineSymbols(draft.base.line)};
+    if(draft.base)formBaseRec={source:formBaseRec.source,...draft.base,line:normalizeLineSymbols(draft.base.line)};
     toast("已還原未儲存草稿；按儲存才會套用");
   }
   if(!id)setTimeout(()=>F.cust.focus(),50);
@@ -7905,7 +8440,7 @@ function openDetail(id){
     <div class="dtl-card">${cell("電話", d.tel, IC_TEL)}${cell("LINE", normalizeLineSymbols(d.line))}</div>
     <div class="dtl-meta" id="dtlMeta">
       <div class="dtl-h" style="color:var(--ink-soft);">建檔資訊</div>
-      <div class="dtl-card">${cell("建檔日", d.date)}${cell("詢問案名", d.ask)}</div>
+      <div class="dtl-card">${cell("建檔日", d.date)}${cell("來源", d.source)}${cell("詢問案名", d.ask)}</div>
     </div>
   </div>`;
   // 購屋需求:三排 → 區域/類型、預算/房數、車位/車數(狀態已移到標題,不再入格)
@@ -7963,6 +8498,7 @@ function buildFormRec(){
     date: F.date.value.trim(),
     area: areaPick.get(),
     status: statusPick.get(),
+    source: sourcePick.get(),
     budget: F.budget.value.trim(),
     bMin: (function(){ const r = parseBudget(F.budget.value); return (r && isFinite(r[0]) && r[0] > 0) ? r[0] : null; })(),
     bMax: (function(){ const r = parseBudget(F.budget.value); return (r && isFinite(r[1])) ? r[1] : null; })(),
@@ -7985,7 +8521,7 @@ function buildFormRec(){
 const FORM_DRAFT_KEY = "customer_app_form_draft_v1";
 function formDraftHasContent(rec){
   const hasText=["cust","date","budget","need","need2","need3","tel","line","ask"].some(k=>String(rec[k]??"").trim());
-  const hasChoice=["cat","area","status","rooms","pType","pNum"].some(k=>asFieldVals(rec[k]).length);
+  const hasChoice=["cat","area","status","source","rooms","pType","pNum"].some(k=>asFieldVals(rec[k]).length);
   const hasTitle=[1,2,3].some(sg=>String(rec["t"+sg]??needDefTitle(sg))!==needDefTitle(sg));
   return hasText||hasChoice||hasTitle||!CustomerDataCore.equal(needOrder(rec),[1,2,3])||[1,2,3].some(sg=>needFontPercent(rec,sg)!==100);
 }
@@ -8009,6 +8545,7 @@ function applyFormDraft(d){
   F.date.value = d.date || "";
   areaPick.set(d.area || "");
   statusPick.set(d.status || "");
+  if (Object.hasOwn(d,"source")) sourcePick.set(d.source);
   F.budget.value = d.budget || "";
   roomsPick.set(d.rooms || "");
   ptypePick.set(d.pType || "");
@@ -8059,6 +8596,7 @@ function saveForm(){
     items[i] = {...items[i], ...changed, updatedAt: Date.now()};
   } else {
     const now = Date.now();
+    if (!rec.source) delete rec.source;
     items.push({...rec, id: uid(), createdAt: now, updatedAt: now});
   }
   if(saveItems()===false){items=previousItems;saveFormDraft();toast("尚未儲存成功，表單草稿已保留，請稍後重試");return;}
@@ -8622,12 +9160,14 @@ const importFile = document.getElementById("importFile");
 
 async function applyBackup(parsed,mode="replace"){
   const normalized=validateBackup(parsed);
+  if(window._unreadableFormat)throw new Error("本機資料格式無法確認，請匯出原始資料並更新客戶總覽");
   if(window._storageCorrupt&&mode!=="replace")throw new Error("本機資料損壞時，請使用完整還原");
   if(typeof closeNeedExp==="function")closeNeedExp();
   if(typeof hideNeedHover==="function")hideNeedHover();
   if(!window._storageCorrupt&&!storeCurrentState())throw new Error("本機修改尚未安全保存，請先匯出備份後再匯入");
   const before=DataCore.clone(dataState),stored=localStorage.getItem(DATA_V6_KEY),localBefore=DataCore.clone(captureLocalState());
-  const unchanged=()=>DataCore.equal(before,dataState)&&stored===localStorage.getItem(DATA_V6_KEY)&&DataCore.equal(localBefore,captureLocalState());
+  const restoreEmail=syncEmail;
+  const unchanged=()=>restoreEmail===syncEmail&&DataCore.equal(before,dataState)&&stored===localStorage.getItem(DATA_V6_KEY)&&DataCore.equal(localBefore,captureLocalState());
   let restoreBase=before, repair=null;
   if(mode==="replace"&&syncConnected&&window.prepareCloudRestore){
     repair=await window.prepareCloudRestore();
@@ -8641,8 +9181,7 @@ async function applyBackup(parsed,mode="replace"){
   let next;
   if(mode==="merge")next=DataCore.importMerge(dataState,v,DataCore.newId());
   else{
-    next=DataCore.fromView(v);
-    next.epoch={generation:restoreBase.epoch.generation+1,id:DataCore.newId()};
+    next=DataCore.restore(restoreBase,v,DataCore.newId());
   }
 
   if(repair?.damaged.length){
@@ -8651,12 +9190,123 @@ async function applyBackup(parsed,mode="replace"){
     localStorage.setItem("customer_app_repair_v6",JSON.stringify({email:syncEmail,epoch:next.epoch,files:repair.damaged.map(f=>({id:f.id,name:f.name}))}));
   }
   paintDataState(DataCore.autoLatest(next));
+  if(mode==="replace"&&repair&&!repair.damaged.length){
+    // Clear only the obsolete repair confirmed by this restore. Another tab or
+    // account may already have recorded a newer decision.
+    try{
+      const pending=JSON.parse(localStorage.getItem("customer_app_repair_v6")||"null");
+      if(pending&&pending.email===restoreEmail&&DataCore.equal(pending.epoch,before.epoch))localStorage.removeItem("customer_app_repair_v6");
+    }catch(e){}
+  }
   window._pendingMerge=null;window._corruptRaw=null;window._autoApplyError=false;updateDataNotice();
   document.querySelectorAll("dialog.data-dialog").forEach(d=>d.close());
   onLocalChange("data");
   toast(mode==="merge"?"已合併匯入，自動採用較新的修改；取代前備份已保留":"已完整還原，還原前資料可由備份記錄找回");
 }
-function confirmApplyBackup(parsed){
+function backupSourceMenu(value){
+  let opts=value?.settings ? value.settings.opts : value?.opts;
+  // Some v6 files omitted the outer settings. A full restore retains their
+  // per-option history; project only preferences for this read-only preview.
+  const prefs=value?.syncState?.prefs;
+  if(!opts && prefs && Object.keys(prefs).some(key=>key.startsWith("option:"))){
+    try{opts=DataCore.project({prefs,records:{}}).settings.opts;}catch(e){return null;}
+  }
+  if(!opts || typeof opts!=="object")return null;
+  const hidden=new Set((Array.isArray(opts.hidden?.source)?opts.hidden.source:[]).filter(name=>typeof name==="string" && name));
+  const visible=new Set();
+  const add=name=>{if(typeof name==="string" && name && !hidden.has(name))visible.add(name);};
+  DEF_OPTS.source.forEach(add);
+  if(Array.isArray(opts.source))opts.source.forEach(add);
+  if(Array.isArray(value.items))value.items.forEach(row=>add(row?.source));
+  return {visible,hidden,recorded:Array.isArray(opts.source)||Array.isArray(opts.hidden?.source)};
+}
+function backupSourceState(menu,name){
+  if(!menu)return "未記錄";
+  return menu.hidden.has(name)?"隱藏":menu.visible.has(name)?"顯示":"未列入";
+}
+function backupCustomerDifference(group){
+  const fields=[...T_FIELDS,"need2","need3","updatedAt"];
+  const records=group.map(row=>{
+    const items=Array.isArray(row.data)?row.data:row.data?.items;
+    const byId=new Map();
+    if(Array.isArray(items))for(const item of items)if(item?.id)byId.set(item.id,item);
+    return byId;
+  });
+  const ids=new Set();
+  for(const recordsById of records)for(const id of recordsById.keys())ids.add(id);
+  for(const id of ids){
+    const versions=records.map(map=>map.get(id));
+    const first=versions.find(Boolean);
+    if(versions.some(row=>!row))return versions.map(row=>(row?"包含":"未列入")+"客戶「"+(row?.cust||first.cust||"未命名")+"」");
+    for(const key of fields){
+      const values=versions.map(row=>row[key]);
+      if(values.every(value=>value===values[0] || DataCore.equal(value,values[0])))continue;
+      const label=T_COLS[T_FIELDS.indexOf(key)] || (key==="updatedAt"?"修改時間":key==="need2"?"第二欄筆記":"第三欄筆記");
+      return versions.map((row,i)=>{
+        let value=values[i];
+        if(key==="updatedAt" && value)value=new Date(value).toLocaleString();
+        if(Array.isArray(value))value=value.join("／");
+        const text=String(value??"").trim();
+        const head=text.length>56?text.slice(0,56)+"…":text;
+        return (row.cust||"未命名")+" · "+label+"「"+(head||"空白")+"」";
+      });
+    }
+  }
+  return [];
+}
+function backupRowDescriptions(rows){
+  const groups=new Map(), descriptions=new Map();
+  for(const row of rows){
+    if(row.data?.app==="customer-rescue")continue;
+    const key=Math.floor(row.at/1000)+"|"+row.label;
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(row);
+  }
+  for(const group of groups.values()){
+    if(group.length<2)continue;
+    const menus=group.map(row=>backupSourceMenu(row.data));
+    const names=new Set();
+    for(const menu of menus){
+      if(!menu)continue;
+      for(const name of menu.visible)names.add(name);
+      for(const name of menu.hidden)names.add(name);
+    }
+    const differences=[];
+    for(const name of names){
+      const first=backupSourceState(menus[0],name);
+      if(menus.some(menu=>backupSourceState(menu,name)!==first)){
+        differences.push(name);
+        if(differences.length===3)break;
+      }
+    }
+    const customers=differences.length?[]:backupCustomerDifference(group);
+    group.forEach((row,i)=>{
+      const menu=menus[i],prefix="副本 "+(i+1)+"/"+group.length;
+      const info=customers[i]||(menu?differences.slice(0,2).map(name=>backupSourceState(menu,name)+"「"+name+"」").join("、"):"未記錄來源設定");
+      descriptions.set(row.id,prefix+(info?" · "+info:"")+(menu && differences.length>2?"…":""));
+    });
+  }
+  return descriptions;
+}
+function backupSourcePreview(backup){
+  const menu=backupSourceMenu(backup);
+  if(!menu){
+    const p=document.createElement("p");p.textContent="這份備份未記錄來源選單設定。";return p;
+  }
+  const details=document.createElement("details");details.className="backup-source-preview";
+  const summary=document.createElement("summary");summary.textContent=(menu.recorded?"來源選單":"未記錄自訂來源 · 來源選單")+" · 顯示 "+menu.visible.size+"／隱藏 "+menu.hidden.size;
+  details.append(summary);
+  details.addEventListener("toggle",()=>{
+    if(!details.open || details.childElementCount>1)return;
+    for(const [label,names] of [["顯示",menu.visible],["隱藏",menu.hidden]]){
+      const list=document.createElement("p");list.textContent=label+"　"+(names.size?Array.from(names).join("、"):"無");
+      details.append(list);
+    }
+  });
+  return details;
+}
+function confirmApplyBackup(parsed,historyTitle=""){
+  if(window._unreadableFormat){toast("已保留本機資料，請先匯出原始資料並更新客戶總覽");return;}
   let normalized;
   try{normalized=validateBackup(parsed);}catch(e){
     toast(e.message==="wrong_app"?"這不是客戶總覽的備份檔":e.message==="too_many"?"備份超過 5000 筆上限":"匯入失敗："+e.message);return;
@@ -8670,7 +9320,10 @@ function confirmApplyBackup(parsed){
     b.onclick=async()=>{actions.querySelectorAll("button").forEach(b=>b.disabled=true);try{await applyBackup(normalized,mode);}catch(e){toast("未匯入："+e.message);actions.querySelectorAll("button").forEach(b=>b.disabled=window._storageCorrupt&&b.textContent==="合併匯入");}};
     actions.append(b);
   }
-  body.append(p,note,actions);
+  if(historyTitle){
+    const title=document.createElement("p");title.className="backup-history-title";title.textContent=historyTitle;body.append(title);
+  }
+  body.append(backupSourcePreview(normalized),p,note,actions);
 }
 
 // 「匯入備份檔」的來源選擇(手機 / Google 雲端)綁定在下方 Google 雲端 IIFE 內
@@ -9200,7 +9853,7 @@ const DATA_V6_KEY = "customer_app_state_v6";
 const DataCore = CustomerDataCore;
 const editActor = deviceId + "-" + DataCore.newId();
 let applyingDataState = false;
-function defaultPreferenceView(){return {cats:DataCore.clone(DEFAULT_CATS),settings:{density:"normal",sort:"default",colw:{...DEFAULT_COLW},theme:"light",opts:normOpts(null),statusColors:{},fltorder:{},expfocus:false,optorder:{},colFilter:{area:null,cat:null,rooms:null,pType:null,pNum:null,status:null},fltB:{lo:null,hi:null}}};}
+function defaultPreferenceView(){return {cats:DataCore.clone(DEFAULT_CATS),settings:{density:"normal",sort:"default",colw:{...DEFAULT_COLW},theme:"light",opts:normOpts(null),statusColors:{},fltorder:{},expfocus:false,optorder:{},colFilter:{area:null,cat:null,rooms:null,pType:null,pNum:null,status:null,source:null},fltB:{lo:null,hi:null}}};}
 function legacyPreferenceView(){
   const all=collectSettings(),settings={};
   for(const key of Object.keys(all))if(bootPreferenceStorage[key]!==null)settings[key]=all[key];
@@ -9214,40 +9867,75 @@ function dataView(){return {items,cats,deleted,settings:collectSettings()};}
 let savedDataView=DataCore.clone(dataView()),savedViewState=DataCore.clone(dataState),needsDataPaint=false,pendingLocalBackup=null;
 let autoApplyTimer=null,autoApplyBusy=false;
 // Keep the visible baseline separate from durable data while an editor is open.
-function captureViewState(base=dataState,view=dataView()){
+function captureViewState(base=dataState,view=dataView(),previousView=savedDataView){
   const basis=DataCore.epochCmp(base.epoch,savedViewState.epoch)===0?base:savedViewState;
-  return DataCore.capture(basis,view,editActor,Date.now(),savedPreferenceView,savedDataView);
+  return DataCore.capture(basis,view,editActor,Date.now(),savedPreferenceView,previousView);
 }
 function captureLocalState(){return DataCore.merge(dataState,captureViewState());}
-function storeCurrentState(observed){
+function storeCurrentState(observed, changedSettings, statusEdit){
   if(applyingDataState)return true;
   if(window._storageCorrupt)return false;
+  const unrelatedSaveError = window._saveError && !onlyStatusWriteFailed;
+  let retryableStatusWrite = false;
   try{
     if(!storageOK)throw new Error("本機儲存不可用");
-    const view=DataCore.clone(dataView()),nextPrefs=DataCore.clone({cats:view.cats,settings:view.settings});
+    if (changedSettings) DataCore.settings(changedSettings,true);
+    // A preference-only action must not commit or acknowledge a pending customer edit.
+    const view = changedSettings
+      ? {...savedDataView, settings:{...savedDataView.settings, ...DataCore.clone(changedSettings)}}
+      : DataCore.clone(dataView());
+    const nextPrefs=DataCore.clone({cats:view.cats,settings:view.settings});
     const raw=localStorage.getItem(DATA_V6_KEY);
     let base=DataCore.clone(dataState);
     if(raw!==null){
       let stored;
       try{stored=DataCore.validateState(JSON.parse(raw));}
-      catch(e){markCorruptStore(DATA_V6_KEY,raw);throw e;}
+      catch(e){markCorruptStore(DATA_V6_KEY,raw,e);throw e;}
       base=DataCore.merge(base,stored);
     }
     if(observed)base=DataCore.merge(base,observed);
-    const local=captureViewState(base,view);
+    let previousView = savedDataView;
+    if (statusEdit && !statusEdit.verifyOnly){
+      const {id,updatedAt} = statusEdit;
+      const life = base.records[id]?.$alive;
+      if (!life?.choices.some(choice => choice.value === true) || !view.items.some(row => row.id === id))
+        throw new Error("客戶資料已變更，請重新開啟選單");
+      if (statusEdit.remove !== undefined){
+        // Only remove the requested option. Another tab may already have assigned a different status.
+        const latest = DataCore.project(base).items.find(row => row.id === id);
+        statusEdit.changed = fieldHas(latest, "status", statusEdit.remove);
+        statusEdit.value = statusEdit.changed ? toggleFieldVal(latest.status,statusEdit.remove,false) : latest.status;
+        statusEdit.updatedAt = statusEdit.changed ? updatedAt : latest.updatedAt;
+        // Compare against the observed status. Accepting a newer status must not author another edit.
+        previousView = {...savedDataView,items:savedDataView.items.map(row =>
+          row.id === id ? {...row,status:latest.status,updatedAt:latest.updatedAt} : row)};
+      }
+      // Start with the saved view so a menu click never commits another editor's pending fields.
+      view.items = view.items.map(row => row.id === id ? {...row,status:statusEdit.value,updatedAt:statusEdit.updatedAt} : row);
+    }
+    const local=captureViewState(base,view,previousView);
     if(DataCore.epochCmp(base.epoch,savedViewState.epoch)>0&&!DataCore.equal(local,savedViewState)){
       queueMergedState(base);scheduleAutoLatest();
       throw new Error("另一個視窗已完整還原，這份編輯尚未保存");
     }
     const next=DataCore.merge(base,local),received=!DataCore.equal(base,dataState);
     const recoveryBefore=received&&!pendingLocalBackup?DataCore.clone(captureLocalState()):null;
+    // A status transaction changes the visible row only after this write succeeds.
+    // An idle storage event may retry the same rolled-back state against another tab's update.
+    retryableStatusWrite = !!statusEdit || (onlyStatusWriteFailed && !!observed && DataCore.equal(view,savedDataView));
     localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));
+    retryableStatusWrite = false;
+    onlyStatusWriteFailed = false;
     dataState=next;savedPreferenceView=nextPrefs;
     savedDataView=view;savedViewState=local;
     if(received){needsDataPaint=true;if(recoveryBefore)pendingLocalBackup=recoveryBefore;}
     if(needsDataPaint){queueMergedState(next);scheduleAutoLatest();}
-    window._saveError=false;updateDataNotice();return true;
-  }catch(e){window._saveError=true;updateDataNotice();return false;}
+    if (!statusEdit || !unrelatedSaveError) window._saveError=false;
+    updateDataNotice();return true;
+  }catch(e){
+    onlyStatusWriteFailed = retryableStatusWrite && !unrelatedSaveError;
+    window._saveError=true;updateDataNotice();return false;
+  }
 }
 window._persistData = storeCurrentState;
 // Persist even an empty first-install envelope so fallback mirrors cannot become legacy edits on reload.
@@ -9259,7 +9947,7 @@ function paintDataState(next){
   try{
     dataState=DataCore.clone(next);const v=DataCore.project(next);
     items=v.items;cats=next.prefs.cats?v.cats:DataCore.clone(DEFAULT_CATS);deleted=v.deleted;
-    window._storageCorrupt=false;window._saveError=false;
+    onlyStatusWriteFailed=false;window._storageCorrupt=false;window._saveError=false;
     saveItems();saveCats();saveDeleted();applySettings({...defaultPreferenceView().settings,...v.settings});
     savedPreferenceView=DataCore.clone({cats,settings:collectSettings()});
     savedDataView=DataCore.clone(dataView());savedViewState=DataCore.clone(next);needsDataPaint=false;
@@ -9335,7 +10023,8 @@ function dataDialog(title){
 function updateDataNotice(){/* completion-check:start */window.refreshCompletionCheck?.();/* completion-check:end */
   const el=document.getElementById("dataNotice");if(!el)return;
   el.hidden=!window._storageCorrupt&&!window._saveError&&!window._autoApplyError;
-  if(window._storageCorrupt)el.innerHTML='本機資料無法讀取，已停止改寫與同步。<button class="s-btn" data-rescue>匯出原始資料</button><button class="s-btn" data-import>匯入備份還原</button>';
+  if(window._unreadableFormat)el.innerHTML='此版本無法確認本機資料格式。請保留原始資料並更新客戶總覽。<button class="s-btn" data-rescue>匯出原始資料</button>';
+  else if(window._storageCorrupt)el.innerHTML='本機資料無法讀取，已停止改寫與同步。<button class="s-btn" data-rescue>匯出原始資料</button><button class="s-btn" data-import>匯入備份還原</button>';
   else if(window._saveError)el.innerHTML='本機儲存失敗，修改尚未安全保存。請先匯出備份。<button class="s-btn" data-rescue>匯出備份</button>';
   else if(window._autoApplyError)el.innerHTML='自動整理尚未完成，原資料皆已保留。<button class="s-btn" data-auto-retry>重試整理</button><button class="s-btn" data-rescue>匯出備份</button>';
   else el.textContent="";
@@ -9347,14 +10036,18 @@ async function showBackupHistory(){
   const {body}=dataDialog("依日期還原備份");body.textContent="讀取備份記錄…";
   let rows=[];try{rows=await CustomerRecovery.list();}catch(e){body.textContent="本機備份空間無法讀取："+e.message;return;}
   body.textContent="";
-  const add=(label,load,rescue=false)=>{
+  const descriptions=backupRowDescriptions(rows);
+  const add=(label,load,rescue=false,description="")=>{
     const row=document.createElement("div");row.className="data-history-row";
     const t=document.createElement("span");t.textContent=label;
+    if(description){
+      const summary=document.createElement("small");summary.className="backup-row-info";summary.textContent=description;t.append(summary);
+    }
     const b=document.createElement("button");b.className="s-btn";b.textContent=rescue?"下載救援資料":"選擇";
-    b.onclick=async()=>{b.disabled=true;try{const value=await load();if(rescue)downloadJSON(value,"客戶總覽原始資料.json");else confirmApplyBackup(value);}catch(e){toast("這份備份無法還原："+e.message);b.disabled=false;}};
+    b.onclick=async()=>{b.disabled=true;try{const value=await load();if(rescue)downloadJSON(value,"客戶總覽原始資料.json");else confirmApplyBackup(value,label+(description?" · "+description:""));}catch(e){toast("這份備份無法還原："+e.message);b.disabled=false;}};
     row.append(t,b);body.append(row);
   };
-  for(const row of rows)add(new Date(row.at).toLocaleString()+" · "+row.label,async()=>row.data,row.data?.app==="customer-rescue");
+  for(const row of rows)add(new Date(row.at).toLocaleString()+" · "+row.label,async()=>row.data,row.data?.app==="customer-rescue",descriptions.get(row.id));
   if(!rows.length){const p=document.createElement("p");p.textContent="目前沒有本機安全副本。";body.append(p);}
   if(syncConnected&&window.listCloudSnapshots){
     const info=document.createElement("p");info.textContent="讀取雲端每日備份…";body.append(info);
@@ -9777,6 +10470,7 @@ let syncConnected = false, syncEmail = null;
   // ---- core two-way sync ----
   async function syncNow(force){/* completion-check:start */updateSyncCheck();/* completion-check:end */
     if(!syncConnected)return {ok:false,reason:"not_connected"};
+    if (onlyStatusWriteFailed && !window._storageCorrupt && !inFlight && navigator.onLine && !window.isTableBusy() && !detailBg.classList.contains("open")) verifyAbandonedStatus();
     if(window._storageCorrupt||window._saveError){setStatus("本機資料尚未安全保存，請先備份處理","warn");syncError=true;return {ok:false,reason:"local_storage"};}
     if(!navigator.onLine){setStatus("目前離線，連線後重試","offline");return {ok:false,reason:"offline"};}
     if(inFlight)return {ok:false,reason:"busy"};
@@ -9792,19 +10486,26 @@ let syncConnected = false, syncEmail = null;
 
       let repair=null;
       try{const p=JSON.parse(localStorage.getItem("customer_app_repair_v6")||"null");if(p&&p.email===syncEmail&&DataCore.equal(p.epoch,dataState.epoch))repair=p;}catch(e){}
+      if(repair){await drive.checkPendingRepair(repair.files);guard();}
       const pulled=await drive.pull(repair?repair.files.map(f=>f.id):[]);guard();
       if(!storeCurrentState())throw new Error("本機儲存失敗");
       let merged=pulled.state?DataCore.merge(dataState,pulled.state):DataCore.clone(dataState);/* completion-check:start */if(!DataCore.equal(DataCore.autoLatest(merged),dataState))showSyncWork();/* completion-check:end */
       if(!await acceptMergedState(merged,guard)){scheduleSyncRetry();return {ok:false,reason:"local_change"};}
       guard();merged=DataCore.clone(dataState);
       let published=null;
-      if(repair||!pulled.loaded.length||!pulled.state||!DataCore.equal(merged,pulled.state)){/* completion-check:start */showSyncWork();/* completion-check:end */
+      const sourceRecovery=DataCore.needsSourceCheckpoint(pulled.loaded,merged);
+      if(repair||!pulled.loaded.length||!pulled.state||!DataCore.equal(merged,pulled.state)||sourceRecovery){/* completion-check:start */showSyncWork();/* completion-check:end */
         // Preserve individual cloud sources before compaction can remove them.
         for(const source of pulled.loaded)if(!DataCore.equal(source.state,merged)){
-          await CustomerRecovery.put("同步取代前：雲端來源",stateBackup(source.state));guard();
+          // Drive checkpoint IDs are immutable. Retrying a partial cleanup reuses its durable backup.
+          const sourceId=sourceRecovery?"drive-source:"+syncCheckEmail+":"+source.file.id:undefined;
+          await CustomerRecovery.put("同步取代前：雲端來源",stateBackup(source.state),sourceId);guard();
         }
         if(autoApplyEditing()||!DataCore.equal(dataState,captureLocalState())){scheduleSyncRetry();return {ok:false,reason:"editing"};}
-        published=await drive.publish(merged);guard();
+        // The cloud may already contain this verified result after a lost readback
+        // or interrupted compaction. Keep that immutable copy instead of uploading it again.
+        const existing=sourceRecovery&&!repair && pulled.loaded.find(s=>DataCore.equal(s.state,merged));
+        published=existing ? existing.file : await drive.publish(merged);guard();
       }
       // A verified upload contains exactly this checkpoint. New local changes remain dirty.
       const latest=DataCore.autoLatest(DataCore.merge(dataState,merged));
