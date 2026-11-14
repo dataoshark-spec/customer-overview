@@ -1068,6 +1068,24 @@
   .table-mode .exp-focus-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink-soft);cursor:pointer;flex:none;transition:all .15s;}
   .exp-focus-btn svg{width:18px;height:18px;}
   .exp-focus-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+  #discreetBtn{-webkit-touch-callout:none;user-select:none;touch-action:manipulation;}
+  #discreetDialog{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;width:min(380px,calc(100vw - 28px));max-height:85dvh;overflow:auto;padding:18px;box-shadow:0 16px 50px rgba(22,34,42,.24);}
+  #discreetDialog::backdrop{background:rgba(12,20,18,.45);}
+  #discreetDialog h2{margin:0;font-size:1.1rem;}
+  #discreetDialog p{color:var(--ink-soft);font-size:.84rem;margin:8px 0;}
+  #discreetChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;}
+  #discreetChoices label{display:flex;align-items:center;gap:7px;min-height:36px;padding:5px 2px;cursor:pointer;}
+  #discreetChoices input{accent-color:var(--accent);width:16px;height:16px;}
+  #discreetDialog .fpanel-foot{justify-content:flex-end;border-top:1px solid var(--line);padding-top:12px;}
+  .table-wrap .discreet-empty{margin:0;padding:28px 12px;color:var(--ink-soft);text-align:center;}
+  @media(max-width:440px){#discreetChoices{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(pointer:coarse){#discreetChoices label{min-height:44px;}}
+  @media(max-width:430px){
+    .table-mode .ctrl-right{gap:4px;}
+    .table-mode .sortsel{min-width:0;}
+    .table-mode .sortsel .cselect-btn{max-width:100%;}
+    .table-mode .sortsel .cselect-txt{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  }
   @media (hover:hover){ .table-mode .exp-focus-btn:not(.on):hover{border-color:var(--border-2);} }
   .needexp-lab{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.74rem;color:var(--text-faint);font-weight:600;margin-bottom:8px;}
   .needexp-hbtn{flex:none;display:inline-block;font-family:inherit;font-size:.78rem;font-weight:700;color:var(--accent-deep);background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:6px 14px;cursor:pointer;}
@@ -1097,6 +1115,12 @@
   .opt-line.dragging{background:var(--surface-2);border-radius:8px;position:relative;z-index:2;}
   .opt-line .opt-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
   .opt-line.is-pri .opt-txt{font-weight:700;}
+  .opt-rename-row{display:flex;align-items:center;gap:3px;padding:1px 0;}
+  .opt-rename-row>.cselect-opt{min-width:0;flex:1;}
+  .opt-rename-btn{flex:none;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--accent-deep);padding:4px 6px;font-family:inherit;font-weight:600;font-size:.73rem;cursor:pointer;}
+  .opt-editing .opt-rename-btn{display:none;}
+  #areaMenu{left:50%;transform:translateX(-50%);width:max-content;min-width:min(272px,calc(100vw - 50px));max-width:min(320px,calc(100vw - 50px));}
+  #toptmenu:has(.opt-rename-row){min-width:min(248px,calc(100vw - 20px));}
   .opt-del{flex:0 0 auto;display:none;align-items:center;justify-content:center;width:28px;height:28px;padding:0;
     font-size:0;color:transparent;border:0;border-radius:50%;background:transparent;box-shadow:none;transition:background .15s,box-shadow .15s;}
   .opt-del::before{content:"";width:13px;height:13px;background:var(--text-faint);transition:background .15s;
@@ -1439,6 +1463,21 @@
 .data-history-row span{overflow-wrap:anywhere;min-width:0}.backup-row-info{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;color:var(--ink-soft);font-size:.88em}
 .backup-history-title,.backup-source-preview{overflow-wrap:anywhere}.backup-history-title{margin-top:0}.backup-source-preview summary{cursor:pointer}.backup-source-preview p{max-height:8em;overflow:auto;margin:.5em 0}
 .data-history-row button{flex-shrink:0}.data-import-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+#optionRenameDialog{width:min(470px,calc(100vw - 24px));background:var(--card);color:var(--ink);max-height:85dvh;overflow:auto;}
+#optionRenameDialog .data-dialog-head{align-items:start;}
+#optionRenameDialog .rename-from{font-size:.86rem;color:var(--ink-soft);overflow-wrap:anywhere;margin-top:4px;}
+#optionRenameDialog .data-dialog-body{padding:14px 16px 16px;}
+#optionRenameDialog label{display:block;font-size:.84rem;font-weight:650;margin-bottom:5px;}
+#optionRenameName{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font:inherit;background:var(--card);color:var(--ink);}
+#optionRenameCount{font-weight:700;color:var(--accent-deep);margin:12px 0 6px;}
+#optionRenameDialog .rename-feedback{color:var(--danger);font-size:.88rem;margin:6px 0;overflow-wrap:anywhere;}
+#optionRenameDialog .rename-preview{overflow:auto;max-height:min(35dvh,300px);border-bottom:1px solid var(--line);}
+#optionRenameDialog table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:.86rem;}
+#optionRenameDialog th,#optionRenameDialog td{padding:7px 4px;text-align:start;vertical-align:top;overflow-wrap:anywhere;}
+#optionRenameDialog th{background:var(--card);color:var(--ink-soft);position:sticky;top:0;border-bottom:1px solid var(--line);}
+#optionRenameDialog td:last-child{color:var(--accent-deep);font-weight:600;}
+#optionRenameDialog .rename-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+#optionRenameDialog .rename-actions button:disabled{opacity:.48;cursor:default;}
 /* 每位客戶的三欄交換：只加入小把手，保留原標題及工具列。 */
 .need-order-title{display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:100%}
 .fneed-head .need-order-title{flex:1;min-width:76px}
@@ -1632,6 +1671,7 @@
         </div>
         <div class="ctrl-right">
           <button type="button" class="flt-clear-btn" id="fltClearAll" title="清除所有欄位篩選" aria-label="清除所有欄位篩選"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h14l-5.4 6.4V18l-3.2 1.6v-8.2L3.5 5Z"/><path d="m17 16 4.5 4.5M21.5 16 17 20.5"/></svg></button>
+          <button type="button" class="exp-focus-btn" id="discreetBtn" title="低調模式：單點切換，長按設定隱藏欄位（鍵盤按 ↓）" aria-label="低調模式" aria-pressed="false" aria-haspopup="dialog" aria-controls="discreetDialog" aria-keyshortcuts="ArrowDown"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M9.8 5.5a12.3 12.3 0 0 1 2.2-.2c6.2 0 10 6.7 10 6.7a18.6 18.6 0 0 1-3 3.9M6.1 6.9A18.1 18.1 0 0 0 2 12s3.8 6.7 10 6.7c1.8 0 3.5-.5 5-1.3M9.6 9.6a3.4 3.4 0 0 0 4.8 4.8"/></svg></button>
           <button type="button" class="exp-focus-btn" id="expFocusBtn" title="展開需求時聚焦：其他列變淡" aria-pressed="false" aria-label="展開聚焦"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="2.5" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="21.5" y2="12"/></svg></button>
           <button type="button" class="view-btn" id="viewBtn" title="切換檢視" aria-label="切換檢視"></button>
           <button type="button" class="mode-btn" id="modeBtn" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20Z"/><path d="m13.5 7.5 3.5 3.5"/></svg></button>
@@ -1852,6 +1892,15 @@
   </div>
 
   <!-- ===== Toast ===== -->
+  <dialog id="discreetDialog" aria-labelledby="discreetTitle" aria-describedby="discreetDesc">
+    <h2 id="discreetTitle">低調模式設定</h2>
+    <p id="discreetDesc">勾選開啟時要隱藏的欄位</p>
+    <div id="discreetChoices"></div>
+    <div class="fpanel-foot">
+      <button type="button" class="cal-fbtn cal-cancel" id="discreetCancel">取消</button>
+      <button type="button" class="cal-fbtn cal-today" id="discreetApply">套用</button>
+    </div>
+  </dialog>
   <!-- ===== Install banner ===== -->
   <div class="install-bar" id="installBar" role="dialog" aria-label="安裝應用程式">
     <span class="ib-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg></span>
@@ -2606,7 +2655,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.14E";
+const APP_VERSION = "2026.11.14F";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3267,10 +3316,11 @@ function stripOrphansFromItem(it, field, optKey){
   it.updatedAt = Date.now();
   return true;
 }
-function buildOptMenuRowHTML(v, { multi, curArr, curSingle }){
+function buildOptMenuRowHTML(v, { multi, curArr, curSingle, renamable }){
   const on = multi ? curArr.includes(v) : v === curSingle;
   const pri = multi && on && curArr[0] === v;
-  return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}" data-v="${esc(v)}"><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span>${multi&&on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}${multi?`<span class="chk">✓</span>`:""}<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`;
+  const shortcut = renamable ? ' aria-keyshortcuts="F2" title="F2 重新命名"' : "";
+  return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}" data-v="${esc(v)}"${shortcut}><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span>${multi&&on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}${multi?`<span class="chk">✓</span>`:""}<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`;
 }
 function canAddSourceOption(key, value){
   if (key !== "source") return true;
@@ -3287,17 +3337,36 @@ function canRemoveSourceOption(key, value){
 }
 function buildOptMenuHTML(optKey, curArr, multi, emptyOn, curSingle){
   return `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>`
-    + optList(optKey).map(v => optKey === "status" && !multi ? buildStatusColorMenuRow(v, curSingle) : buildOptMenuRowHTML(v, { multi, curArr, curSingle })).join("")
+    + optList(optKey).map(v => {
+      if (optKey === "status" && !multi) return buildStatusColorMenuRow(v, curSingle);
+      const renamable=optKey === "area" || optKey === "source";
+      const option=buildOptMenuRowHTML(v, {multi,curArr,curSingle,renamable});
+      if (!renamable) return option;
+      return '<div class="opt-rename-row">'+option+'<button type="button" class="opt-rename-btn" data-rename-option="'+esc(v)+'" aria-label="重新命名「'+esc(v)+'」">重新命名</button></div>';
+    }).join("")
     + `<div class="opt-add"><input placeholder="自訂…"><button type="button">加入</button></div>`;
 }
 const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","來源","詢問","客戶需求"];
 const T_FIELDS = ["date","status","area","cat","budget","rooms","pType","pNum","cust","tel","line","source","ask","need"];
+const DISCREET_KEY = "customer_app_discreet_v1";
+function loadDiscreet(){
+  try {
+    const v = JSON.parse(localStorage.getItem(DISCREET_KEY));
+    if (v && Array.isArray(v.fields)){
+      const fields = T_FIELDS.filter(f => v.fields.includes(f));
+      return {on:v.on === true && fields.length > 0, fields};
+    }
+  } catch(e){}
+  return {on:false, fields:["source"]};
+}
+let discreet = loadDiscreet();
+function visibleTableFields(){ return discreet.on ? T_FIELDS.filter(f => !discreet.fields.includes(f)) : T_FIELDS; }
 const DEFAULT_COLW = {date:84,area:120,cat:80,budget:112,rooms:88,pType:96,pNum:64,status:88,cust:120,tel:104,line:96,source:88,ask:116};
 const COLW_MIN = 48, COLW_MAX = 640, NEED_MIN = 240, DEL_W = 40;
 function loadColW(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_colw_v1") || "null"); if (s && typeof s === "object") return {...DEFAULT_COLW, ...s}; } catch(e){} } return {...DEFAULT_COLW}; }
 function saveColW(){ if (storageOK){ try { localStorage.setItem("customer_app_colw_v1", JSON.stringify(colW)); } catch(e){} } }
 let colW = loadColW();
-function colSumMinWidth(){ let s = 0; for (const f in DEFAULT_COLW) s += (colW[f] || DEFAULT_COLW[f]); return s + NEED_MIN + DEL_W; }
+function colSumMinWidth(fields = visibleTableFields()){ return fields.reduce((w,f) => w + (f === "need" ? NEED_MIN : colW[f] || DEFAULT_COLW[f]), DEL_W); }
 function tchip(url, label, cls){
   const on = url && String(url).trim();
   const u = on ? String(url) : "";
@@ -3367,7 +3436,7 @@ function bindTableDates(){
   cells.forEach(observeTableDate);
   fitTableDateCells(cells);
 }
-function trowHTML(d){
+function trowHTML(d, fields = visibleTableFields()){
   const catVals = fieldVals(d, "cat");
   const catPri = catVals[0] || "";
   const color = catColor(catPri);
@@ -3402,32 +3471,35 @@ function trowHTML(d){
   const dateCell = `<td class="datewrap"><span class="gen-edge"></span><button type="button" class="gen-btn" tabindex="-1" data-gen="1" title="生成買方名稱並複製" aria-label="生成買方名稱並複製">${GEN_ICON}<span class="gen-label">生成</span></button>${dateInner}</td>`;
   // 重繪時直接帶上列狀態:展開列(首次排版即為淡化樣式,聚焦轉場不會重播)+ 批次選取列(同步重繪不掉選取)
   const _trCls = ((openNeedId === d.id) ? ("exp-open" + (editMode ? " exp-editing" : "") + " ") : "") + ((tselMode && selected.has(d.id)) ? "tsel-row" : "");
-  return `<tr data-id="${esc(d.id)}"${statusColorRowAttrs(d)}${_trCls.trim() ? ` class="${_trCls.trim()}"` : ""}>`+
-    dateCell+
-    optCell("status","status")+
-    optCell("area","area")+
-    catCell+
-    cell("budget")+
-    optCell("rooms","rooms")+
-    optCell("pType","ptype")+optCell("pNum","pnum")+
-    segCell("cust","tname")+
-    cell("tel")+
-    cell("line")+
-    optCell("source","source")+
-    segCell("ask")+
-    `<td class="tneedcell"><div class="tcell tneed" data-need="1"${editMode ? ' tabindex="0"' : ""}>${needSummaryHTML(d)}</div></td>`+
-    delCell+
-  `</tr>`;
+  const rowCells = fields.map(f => {
+    switch(f){
+      case "date": return dateCell;
+      case "cat": return catCell;
+      case "cust": return segCell(f,"tname");
+      case "ask": return segCell(f);
+      case "need": return `<td class="tneedcell"><div class="tcell tneed" data-need="1"${editMode ? ' tabindex="0"' : ""}>${needSummaryHTML(d)}</div></td>`;
+      case "budget": case "tel": case "line": return cell(f);
+      default: return optCell(f,f.toLowerCase());
+    }
+  }).join("");
+  return `<tr data-id="${esc(d.id)}"${statusColorRowAttrs(d)}${_trCls.trim() ? ` class="${_trCls.trim()}"` : ""}>${rowCells}${delCell}</tr>`;
 }
 function renderTable(list){
   if(!commitOpenNeedEditors())return false;
   closeNeedOrderUI();
   const oldScroll = tableWrap.querySelector(".tbody-wrap");
   const sTop = oldScroll ? oldScroll.scrollTop : 0, sLeft = oldScroll ? oldScroll.scrollLeft : 0;
-  const T = T_COLS.concat("");
+  const fields = visibleTableFields();
+  if (!fields.includes("need")) openNeedId = null;
+  if (!fields.length){
+    tableDateObserver?.disconnect();
+    if (tableWrap._scrollUnbind){ tableWrap._scrollUnbind(); tableWrap._scrollUnbind = null; }
+    tableWrap.innerHTML = '<p class="discreet-empty">表格欄位已全部隱藏</p>';
+    return;
+  }
   const FILTERABLE = {area:1, cat:1, budget:1, rooms:1, pType:1, pNum:1, status:1, source:1};
-  const head = T_COLS.map((h,i) => {
-    const f = T_FIELDS[i];
+  const head = fields.map(f => {
+    const h = T_COLS[T_FIELDS.indexOf(f)];
     const rz = (f && f !== "need") ? `<span class="col-resize" data-field="${f}"></span>` : "";
     const lab = (f && FILTERABLE[f])
       ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}"><span class="th-label">${h}</span><span class="fmk">▾</span></button>`
@@ -3435,13 +3507,13 @@ function renderTable(list){
     const gc = (f === "date") ? '<span class="gen-caret" aria-hidden="true">▾</span>' : "";
     return `<th data-field="${f}">${lab}${gc}${rz}</th>`;
   }).join("") + `<th></th>`;
-  const cols = T_FIELDS.map(f => f === "need"
+  const cols = fields.map(f => f === "need"
     ? `<col data-field="need">`
     : `<col data-field="${f}" style="width:${colW[f] || DEFAULT_COLW[f]}px">`
   ).join("") + `<col data-field="_del" style="width:${DEL_W}px">`;
-  const rows = list.length ? list.map(trowHTML).join("")
-    : `<tr><td colspan="${T.length}" class="tempty">${items.length ? "找不到符合的需求" : "還沒有需求，點右上「＋ 新增客戶」開始建立。"}</td></tr>`;
-  const mw = colSumMinWidth();
+  const rows = list.length ? list.map(d => trowHTML(d,fields)).join("")
+    : `<tr><td colspan="${fields.length+1}" class="tempty">${items.length ? "找不到符合的需求" : "還沒有需求，點右上「＋ 新增客戶」開始建立。"}</td></tr>`;
+  const mw = colSumMinWidth(fields);
   const cls = editMode ? "" : "ro";
   // 兩層:表頭層固定填滿到圓角、捲軸只長在表身層;兩表共用同一份 colgroup 與 min-width 才對齊
   tableWrap.innerHTML =
@@ -3716,11 +3788,12 @@ function tNavGrid(fromEl, dRow, dCol){
   const field = tNavFieldFromEl(fromEl);
   const tr = fromEl.closest("tr[data-id]");
   if (!field || !tr) return false;
-  let fi = T_FIELDS.indexOf(field);
+  const fields = visibleTableFields();
+  let fi = fields.indexOf(field);
   if (fi < 0) return false;
   if (dCol){
     const ni = fi + dCol;
-    if (ni < 0 || ni >= T_FIELDS.length) return false;
+    if (ni < 0 || ni >= fields.length) return false;
     fi = ni;
   }
   let nrow = tr;
@@ -3729,7 +3802,7 @@ function tNavGrid(fromEl, dRow, dCol){
     if (!nr) return false;
     nrow = nr;
   }
-  const target = tGetFieldEl(nrow, T_FIELDS[fi]);
+  const target = tGetFieldEl(nrow, fields[fi]);
   if (!target) return false;
   tCommitIfCell(fromEl);
   return tFocusFieldEl(target);
@@ -4188,7 +4261,7 @@ function openNeedExp(tr, doFocus){
     if (previous) refreshNeedSummary(previous);
   });
   const it = items.find(x => x.id === id); if (!it) return;
-  const nCols = T_FIELDS.length + 1;
+  const nCols = tr.cells.length;
   const exp = document.createElement("tr");
   exp.className = editMode ? "needexp editing" : "needexp"; exp.dataset.for = id;
   const head = (sg) => {
@@ -5884,7 +5957,7 @@ function _measText(text, srcEl){
   return m.getBoundingClientRect().width;
 }
 function autoFitColumn(field){
-  const idx = T_FIELDS.indexOf(field);
+  const idx = visibleTableFields().indexOf(field);
   if (idx < 0 || field === "need") return;
   const headTbl = tableWrap.querySelector(".thead-wrap .ptable");
   const bodyTbl = tableWrap.querySelector(".tbody-wrap .ptable");
@@ -5934,7 +6007,7 @@ tableWrap.addEventListener("pointerdown", e => {
     _lastRzTime = 0; _lastRzField = null; autoFitColumn(field); return;
   }
   _lastRzField = field; _lastRzTime = now;
-  const th = h.closest("th"), idx = T_FIELDS.indexOf(field);
+  const th = h.closest("th"), idx = th.cellIndex;
   _rz = { field, startX: e.clientX, startW: th.offsetWidth, h, hMin: colHeaderMin(idx), moved: false };
   h.classList.add("dragging"); document.body.classList.add("col-resizing");
 });
@@ -6394,11 +6467,16 @@ function toptMenuSyncIdx(){
   toptMenuHighlight();
 }
 function onToptMenuKey(e){
+  if (e.target.closest("[data-rename-option],#optionRenameDialog")) return;
   if (e.target.closest("#tint-panel") || e.target.closest("[data-status-color]")) return;
   if (!toptmenu.classList.contains("show")) return;
   if (e.target.closest(".opt-add")) return;
   const opts = toptMenuOpts();
   if (!opts.length) return;
+  if (e.key === "F2" && !toptmenu.classList.contains("opt-editing")){
+    const rename=opts[toptMenuIdx]?.closest(".opt-rename-row")?.querySelector("[data-rename-option]");
+    if(rename){e.preventDefault();e.stopImmediatePropagation();rename.click();}return;
+  }
   if (e.key === "ArrowDown"){ e.preventDefault(); e.stopPropagation(); toptMenuIdx = (toptMenuIdx + 1) % opts.length; toptMenuHighlight(); }
   else if (e.key === "ArrowUp"){ e.preventDefault(); e.stopPropagation(); toptMenuIdx = (toptMenuIdx - 1 + opts.length) % opts.length; toptMenuHighlight(); }
   else if (e.key === "Enter" || e.key === " "){
@@ -6586,6 +6664,17 @@ function setOptValue(v, opts){
   if (multi) renderToptMenu();
 }
 toptmenu.addEventListener("click", e => {
+  const rename=e.target.closest("[data-rename-option]");
+  if(rename){
+    e.stopPropagation();
+    const key=toptKey, id=tFindItem(toptTrigger)?.id;
+    closeOptMenu();
+    openOptionRenameDialog(key,rename.dataset.renameOption,()=>{
+      const row=Array.from(tableWrap.querySelectorAll("tr[data-id]")).find(r=>r.dataset.id===id);
+      (row?.querySelector('.topt-trigger[data-field="'+key+'"]')||tableWrap.querySelector('[data-flt="'+key+'"]'))?.focus({preventScroll:true});
+    });
+    return;
+  }
   const del = e.target.closest(".opt-del");
   if (del){ e.stopPropagation(); const dv = del.dataset.del;
     if (!canRemoveSourceOption(toptKey,dv)) return;
@@ -7048,6 +7137,94 @@ function applyExpFocus(){
   if (b){ b.classList.toggle("on", expFocus); b.setAttribute("aria-pressed", expFocus ? "true" : "false"); }
 }
 (function(){ const b = document.getElementById("expFocusBtn"); if (b) b.addEventListener("click", () => { expFocus = !expFocus; saveExpFocus(); applyExpFocus(); onLocalChange("settings"); toast(expFocus ? "展開聚焦：開" : "展開聚焦：關"); }); applyExpFocus(); })();
+
+// Local presentation preference. Customer records, filter criteria and synced preferences are independent.
+const discreetDialog = document.getElementById("discreetDialog");
+(function(){
+  const button = document.getElementById("discreetBtn");
+  const choices = document.getElementById("discreetChoices");
+  let hold = null, suppressTap = false;
+  // A touch that opens a native dialog can send its release-click to a checkbox
+  // under the finger. Only a new gesture may activate a dialog control.
+  let suppressDialogClick = false;
+  discreetDialog.addEventListener("pointerdown",() => { suppressDialogClick = false; },true);
+  discreetDialog.addEventListener("click", e => {
+    if (suppressDialogClick && e.detail){
+      suppressDialogClick = false; e.preventDefault(); e.stopImmediatePropagation();
+    }
+  },true);
+  function syncButton(){
+    button.classList.toggle("on",discreet.on);
+    button.setAttribute("aria-pressed",String(discreet.on));
+  }
+  function setDiscreet(on,fields){
+    const redraw = on || discreet.on;
+    if (redraw){
+      if (lpop.classList.contains("show")) commitLink();
+      if (!commitOpenNeedEditors()) return false;
+      if (catmenu.classList.contains("show")) closeCatMenu();
+      if (toptmenu.classList.contains("show")) closeOptMenu();
+      hideNeedHover(); hideMultiHover();
+      if (on && fields.length === T_FIELDS.length && tselMode) exitTselMode();
+    }
+    const toggled = discreet.on !== on;
+    discreet = {on,fields};
+    syncButton();
+    if (redraw) applyFilter();
+    const message = toggled ? (on ? "低調模式：開" : "低調模式：關") : "";
+    try { localStorage.setItem(DISCREET_KEY, JSON.stringify(discreet)); }
+    catch(e){ toast((message ? message + "。" : "") + "設定只套用於這次使用"); return true; }
+    if (message) toast(message);
+    return true;
+  }
+  function openDialog(){
+    if (discreetDialog.open) return;
+    if (catmenu.classList.contains("show")) closeCatMenu();
+    if (toptmenu.classList.contains("show")) closeOptMenu();
+    if (lpop.classList.contains("show")) commitLink();
+    hideNeedHover(); hideMultiHover();
+    choices.innerHTML = T_FIELDS.map((f,i) => `<label><input type="checkbox" value="${f}"${discreet.fields.includes(f) ? " checked" : ""}>${T_COLS[i]}</label>`).join("");
+    discreetDialog.showModal();
+    choices.querySelector('input[value="source"]').focus({preventScroll:true});
+  }
+  function stopHold(){
+    if (hold) clearTimeout(hold.timer);
+    hold = null;
+  }
+  button.addEventListener("pointerdown", e => {
+    if (!e.isPrimary || e.button !== 0){ stopHold(); return; }
+    stopHold(); suppressTap = false;
+    hold = {id:e.pointerId,x:e.clientX,y:e.clientY,timer:setTimeout(() => {
+      suppressTap = true; suppressDialogClick = true; openDialog();
+    },550)};
+    button.setPointerCapture(e.pointerId);
+  });
+  button.addEventListener("pointermove", e => {
+    if (hold && e.pointerId === hold.id && Math.hypot(e.clientX-hold.x,e.clientY-hold.y)>10){ suppressTap = true; stopHold(); }
+  });
+  button.addEventListener("pointerup",stopHold);
+  button.addEventListener("pointercancel",() => { suppressTap = true; stopHold(); });
+  button.addEventListener("lostpointercapture",stopHold);
+  window.addEventListener("blur",stopHold);
+  button.addEventListener("contextmenu", e => e.preventDefault());
+  button.addEventListener("click", e => {
+    if (e.detail && suppressTap){ suppressTap = false; return; }
+    if (discreetDialog.open) return;
+    if (!discreet.on && !discreet.fields.length){ openDialog(); return; }
+    setDiscreet(!discreet.on,discreet.fields);
+  });
+  button.addEventListener("keydown", e => {
+    if (e.key === "ArrowDown" || e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")){
+      e.preventDefault(); openDialog();
+    }
+  });
+  document.getElementById("discreetCancel").onclick = () => discreetDialog.close();
+  document.getElementById("discreetApply").onclick = () => {
+    const fields = Array.from(choices.querySelectorAll(":checked"), x => x.value);
+    if (setDiscreet(discreet.on && fields.length > 0,fields)) discreetDialog.close();
+  };
+  syncButton();
+})();
 document.getElementById("modeBtn").addEventListener("click", () => setEditMode(!editMode));
 document.getElementById("fltClearAll").addEventListener("click", () => {
   if (!anyColFilter()) return;
@@ -7589,6 +7766,7 @@ function trapFocusKey(e, container){
   try { nodes[j].focus(); } catch(err){}
 }
 function tabTrapTarget(){
+  if (discreetDialog.open) return discreetDialog;
   const tint=document.getElementById("tint-panel");if(tint&&tint.getClientRects().length)return tint;
   const dataDlg=document.querySelector("dialog.data-dialog[open]");if(dataDlg)return dataDlg;
   if (confirmBg && confirmBg.classList.contains("open")) return confirmBg.querySelector(".confirm");
@@ -8121,12 +8299,12 @@ function loadOptOrder(){ if (storageOK){ try { const s = JSON.parse(localStorage
 let optOrder = loadOptOrder();
 statusColorsReady = true;
 function saveOptOrder(){ if (storageOK){ try { localStorage.setItem("customer_app_optorder_v1", JSON.stringify(optOrder)); } catch(e){} } }
-function optList(key){
-  const hid = new Set((customOpts.hidden[key]||[]).map(String)); const seen = new Set();
+function optList(key,options=customOpts,records=items,order=optOrder){
+  const hid = new Set((options.hidden[key]||[]).map(String)); const seen = new Set();
   // 已填的來源可能來自備份或另一台裝置；清單偏好沒有這個名稱時仍可選用。
-  const candidates = DEF_OPTS[key].concat(customOpts[key], key === "source" ? items.map(d => d.source || "") : []);
+  const candidates = DEF_OPTS[key].concat(options[key], key === "source" ? records.map(d => d.source || "") : []);
   const present = candidates.map(String).filter(v => { if (!v || seen.has(v) || hid.has(v)) return false; seen.add(v); return true; });
-  const ord = optOrder[key];
+  const ord = order[key];
   if (ord && ord.length){
     const inOrd = ord.filter(v => present.includes(v));
     return inOrd.concat(present.filter(v => !inOrd.includes(v)));   // 自訂順序在前,未排序/新選項接後面
@@ -8159,10 +8337,21 @@ function makeOptSel(key, emptyLabel, multi){
   function set(v){ vals = asFieldVals(v); if (!multi && vals.length > 1) vals = [vals[0]]; show(); }
   function setFromUser(v){ set(v); saveFormDraft(); }
   function get(){ return packFieldVals(vals); }
+  menu.addEventListener("keydown", e => {
+    if (e.key !== "F2" || menu.classList.contains("opt-editing")) return;
+    const rename=e.target.closest(".opt-rename-row")?.querySelector("[data-rename-option]");
+    if(rename){e.preventDefault();e.stopPropagation();rename.click();}
+  });
   btn.addEventListener("click", e => { e.stopPropagation(); const was = sel.classList.contains("open");
     document.querySelectorAll(".opt-sel.open").forEach(x => x.classList.remove("open")); closeCatSel();
     if (!was){ menu.classList.remove("opt-editing"); renderMenu(); sel.classList.add("open"); } });
   menu.addEventListener("click", e => {
+    const rename=e.target.closest("[data-rename-option]");
+    if(rename){
+      e.stopPropagation();sel.classList.remove("open");
+      openOptionRenameDialog(key,rename.dataset.renameOption,()=>btn.focus({preventScroll:true}));
+      return;
+    }
     const del = e.target.closest(".opt-del");
     if (del){ e.stopPropagation(); const dv = del.dataset.del;
       if (!canRemoveSourceOption(key,dv)) return;
@@ -8627,7 +8816,7 @@ function deleteItem(id){
 
 document.getElementById("fab").addEventListener("click", () => {
   if (openNeedId && typeof closeNeedExp === "function") closeNeedExp();   // 有展開時先收合,避免殘留半吊子畫面
-  if (viewMode === "table") addTableRow(); else openForm(null);
+  if (viewMode === "table" && visibleTableFields().length) addTableRow(); else openForm(null);
 });
 
 // ---- Card interaction: tap = edit, long-press = multi-select delete ----
@@ -9037,6 +9226,8 @@ modalBg.addEventListener("click", e => { if (e.target === modalBg && _mbDownOnBg
 /* TAB 切換「正常 / 編輯」模式:只在列表頁(卡片或表格)且沒有任何浮層/對話框時作用;
    其餘情況(封面、設定頁、表單、日曆、選單…)與 Shift+TAB 一律維持原本的欄位切換 */
 function tabModeToggleAllowed(){
+  if (document.querySelector("#optionRenameDialog[open]")) return false;
+  if (discreetDialog.open) return false;
   const tint=document.getElementById("tint-panel");if(tint&&tint.getClientRects().length)return false;
   if(needOrderBusy)return false;
   const on = (id, cls) => { const el = document.getElementById(id); return !!(el && el.classList.contains(cls)); };
@@ -9063,6 +9254,7 @@ document.addEventListener("keydown", e => {
   trapFocusKey(e, tabTrapTarget());       // Shift+TAB / 浮層內:維持原本的欄位切換
 }, true);
 document.addEventListener("keydown", e => {
+  if (discreetDialog.open) return; // Native dialog handles Escape and checkbox input.
   if (e.key === "Enter" && confirmBg.classList.contains("open")){ e.preventDefault(); document.getElementById("confirmOk").click(); return; }
   if (e.key === "Tab") return;   // Tab 已由 capture 階段 trapFocusKey 處理
   if (e.key !== "Escape") return;
@@ -9757,7 +9949,7 @@ document.addEventListener("pointercancel", endCatDrag);
   let sx = 0, sy = 0, st = 0, track = false, skip = false, detailWasOpen = false;
 
   function overlayOpen(){
-    return modalBg.classList.contains("open")
+    return discreetDialog.open || modalBg.classList.contains("open")
         || detailBg.classList.contains("open")
         || catBg.classList.contains("open")
         || confirmBg.classList.contains("open")
@@ -9792,6 +9984,7 @@ document.addEventListener("pointercancel", endCatDrag);
   }
 
   document.addEventListener("touchstart", function(e){
+    if(document.querySelector("#optionRenameDialog[open]")){track=false;return;}
     if(e.target.closest("#tint-panel")){track=false;return;}
     if(e.target.closest(".need-order-handle,.need-order-menu")||needOrderBusy){track=false;return;}
     if (e.touches.length !== 1){ track = false; return; }
@@ -9938,6 +10131,147 @@ function storeCurrentState(observed, changedSettings, statusEdit){
   }
 }
 window._persistData = storeCurrentState;
+// A rename is one local v6 write. Build it from confirmed records and options;
+// keep input values that are still in a form out of the saved transaction.
+function readOptionRenameState(key){
+  if(key!=="area"&&key!=="source")throw new Error("此欄位無法重新命名");
+  if(!storageOK||window._storageCorrupt||window._saveError)throw new Error("請先確認本機資料已安全儲存");
+  let state=dataState;
+  const raw=localStorage.getItem(DATA_V6_KEY);
+  if(raw!==null){
+    let stored;
+    try{stored=DataCore.validateState(JSON.parse(raw));}
+    catch(e){markCorruptStore(DATA_V6_KEY,raw,e);throw new Error("本機資料無法讀取，請先確認備份");}
+    state=DataCore.merge(state,stored);
+  }
+  if(window._pendingMerge)state=DataCore.merge(state,window._pendingMerge);
+  if(DataCore.epochCmp(state.epoch,savedViewState.epoch)!==0)
+    throw new Error("另一台裝置已還原整份資料，請關閉視窗並等候更新後重試");
+  const view=DataCore.project(DataCore.autoLatest(state));
+  const settings={...defaultPreferenceView().settings,...view.settings,opts:normOpts(view.settings.opts)};
+  const names=optList(key,settings.opts,view.items,settings.optorder);
+  return {state,view,settings,names};
+}
+function planOptionRename(snapshot,key,oldName,newName){
+  const rows=[];
+  let collision=false;
+  for(const row of snapshot.view.items){
+    const before=fieldVals(row,key);
+    if(before.includes(newName))collision=true;
+    if(before.includes(oldName))rows.push({id:row.id,cust:row.cust||"",before,after:before.map(v=>v===oldName?(newName||oldName):v)});
+  }
+  let error="";
+  if(!snapshot.names.includes(oldName))error="這個選項已經變更，請重新開啟選單";
+  else if(!newName)error="請輸入新名稱";
+  else if(newName===oldName)error="請輸入不同的名稱";
+  else if(newName.length>2000)error="選項名稱最多 2000 字";
+  else if(collision||snapshot.names.includes(newName))error="這個名稱已經存在，請使用其他名稱";
+  return {rows,error};
+}
+function renamedList(list,oldName,newName){
+  if(!Array.isArray(list)||!list.includes(oldName))return list;
+  return list.filter(v=>v!==newName).map(v=>v===oldName?newName:v);
+}
+function renamedOptionSettings(snapshot,key,oldName,newName){
+  const settings=snapshot.settings,opts=DataCore.clone(settings.opts);
+  opts[key]=opts[key].filter(v=>v!==oldName&&v!==newName);
+  if(!DEF_OPTS[key].includes(newName))opts[key].push(newName);
+  opts.hidden[key]=opts.hidden[key].filter(v=>v!==newName);
+  if((key==="source"||DEF_OPTS[key].includes(oldName))&&!opts.hidden[key].includes(oldName))opts.hidden[key].push(oldName);
+  const changes={opts};
+  const currentOrder=settings.optorder[key];
+  // An old multi-device options list can be longer than a writable area order.
+  const ordering=key==="area"&&snapshot.names.length>500?currentOrder:snapshot.names;
+  const ordered=renamedList(ordering,oldName,newName);
+  if(ordered&&!DataCore.equal(ordered,currentOrder))changes.optorder={...settings.optorder,[key]:ordered};
+  for(const group of ["colFilter","fltorder"]){
+    const current=settings[group][key];
+    if(current?.includes(oldName))changes[group]={...settings[group],[key]:renamedList(current,oldName,newName)};
+  }
+  return changes;
+}
+function renameFormSelection(key,oldName,newName){
+  const remap=v=>packFieldVals(renamedList(asFieldVals(v),oldName,newName));
+  if(modalBg.classList.contains("open")){
+    const picker=key==="area"?areaPick:sourcePick;
+    if(asFieldVals(picker.get()).includes(oldName))picker.set(remap(picker.get()));
+    if(formBaseRec&&asFieldVals(formBaseRec[key]).includes(oldName))formBaseRec[key]=remap(formBaseRec[key]);
+    saveFormDraft();
+  }else{
+    // A draft may survive a reload before its original form is reopened.
+    const draft=loadFormDraft();if(!draft)return;
+    let changed=false;
+    for(const rec of [draft.rec||draft,draft.base])if(rec&&asFieldVals(rec[key]).includes(oldName)){
+      rec[key]=remap(rec[key]);changed=true;
+    }
+    if(changed)try{sessionStorage.setItem(FORM_DRAFT_KEY,JSON.stringify(draft));}catch(e){toast("草稿暫存失敗，請再次確認草稿中的選項");}
+  }
+}
+function optionRenameNeedsRecovery(snapshot,key,oldName,newName,rows,changes){
+  // capture writes a new dot for the changed field and record life. Leave any
+  // distinct, unresolved candidates intact for the existing recovery backup.
+  const {records,prefs}=snapshot.state;
+  const competing=(cell,project=value=>value)=>{
+    if(!cell||cell.choices.length<2)return false;
+    const first=project(cell.choices[0].value);
+    return cell.choices.slice(1).some(choice=>!DataCore.equal(first,project(choice.value)));
+  };
+  if(rows.some(row=>competing(records[row.id]?.[key])||competing(records[row.id]?.$alive)))return true;
+  const names=[oldName,newName];
+  if(names.some(name=>competing(prefs["option:"+JSON.stringify([key,name])])))return true;
+  // Old versions kept a whole options snapshot. Only its membership for the
+  // two names matters. colFilter and ordering are still whole registers.
+  if(competing(prefs["setting:opts"],opts=>names.map(name=>[
+    !!opts?.[key]?.includes(name),!!opts?.hidden?.[key]?.includes(name)
+  ])))return true;
+  return Object.keys(changes).some(group=>group!=="opts"&&competing(prefs["setting:"+group]));
+}
+function commitOptionRename(snapshot,key,oldName,newName,plan){
+  let current,next,changes,updated,stamp,received,recoveryBefore;
+  try{
+    current=readOptionRenameState(key);
+    const fresh=planOptionRename(current,key,oldName,newName);
+    if(fresh.error||!DataCore.equal(fresh.rows,plan.rows))
+      return {ok:false,snapshot:current,message:fresh.error||"受影響的客戶已變動，請確認最新清單後再按一次"};
+    changes=renamedOptionSettings(current,key,oldName,newName);
+    if(optionRenameNeedsRecovery(current,key,oldName,newName,fresh.rows,changes)){
+      queueMergedState(current.state);scheduleAutoLatest();
+      const formOpen=modalBg.classList.contains("open");
+      return {ok:false,close:true,message:formOpen
+        ?"改名尚未執行。請先完成或關閉客戶表單，等同步整理完成後再改名"
+        :"改名尚未執行。正在整理兩台裝置的修改，請等同步完成後再改名"};
+    }
+    DataCore.settings(changes,true);
+    updated=new Map(fresh.rows.map(row=>[row.id,packFieldVals(row.after)]));
+    stamp=Date.now();
+    const after={...current.view,settings:{...current.settings,...changes},items:current.view.items.map(row=>
+      updated.has(row.id)?{...row,[key]:updated.get(row.id),updatedAt:stamp}:row)};
+    next=DataCore.capture(current.state,after,editActor,stamp,{cats:current.view.cats,settings:current.settings},current.view);
+    DataCore.validateState(next);
+    received=!DataCore.equal(current.state,dataState);
+    recoveryBefore=received&&!pendingLocalBackup?DataCore.clone(captureLocalState()):null;
+    localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));
+  }catch(e){
+    return {ok:false,message:e.name==="QuotaExceededError"?"本機儲存空間不足，改名尚未儲存，請稍後重試":("未能儲存改名："+(e.message||"請稍後重試"))};
+  }
+  // The envelope is authoritative. Publish only this edit to the current screen;
+  // let the existing backup-and-paint path present other devices' changes.
+  const applyRows=rows=>rows.map(row=>updated.has(row.id)?{...row,[key]:updated.get(row.id),updatedAt:stamp}:row);
+  items=applyRows(items);
+  savedDataView={...savedDataView,items:applyRows(savedDataView.items),settings:{...savedDataView.settings,...changes}};
+  savedPreferenceView={...savedPreferenceView,settings:{...savedPreferenceView.settings,...DataCore.clone(changes)}};
+  dataState=next;savedViewState=DataCore.clone(next);
+  if(recoveryBefore)pendingLocalBackup=recoveryBefore;
+  if(received||needsDataPaint){needsDataPaint=true;queueMergedState(next);scheduleAutoLatest();}
+  customOpts=changes.opts;
+  if(changes.optorder){optOrder=changes.optorder;saveOptOrder();}
+  if(changes.fltorder){filterOrder=changes.fltorder;saveFltOrder();}
+  if(changes.colFilter){applyColFilterState(changes);saveColFilterState();}
+  try{localStorage.setItem("customer_app_opts_v1",JSON.stringify(customOpts));localStorage.setItem(STORE_KEY,JSON.stringify(DataCore.project(next).items));}catch(e){}
+  renameFormSelection(key,oldName,newName);
+  renderCover();applyFilter();window.touchSettings();window.scheduleSync();
+  return {ok:true};
+}
 // Persist even an empty first-install envelope so fallback mirrors cannot become legacy edits on reload.
 if(!window._bootState&&!window._storageCorrupt)storeCurrentState();
 function paintDataState(next){
@@ -10019,6 +10353,64 @@ function dataDialog(title){
   d.addEventListener("keydown",e=>{if(e.key==="Escape")e.stopPropagation();});
   d.addEventListener("close",()=>{d.remove();applyPendingMergeIfAny();});
   document.body.append(d);d.showModal();return {dialog:d,body:d.querySelector(".data-dialog-body")};
+}
+function openOptionRenameDialog(key,oldName,returnFocus){
+  if (key !== "area" && key !== "source") return;
+  let snapshot;
+  try { snapshot=readOptionRenameState(key); }
+  catch(error){ toast(error.message || "無法讀取選項，請稍後重試"); returnFocus?.(); return; }
+  const label=key === "area" ? "區域" : "來源";
+  const {dialog,body}=dataDialog("重新命名"+label);
+  dialog.id="optionRenameDialog";
+  const heading=dialog.querySelector("h2");
+  heading.id="optionRenameTitle";
+  dialog.setAttribute("aria-labelledby",heading.id);
+  const original=document.createElement("div");
+  original.className="rename-from";
+  original.textContent="原名稱　"+oldName;
+  const group=document.createElement("div");
+  heading.before(group); group.append(heading,original);
+  body.innerHTML='<label for="optionRenameName">新名稱</label><input id="optionRenameName" autocomplete="off" aria-describedby="optionRenameNote">'+
+    '<p id="optionRenameNote" class="rename-feedback" role="status" hidden></p><p id="optionRenameCount" aria-live="polite"></p>'+
+    '<div class="rename-preview"><table aria-label="改名前後預覽"><thead><tr><th scope="col">客戶</th><th scope="col">目前名稱</th><th scope="col">改名後</th></tr></thead><tbody></tbody></table></div>'+
+    '<div class="rename-actions"><button type="button" id="optionRenameCancel" class="s-btn">取消</button><button type="button" id="optionRenameConfirm" class="s-btn s-btn-primary">確認改名</button></div>';
+  const input=body.querySelector("input"), count=body.querySelector("#optionRenameCount"), note=body.querySelector("#optionRenameNote");
+  const confirm=body.querySelector("#optionRenameConfirm"), tbody=body.querySelector("tbody"), preview=body.querySelector(".rename-preview");
+  let plan;
+  function updatePreview(message=""){
+    const next=input.value.trim();
+    plan=planOptionRename(snapshot,key,oldName,next);
+    confirm.disabled=!!plan.error || !next || next===oldName;
+    const feedback=message || (next!==oldName ? plan.error : "");
+    note.textContent=feedback||"";note.hidden=!feedback;
+    input.setAttribute("aria-invalid",String(!!plan.error && next!==oldName));
+    count.textContent="會更新 "+plan.rows.length+" 位客戶";
+    preview.hidden=!plan.rows.length;
+    const fragment=document.createDocumentFragment();
+    for(const row of plan.rows){
+      const tr=document.createElement("tr");
+      for(const value of [row.cust||"未命名",row.before.join("／"),row.after.join("／")]){
+        const td=document.createElement("td");td.textContent=value;tr.append(td);
+      }
+      fragment.append(tr);
+    }
+    tbody.replaceChildren(fragment);
+  }
+  confirm.onclick=()=>{
+    if(confirm.disabled || !dialog.open)return;
+    const result=commitOptionRename(snapshot,key,oldName,input.value.trim(),plan);
+    if(result.ok){dialog.close();toast("已重新命名，更新 "+plan.rows.length+" 位客戶");return;}
+    if(result.close){dialog.close();toast(result.message);return;}
+    if(result.snapshot)snapshot=result.snapshot;
+    updatePreview(result.message || "更名未儲存，請稍後重試");
+  };
+  input.addEventListener("input",()=>updatePreview());
+  input.addEventListener("keydown",e=>{
+    if(e.key==="Enter" && !e.isComposing && e.keyCode!==229){e.preventDefault();e.stopPropagation();confirm.click();}
+  });
+  body.querySelector("#optionRenameCancel").onclick=()=>dialog.close();
+  dialog.addEventListener("close",()=>returnFocus?.(),{once:true});
+  input.value=oldName;updatePreview();input.focus();input.select();
 }
 function updateDataNotice(){/* completion-check:start */window.refreshCompletionCheck?.();/* completion-check:end */
   const el=document.getElementById("dataNotice");if(!el)return;
