@@ -2729,7 +2729,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.15E";
+const APP_VERSION = "2026.11.15F";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3500,7 +3500,7 @@ function tchip(url, label, cls){
   return `<span class="tchip ${cls} ${on?'on':''}" title="${esc(tip)}" data-label="${esc(label)}" data-url="${esc(url||'')}">${label}</span>`;
 }
 const GEN_ICON = '<svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
-// 生成買方名稱:買方-詢問-客戶（ 結尾（全形括號）。大樓→房數(每個數字各加「房」)、非大樓→類型;各段空白則略過
+// 大樓使用各房數選項的原始值，保留單一選項的範圍與複選順序。
 function buildBuyerName(d){
   const ask = String(d.ask == null ? "" : d.ask).trim();
   const cust = String(d.cust == null ? "" : d.cust).trim();
@@ -3508,8 +3508,11 @@ function buildBuyerName(d){
   const rooms = fieldVals(d, "rooms");
   let tail;
   if (cats.includes("大樓") || fieldPrimary(d, "cat") === "大樓"){
-    const nums = rooms.join("").match(/\d+/g) || String(rooms[0] || "").match(/\d+/g);
-    tail = nums ? nums.map(n => n + "房").join("") : "";
+    tail = rooms.map(room => {
+      const range = room.normalize("NFKC").match(/^(\d+)\s*(?:房\s*)?[-~–—至]\s*(\d+)\s*房?$/);
+      if (range) return range[1] + "-" + range[2] + "房";
+      return (room.match(/\d+/g) || []).map(n => n + "房").join("");
+    }).join("");
   } else {
     tail = fieldPrimary(d, "cat");
   }
