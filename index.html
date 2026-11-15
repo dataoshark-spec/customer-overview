@@ -445,6 +445,20 @@
   }
   .search input::placeholder{color:var(--text-faint);}
   .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(43,92,168,.12);}
+  /* search-help:start */
+  .search-help-btn{flex:0 0 32px;width:32px;height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:8px;background:transparent;color:var(--ink-soft);cursor:pointer;}
+  .search-help-btn svg{width:17px;height:17px;}
+  .search-help-btn[aria-expanded="true"]{color:var(--accent-deep);background:var(--surface-2);}
+  .search-help-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  @media(hover:hover){.search-help-btn:hover{color:var(--accent-deep);background:var(--surface-2);}}
+  .search-help-pop{position:fixed;z-index:205;box-sizing:border-box;width:506px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;padding:15px 17px;border:1px solid var(--line);border-radius:13px;background:var(--card);color:var(--ink-soft);box-shadow:0 8px 24px rgba(12,39,45,.14);font-size:.82rem;line-height:1.8;}
+  .search-help-pop[hidden]{display:none;}
+  .search-help-pop p{margin:0;}
+  .search-help-pop p+p{margin-top:7px;}
+  .search-help-pop .search-help-fields{display:grid;grid-template-columns:5em minmax(0,1fr);gap:3px;}
+  .search-help-pop strong{font-weight:700;color:var(--ink);white-space:nowrap;}
+  @media(pointer:coarse){.search-help-btn{height:44px;}}
+  /* search-help:end */
   .search-box{position:relative;flex:1;min-width:0;display:flex;}
   .search-box input{width:100%;padding-right:38px;}   /* 右側留給清除鈕 */
   /* 自訂清除鈕:只要有輸入文字就顯示(原生的 X 一失焦就消失,不方便) */
@@ -1150,7 +1164,7 @@
   /* 搜尋範圍提示:搜尋框有字或聚焦時,「會被比對」的欄位標題轉琥珀色。
      補進 pType/pNum 後,目前表格 13 個欄位全部都在搜尋範圍 → 整排點亮;之後若新增「不搜尋」的欄位,改成逐欄列選擇器排除它 */
   .thead-wrap th .th-label{transition:color .15s;}
-  .table-wrap.search-hint .thead-wrap th:not([data-field="date"]):not([data-field="tel"]):not([data-field="line"]) .th-label{color:#FFE08A;}   /* 搜尋範圍點亮,但排除不參與搜尋的 建檔日/電話/LINE */
+  .table-wrap.search-hint .thead-wrap th[data-field]:not([data-field="date"]) .th-label{color:#FFE08A;}
   #fltBg{z-index:60;}
   .fpanel{background:var(--card);width:100%;max-width:390px;max-height:80dvh;border-radius:20px;padding:15px 16px 16px;box-shadow:0 18px 50px rgba(22,34,42,.3);display:flex;flex-direction:column;}
   .fpanel-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:1.02rem;color:var(--ink);margin-bottom:8px;}
@@ -1654,6 +1668,14 @@
           <input id="search" type="search" placeholder="關鍵字搜尋" aria-label="搜尋" title="可用「／」分隔多個條件,全部符合才顯示">
           <button type="button" class="search-clear" id="searchClear" aria-label="清除搜尋" title="清除搜尋">✕</button>
         </div>
+        <!-- search-help:start -->
+        <button type="button" class="search-help-btn" id="searchHelpBtn" aria-label="搜尋說明" aria-expanded="false" aria-controls="searchHelpPop" title="搜尋說明"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><circle cx="12" cy="7.5" r=".75" fill="currentColor" stroke="none"/></svg></button>
+        <div class="search-help-pop" id="searchHelpPop" role="region" aria-label="搜尋說明" hidden>
+          <p>輸入部分文字即可搜尋。多個條件用 / 或 ／ 隔開，必須全部符合。</p>
+          <p class="search-help-fields"><strong>會搜尋：</strong><span>客戶稱呼、電話、LINE、狀態、區域、類型、預算、房數、車類、車數、來源、詢問、共有，以及客戶需求三欄的內容與自訂標題。</span></p>
+          <p class="search-help-fields"><strong>不搜尋：</strong><span>建檔日、連結欄的網址，以及客戶需求內的連結網址。</span></p>
+        </div>
+        <!-- search-help:end -->
         <button class="add-obj" id="fab">＋ 新增客戶</button>
       </div>
       <div class="controls">
@@ -2707,7 +2729,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.15C";
+const APP_VERSION = "2026.11.15D";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -6450,14 +6472,16 @@ function eventWithin(e,root){
 }
 // 浮層互斥:開任一浮層前先關掉其他所有(類別選單/格子下拉/篩選彈窗/展開/懸浮預覽),同時只留一個
 function closeOtherOverlays(keep){
+  if (keep !== "search-help") closeSearchHelp();
   if (keep !== "cat" && typeof closeCatMenu === "function") closeCatMenu();
   if (keep !== "opt" && typeof closeOptMenu === "function") closeOptMenu();
   if (keep !== "link"){
     if (lpop && lpop.classList.contains("show") && typeof commitLink === "function") commitLink();
     else if (typeof closeLinkPop === "function") closeLinkPop();
   }
-  if (keep !== "flt" && typeof closeColFlt === "function") closeColFlt();
-  if (keep !== "exp" && typeof closeNeedExp === "function") closeNeedExp();
+  // A closed filter has no scroll lock to release when opening search help.
+  if (keep !== "flt" && typeof closeColFlt === "function" && (keep !== "search-help" || fltBg.classList.contains("open"))) closeColFlt();
+  if (keep !== "exp" && keep !== "search-help" && typeof closeNeedExp === "function") closeNeedExp();
   if (typeof hideNeedHover === "function") hideNeedHover();
   if (typeof hideMultiHover === "function") hideMultiHover();
 }
@@ -7654,6 +7678,7 @@ function updateLH(){
 window.addEventListener("resize", function(){ requestAnimationFrame(function(){ updateLH(); if (typeof syncTableChrome==="function") syncTableChrome(); if (typeof sizeNeedExp==="function") sizeNeedExp(); }); });
 function openList(cat){
   if(!commitOpenNeedEditors())return false;
+  closeSearchHelp();
   headerCountIndex=0;headerCountPage=0; // A fresh list navigation starts at the first count page.
   exitSelectMode();
   editMode = false; saveEditMode();     // 進入列表一律預設「正常」模式;要編輯需先選檢視再點編輯
@@ -7669,6 +7694,7 @@ function openList(cat){
 }
 function showCover(){
   if(!commitOpenNeedEditors())return false;
+  closeSearchHelp();
   saveNav("cover");
   exitSelectMode();
   if (typeof closeColFlt === "function") closeColFlt();
@@ -7695,6 +7721,48 @@ document.getElementById("tabs").addEventListener("click", e => {
 let _searchDeb = null;
 searchEl.addEventListener("input", () => { clearTimeout(_searchDeb); _searchDeb = setTimeout(applyFilter, 150); });
 document.getElementById("searchClear").addEventListener("click", () => { searchEl.value = ""; applyFilter(); });
+/* search-help:start */
+const searchHelpBtn = document.getElementById("searchHelpBtn");
+const searchHelpPop = document.getElementById("searchHelpPop");
+// 放在頁面最外層，避免列表標頭的毛玻璃效果改變 fixed 浮層的定位基準。
+document.body.appendChild(searchHelpPop);
+function closeSearchHelp(){
+  const pop = document.getElementById("searchHelpPop"), btn = document.getElementById("searchHelpBtn");
+  if (pop) pop.hidden = true;
+  if (btn){ btn.setAttribute("aria-expanded", "false"); btn.removeAttribute("aria-describedby"); }
+}
+function positionSearchHelp(){
+  if (searchHelpPop.hidden) return;
+  const rect = searchEl.getBoundingClientRect(), btnRect = searchHelpBtn.getBoundingClientRect();
+  const edge = 12, vw = document.documentElement.clientWidth, vh = window.innerHeight;
+  searchHelpPop.style.maxHeight = Math.max(80, vh - edge * 2) + "px";
+  const width = searchHelpPop.offsetWidth, height = searchHelpPop.offsetHeight;
+  const left = Math.min(Math.max(edge, rect.left), Math.max(edge, vw - width - edge));
+  const below = Math.max(rect.bottom, btnRect.bottom) + 8;
+  const top = below + height <= vh - edge ? below : Math.max(edge, rect.top - height - 8);
+  searchHelpPop.style.left = left + "px";
+  searchHelpPop.style.top = top + "px";
+}
+searchHelpBtn.addEventListener("click", () => {
+  if (!searchHelpPop.hidden){ closeSearchHelp(); return; }
+  closeOtherOverlays("search-help");
+  searchHelpPop.hidden = false;
+  searchHelpBtn.setAttribute("aria-expanded", "true");
+  searchHelpBtn.setAttribute("aria-describedby", "searchHelpPop");
+  positionSearchHelp();
+});
+searchEl.addEventListener("focus", closeSearchHelp);
+document.addEventListener("click", e => {
+  if (!searchHelpPop.hidden && !searchHelpPop.contains(e.target) && !searchHelpBtn.contains(e.target)) closeSearchHelp();
+}, true);
+document.addEventListener("focusin", e => {
+  if (!searchHelpPop.hidden && !searchHelpPop.contains(e.target) && e.target !== searchHelpBtn) closeSearchHelp();
+});
+document.addEventListener("scroll", e => {
+  if (!searchHelpPop.hidden && e.target !== searchHelpPop && !searchHelpPop.contains(e.target)) closeSearchHelp();
+}, true);
+window.addEventListener("resize", positionSearchHelp);
+/* search-help:end */
 const syncSearchHint = () => tableWrap.classList.toggle("search-hint", !!searchEl.value || document.activeElement === searchEl);
 searchEl.addEventListener("focus", syncSearchHint);
 searchEl.addEventListener("blur", syncSearchHint);
@@ -9389,6 +9457,7 @@ modalBg.addEventListener("click", e => { if (e.target === modalBg && _mbDownOnBg
 /* TAB 切換「正常 / 編輯」模式:只在列表頁(卡片或表格)且沒有任何浮層/對話框時作用;
    其餘情況(封面、設定頁、表單、日曆、選單…)與 Shift+TAB 一律維持原本的欄位切換 */
 function tabModeToggleAllowed(){
+  if (!searchHelpPop.hidden || document.activeElement?.closest(".search-box, #searchHelpBtn")) return false;
   if (document.querySelector("#optionRenameDialog[open]")) return false;
   if (discreetDialog.open) return false;
   const tint=document.getElementById("tint-panel");if(tint&&tint.getClientRects().length)return false;
@@ -9421,6 +9490,7 @@ document.addEventListener("keydown", e => {
   if (e.key === "Enter" && confirmBg.classList.contains("open")){ e.preventDefault(); document.getElementById("confirmOk").click(); return; }
   if (e.key === "Tab") return;   // Tab 已由 capture 階段 trapFocusKey 處理
   if (e.key !== "Escape") return;
+  if (!searchHelpPop.hidden){ e.preventDefault(); closeSearchHelp(); searchHelpBtn.focus(); return; }
   const ib = document.getElementById("installBar");
   if (ib && ib.classList.contains("show")){ ib.classList.remove("show"); try { localStorage.setItem("customer_app_install_dismiss_v1", "1"); } catch(err){} return; }
   if (document.getElementById("calBg").classList.contains("open")){ if (window.closeCal) window.closeCal(); return; }
@@ -10122,6 +10192,7 @@ document.addEventListener("pointercancel", endCatDrag);
   // 橫滑 = 關閉浮層,不做返回導航 —— 下拉還開著就跳回首頁很反直覺。
   function swipeClosePopups(){
     let closed = false;
+    if (!searchHelpPop.hidden){ closeSearchHelp(); closed = true; }
     const show = id => { const el = document.getElementById(id); return !!(el && el.classList.contains("show")); };
     const isOpen = id => { const el = document.getElementById(id); return !!(el && el.classList.contains("open")); };
     if (show("toptmenu") || show("catmenu") || isOpen("fltBg") || isOpen("sortSel") || isOpen("catSel")){
@@ -10145,7 +10216,7 @@ document.addEventListener("pointercancel", endCatDrag);
     detailWasOpen = detailBg.classList.contains("open");
     const el = e.target;
     // 起點若在橫向捲動列 / 輸入框 / 下拉選單 / 表格 / 連結視窗上，則不攔截(讓它們正常運作)
-    skip = !!(el.closest && el.closest("#tabs, #listCountWrap, input, textarea, .cselect, .table-wrap, #linkpop, #catmenu, select"));
+    skip = !!(el.closest && el.closest("#tabs, #listCountWrap, input, textarea, .cselect, .table-wrap, #linkpop, #catmenu, select, #searchHelpBtn, #searchHelpPop"));
     if (modalBg.classList.contains("open")) skip = false;  // 編輯表單開啟時,允許滑動關閉
     if (detailWasOpen) skip = false;  // 詳情頁開啟時,允許滑動關閉(只回列表,不跳封面)
     const _cb = document.getElementById("calBg");
