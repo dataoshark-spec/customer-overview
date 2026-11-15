@@ -876,9 +876,7 @@
   .cat-item.dragging{transition:none;background:var(--card);border-color:var(--border-2);position:relative;z-index:5;
     box-shadow:0 10px 24px rgba(22,34,42,.16);}
   .cat-item .cat-color{flex:none;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:8px;cursor:pointer;box-shadow:inset 0 0 0 2px var(--card);}
-  .cat-item .cat-name{flex:1;min-width:0;font-family:inherit;font-size:1rem;font-weight:600;color:var(--ink);
-    background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 11px;outline:none;transition:border-color .15s ease;}
-  .cat-item .cat-name:focus{border-color:var(--accent);}
+  .cat-item .cat-name{flex:1;min-width:0;font-size:1rem;font-weight:600;color:var(--ink);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
   .cat-item .cat-count{flex:none;font-size:.76rem;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
   .cat-item .cat-del{flex:none;width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--card);
     color:var(--ink-soft);font-size:1rem;cursor:pointer;display:grid;place-items:center;transition:background .15s ease,color .15s ease,border-color .15s ease;}
@@ -1069,7 +1067,7 @@
   .exp-focus-btn svg{width:18px;height:18px;}
   .exp-focus-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
   #discreetBtn{-webkit-touch-callout:none;user-select:none;touch-action:manipulation;}
-  #discreetDialog{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;width:min(380px,calc(100vw - 28px));max-height:85dvh;overflow:auto;padding:18px;box-shadow:0 16px 50px rgba(22,34,42,.24);}
+  #discreetDialog{position:fixed;inset:0;margin:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;width:min(380px,calc(100vw - 28px));max-height:85dvh;overflow:auto;padding:18px;box-shadow:0 16px 50px rgba(22,34,42,.24);}
   #discreetDialog::backdrop{background:rgba(12,20,18,.45);}
   #discreetDialog h2{margin:0;font-size:1.1rem;}
   #discreetDialog p{color:var(--ink-soft);font-size:.84rem;margin:8px 0;}
@@ -1105,7 +1103,7 @@
   }
   .cselect-txt.ph{color:var(--text-faint);}
   .opt-menu{left:0;right:auto;width:max-content;min-width:max(210px,100%);max-width:min(320px,90vw);max-height:280px;overflow-y:auto;overflow-x:hidden;padding:6px 6px 0;}
-  #pnumMenu{left:auto;right:0;}                                                   /* 車位數在最右欄:下拉靠右,不超出視窗 */
+  #pnumMenu,#sharedMenu{left:auto;right:0;}                                        /* 靠右欄位的下拉需留在視窗內 */
   .opt-menu .opt-add{margin:0 -6px;padding:9px 15px;border-radius:0 0 12px 12px;} /* 底部圓角補滿,不露底 */
   .pk-num .opt-menu{left:auto;right:0;}
   .opt-line{display:flex;align-items:center;gap:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
@@ -1116,11 +1114,14 @@
   .opt-line .opt-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
   .opt-line.is-pri .opt-txt{font-weight:700;}
   .opt-rename-row{display:flex;align-items:center;gap:3px;padding:1px 0;}
-  .opt-rename-row>.cselect-opt{min-width:0;flex:1;}
+  .opt-rename-row>.cselect-opt,.opt-rename-row>.catmenu-opt{min-width:0;flex:1;}
   .opt-rename-btn{flex:none;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--accent-deep);padding:4px 6px;font-family:inherit;font-weight:600;font-size:.73rem;cursor:pointer;}
   .opt-editing .opt-rename-btn{display:none;}
   #areaMenu{left:50%;transform:translateX(-50%);width:max-content;min-width:min(272px,calc(100vw - 50px));max-width:min(320px,calc(100vw - 50px));}
-  #toptmenu:has(.opt-rename-row){min-width:min(248px,calc(100vw - 20px));}
+  #toptmenu:has(.opt-rename-row),#catmenu:has(.opt-rename-row){min-width:min(248px,calc(100vw - 20px));}
+  #catSelMenu{min-width:min(248px,calc(100vw - 30px));right:0;}
+  #catmenu:has(.opt-rename-row){max-width:min(300px,calc(100vw - 20px));}
+  #ptypeMenu{left:50%;right:auto;transform:translateX(-50%);}
   .opt-del{flex:0 0 auto;display:none;align-items:center;justify-content:center;width:28px;height:28px;padding:0;
     font-size:0;color:transparent;border:0;border-radius:50%;background:transparent;box-shadow:none;transition:background .15s,box-shadow .15s;}
   .opt-del::before{content:"";width:13px;height:13px;background:var(--text-faint);transition:background .15s;
@@ -1471,11 +1472,6 @@
 #optionRenameName{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font:inherit;background:var(--card);color:var(--ink);}
 #optionRenameCount{font-weight:700;color:var(--accent-deep);margin:12px 0 6px;}
 #optionRenameDialog .rename-feedback{color:var(--danger);font-size:.88rem;margin:6px 0;overflow-wrap:anywhere;}
-#optionRenameDialog .rename-preview{overflow:auto;max-height:min(35dvh,300px);border-bottom:1px solid var(--line);}
-#optionRenameDialog table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:.86rem;}
-#optionRenameDialog th,#optionRenameDialog td{padding:7px 4px;text-align:start;vertical-align:top;overflow-wrap:anywhere;}
-#optionRenameDialog th{background:var(--card);color:var(--ink-soft);position:sticky;top:0;border-bottom:1px solid var(--line);}
-#optionRenameDialog td:last-child{color:var(--accent-deep);font-weight:600;}
 #optionRenameDialog .rename-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
 #optionRenameDialog .rename-actions button:disabled{opacity:.48;cursor:default;}
 /* 每位客戶的三欄交換：只加入小把手，保留原標題及工具列。 */
@@ -1671,7 +1667,7 @@
         </div>
         <div class="ctrl-right">
           <button type="button" class="flt-clear-btn" id="fltClearAll" title="清除所有欄位篩選" aria-label="清除所有欄位篩選"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h14l-5.4 6.4V18l-3.2 1.6v-8.2L3.5 5Z"/><path d="m17 16 4.5 4.5M21.5 16 17 20.5"/></svg></button>
-          <button type="button" class="exp-focus-btn" id="discreetBtn" title="低調模式：單點切換，長按設定隱藏欄位（鍵盤按 ↓）" aria-label="低調模式" aria-pressed="false" aria-haspopup="dialog" aria-controls="discreetDialog" aria-keyshortcuts="ArrowDown"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M9.8 5.5a12.3 12.3 0 0 1 2.2-.2c6.2 0 10 6.7 10 6.7a18.6 18.6 0 0 1-3 3.9M6.1 6.9A18.1 18.1 0 0 0 2 12s3.8 6.7 10 6.7c1.8 0 3.5-.5 5-1.3M9.6 9.6a3.4 3.4 0 0 0 4.8 4.8"/></svg></button>
+          <button type="button" class="exp-focus-btn" id="discreetBtn" title="低調模式：點一下切換，長按設定隱藏欄位" aria-label="低調模式" aria-pressed="false" aria-haspopup="dialog" aria-controls="discreetDialog"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M9.8 5.5a12.3 12.3 0 0 1 2.2-.2c6.2 0 10 6.7 10 6.7a18.6 18.6 0 0 1-3 3.9M6.1 6.9A18.1 18.1 0 0 0 2 12s3.8 6.7 10 6.7c1.8 0 3.5-.5 5-1.3M9.6 9.6a3.4 3.4 0 0 0 4.8 4.8"/></svg></button>
           <button type="button" class="exp-focus-btn" id="expFocusBtn" title="展開需求時聚焦：其他列變淡" aria-pressed="false" aria-label="展開聚焦"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="2.5" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="21.5" y2="12"/></svg></button>
           <button type="button" class="view-btn" id="viewBtn" title="切換檢視" aria-label="切換檢視"></button>
           <button type="button" class="mode-btn" id="modeBtn" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5V20Z"/><path d="m13.5 7.5 3.5 3.5"/></svg></button>
@@ -1772,11 +1768,14 @@
           </div>
         </label>
         </div>
-        <div class="row2">
+        <div class="row3">
           <label>來源
             <div class="cselect opt-sel" id="sourceSel"><button type="button" class="cselect-btn" id="sourceBtn" aria-haspopup="listbox" aria-label="選擇客戶來源"><span class="cselect-txt" id="sourceTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="sourceMenu" role="listbox"></div></div>
           </label>
           <label>詢問案名<input id="f_ask"></label>
+          <label>共有
+            <div class="cselect opt-sel" id="sharedSel"><button type="button" class="cselect-btn" id="sharedBtn" aria-haspopup="listbox" aria-label="選擇共有名稱"><span class="cselect-txt" id="sharedTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="sharedMenu" role="listbox" aria-multiselectable="true"></div></div>
+          </label>
         </div>
         <div class="row3">
           <label>客戶稱呼<input id="f_cust"></label>
@@ -1962,8 +1961,35 @@
   function unsupported(detail){
     throw Object.assign(new Error("此版本無法讀取" + detail + "，請更新客戶總覽"), {code:"unsupported_format"});
   }
-  const settingNames = new Set(["density","sort","colw","theme","opts","statusColors","fltorder","expfocus","optorder","colFilter","fltB","_updatedAt"]);
-  const optionFields = new Set(["area","rooms","ptype","pnum","status","source"]);
+  const settingNames = new Set(["density","sort","colw","theme","opts","statusColors","optionAliases","fltorder","expfocus","optorder","colFilter","fltB","_updatedAt"]);
+  const optionFields = new Set(["area","rooms","ptype","pnum","status","source","shared"]);
+  const aliasFields = new Set(["status","cat","rooms","ptype","pnum"]);
+  const aliasPrefix = "alias:";
+  const optionAliasKey = (field,raw) => aliasPrefix + JSON.stringify([field.toLowerCase(),String(raw)]);
+  function readAliasKey(key){
+    let pair;
+    try {pair=JSON.parse(key.slice(aliasPrefix.length));} catch(e){fail("選項名稱識別碼不正確");}
+    if(!Array.isArray(pair)||pair.length!==2||!aliasFields.has(pair[0])||typeof pair[1]!=="string"||
+       !pair[1]||pair[1].length>2000||optionAliasKey(pair[0],pair[1])!==key)fail("選項名稱識別碼不正確");
+    return pair;
+  }
+  function aliasLabel(value){
+    str(value,2000);
+    if(!value||value!==value.trim())fail("選項名稱不可空白或含前後空格");
+  }
+  function aliasEntries(aliases){
+    const entries=new Map();
+    if(!object(aliases))fail("選項名稱設定不正確");
+    for(const [field,group] of Object.entries(aliases)){
+      if(!aliasFields.has(field)||!object(group))fail("選項名稱欄位不正確");
+      for(const [key,label] of Object.entries(group)){
+        if(!key.startsWith("v:")||key.length<=2||key.length>2002)fail("選項名稱識別碼不正確");
+        aliasLabel(label);
+        entries.set(optionAliasKey(field,key.slice(2)),label);
+      }
+    }
+    return entries;
+  }
   function supportedKeys(value,known,label){
     if(object(value)&&Object.keys(value).some(key=>!known.includes(key)))unsupported(label+"中的額外欄位");
   }
@@ -1987,7 +2013,7 @@
   }
   function hash(s) { let a=2166136261,b=5381; for(let i=0;i<s.length;i++){a=Math.imul(a^s.charCodeAt(i),16777619); b=Math.imul(b,33)^s.charCodeAt(i);} return (a>>>0).toString(36)+(b>>>0).toString(36); }
   const textFields = new Set(["cust","date","budget","parking","tel","line","ask","need","need2","need3","t1","t2","t3","url591","urlLeju","urlI"]);
-  const multiFields = new Set(["cat","area","status","rooms","pType","pNum"]);
+  const multiFields = new Set(["cat","area","status","rooms","pType","pNum","shared"]);
   function str(x,max=300000){ if(typeof x!=="string") fail("文字欄位格式不正確"); if(x.length>max)unsupported("超過長度上限的文字"); }
   function strings(x){ if(!Array.isArray(x)) fail("選項必須是文字清單"); if(x.length>500)unsupported("超過上限的選項清單"); x.forEach(v=>str(v,2000)); }
   const validNeedOrder = value => Array.isArray(value) && value.length===3 && [1,2,3].every(n=>value.includes(n));
@@ -2011,12 +2037,12 @@
     const keys=new Set();
     cs.forEach(c=>{if(!object(c)) fail("類別格式不正確"); str(c.key,100); str(c.label,100); if(!c.key||keys.has(c.key)) fail("類別名稱重複或空白"); keys.add(c.key); if(typeof c.color!=="string"||!/^#[0-9a-f]{6}$/i.test(c.color)) fail("類別顏色不正確");});
   }
-  // One distinct source per synced record, plus custom/default choices or a blank filter.
-  // Other fields and the source custom/hidden lists keep their existing 500-entry limit.
+  // Record-derived menus can exceed the size of a single device's custom option list.
   function optionSettingList(setting, field, values){
-    if(field!=="source")return strings(values);
+    if(field!=="source"&&field!=="shared")return strings(values);
     const limit=setting==="optorder"?50503:setting==="colFilter"?50001:50000;
-    if(!Array.isArray(values))fail("來源篩選或排序格式不正確"); if(values.length>limit)unsupported("超過上限的來源篩選或排序");
+    const label=field==="shared"?"共有":"來源";
+    if(!Array.isArray(values))fail(label+"篩選或排序格式不正確"); if(values.length>limit)unsupported("超過上限的"+label+"篩選或排序");
     values.forEach(value=>str(value,2000));
   }
   function arrayMap(x){ if(!object(x)) fail("選項設定格式不正確"); Object.values(x).forEach(strings); }
@@ -2032,6 +2058,7 @@
       if(k==="density"&&!["compact","normal"].includes(v)) fail("密度設定不正確");
       if(k==="theme"&&!["light","dark"].includes(v)) fail("主題設定不正確");
       if(k==="sort") str(v,100);
+      if(k==="optionAliases")aliasEntries(v);
       if(k==="expfocus"&&typeof v!=="boolean") fail();
       if(k==="colw"){if(!object(v))fail();Object.values(v).forEach(n=>{if(typeof n!=="number"||!Number.isFinite(n)||n<20||n>4000)fail("欄寬設定不正確");});}
       if(["fltorder","optorder"].includes(k)){if(!object(v))fail("選項設定格式不正確");for(const [field,values] of Object.entries(v))optionSettingList(k,field,values);}
@@ -2120,7 +2147,11 @@
     for(const r of v.items||[]){const fs={"$alive":baseline(true,r.id+":alive",0)};for(const [k,val] of Object.entries(flat(r)))fs[k]=baseline(val,r.id+":"+k,r.updatedAt); s.records[r.id]=fs;}
     for(const [id,t] of Object.entries(v.deleted||{})){const r=(v.items||[]).find(r=>r.id===id); if(!r||t>=(r.updatedAt||0)){s.records[id]||={};s.records[id]["$alive"]=baseline(false,id+":deleted",t);}}
     if(v.cats)s.prefs.cats=baseline(v.cats,"cats",v.catsAt);
-    for(const [k,val] of Object.entries(v.settings||{}))if(k!=="_updatedAt")s.prefs["setting:"+k]=baseline(val,"setting:"+k,v.settingsAt);
+    for(const [k,val] of Object.entries(v.settings||{})){
+      if(k==="optionAliases"){
+        for(const [key,label] of aliasEntries(val))s.prefs[key]=baseline(label,key,v.settingsAt);
+      }else if(k!=="_updatedAt")s.prefs["setting:"+k]=baseline(val,"setting:"+k,v.settingsAt);
+    }
     return s;
   }
   function fromLegacy(p){if(!p||!p.data||!Array.isArray(p.data.properties))fail("舊版雲端資料格式不正確");const b=normalizeBackup({app:"customer",items:p.data.properties,cats:p.cats?.list||[],settings:p.settings||{},deleted:p.deleted||{}},null,true);return fromView({...b,catsAt:p.cats?._updatedAt,settingsAt:p.settings?._updatedAt});}
@@ -2241,7 +2272,7 @@
   }
   // Each edit updates one menu entry, so unrelated offline edits keep their own clocks.
   // The original setting:opts cell remains the baseline for existing backups and clients.
-  const optionGroups = ["area","rooms","ptype","pnum","status","source"];
+  const optionGroups = [...optionFields];
   const optionPrefix = "option:";
   const optionKey = (field,name) => optionPrefix + JSON.stringify([field,name]);
   function readOptionKey(key){
@@ -2382,7 +2413,14 @@
       v.items.push(r);
     }
     v.items.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)||(a.id<b.id?-1:a.id>b.id?1:0));
-    for(const [k,c] of Object.entries(s.prefs))if(k.startsWith("setting:"))v.settings[k.slice(8)]=chosen(c);
+    for(const [k,c] of Object.entries(s.prefs)){
+      if(k.startsWith("setting:"))v.settings[k.slice(8)]=chosen(c);
+      else if(k.startsWith(aliasPrefix)){
+        const [field,raw]=readAliasKey(k),label=chosen(c);
+        const aliases=v.settings.optionAliases ||= {};
+        if(label!==null)(aliases[field] ||= {})["v:"+raw]=label;
+      }
+    }
     const opts=projectOptions(s.prefs,v.settings.opts);if(opts!==undefined)v.settings.opts=opts;
     return v;
   }
@@ -2401,7 +2439,13 @@
     const previous=previousPrefs?{cats:previousPrefs.cats,...Object.fromEntries(Object.entries(previousPrefs.settings||{}).map(([k,v])=>["setting:"+k,v]))}:null;
     for(const [k,v] of Object.entries(prefs)){
       if(v===undefined || (previous&&preferenceEqual(k,previous[k],v)))continue;
-      if(k==="setting:opts"){
+      if(k==="setting:optionAliases"){
+        // Store one clock per original option. Independent offline renames commute.
+        const was=aliasEntries((previous?previous[k]:prev.settings.optionAliases)||{}), now=aliasEntries(v);
+        for(const key of new Set([...was.keys(),...now.keys()])){
+          if(was.get(key)!==now.get(key))s.prefs[key]=write(s.prefs[key],now.get(key)??null,actor,at);
+        }
+      }else if(k==="setting:opts"){
         const before=previous?previous[k]:prev.settings.opts;
         protectLegacySources(s,new Map());
         if(captureOptions(s,before,v,actor,at)&&!s.prefs[k])s.prefs[k]=baseline(before||optionShape(v),k,0);
@@ -2418,7 +2462,15 @@
   }
   function resolve(s,c,value,actor){const out=clone(s),fs=c.scope==="record"?out.records[c.id]:out.prefs;fs[c.field]=write(fs[c.field],value,actor,Date.now());return out;}
   function restore(current,view,uuid){
-    const s=fromView(view);
+    // A v6 projection uses [] for both missing categories and an explicit empty list.
+    // The envelope distinguishes the default category palette from a deliberately cleared one.
+    const s=fromView(view.syncState?{...view,cats:chosen(view.syncState.prefs.cats)}:view);
+    if(view.syncState && view.settings?.optionAliases===undefined){
+      // Some v6 backups carry preferences only in the authoritative envelope.
+      for(const [key,c] of Object.entries(view.syncState.prefs))if(key.startsWith(aliasPrefix)){
+        const label=chosen(c);if(label!==null)s.prefs[key]=baseline(label,key,0);
+      }
+    }
     if(view.syncState&&Object.keys(view.syncState.prefs).some(key=>key.startsWith(optionPrefix))){
       // Preserve the per-option history and its original baseline inside the new epoch.
       delete s.prefs["setting:opts"];
@@ -2472,14 +2524,14 @@
     for(const [id,fs] of Object.entries(s.records)){if(!idOK(id)||!object(fs)||!fs["$alive"])fail("同步客戶識別碼不正確");for(const [k,c] of Object.entries(fs)){
       if(k!=="$alive"&&!textFields.has(k)&&!multiFields.has(k)&&!["source","createdAt","updatedAt","bMin","bMax","needFontSizes","needOrder","font:need","font:need2","font:need3"].includes(k))unsupported("同步欄位「"+k+"」");
       validateCell(c);for(const v of c.choices){if(k==="$alive"){if(typeof v.value!=="boolean")fail();}else if(v.value!==null){const r={id};if(k.startsWith("font:"))r.needFontSizes={[k.slice(5)]:v.value};else r[k]=v.value;record(r);}}}}
-    for(const [k,c] of Object.entries(s.prefs)){validateCell(c);for(const v of c.choices){if(k==="cats")categories(v.value);else if(k.startsWith(optionPrefix)){readOptionKey(k);if(![0,1,2,3].includes(v.value))fail("自訂選項狀態不正確");}else if(k.startsWith("setting:"))settings({[k.slice(8)]:v.value});else fail("同步設定格式不正確");}}
+    for(const [k,c] of Object.entries(s.prefs)){validateCell(c);for(const v of c.choices){if(k==="cats")categories(v.value);else if(k.startsWith(optionPrefix)){readOptionKey(k);if(![0,1,2,3].includes(v.value))fail("自訂選項狀態不正確");}else if(k.startsWith(aliasPrefix)){readAliasKey(k);if(v.value!==null)aliasLabel(v.value);}else if(k.startsWith("setting:")&&k!=="setting:optionAliases")settings({[k.slice(8)]:v.value});else fail("同步設定格式不正確");}}
     if(Object.keys(s.prefs).some(key=>key.startsWith(optionPrefix))){
       settings({opts:projectOptions(s.prefs,chosen(s.prefs["setting:opts"]))},true);
     }
     return s;
   }
   const newId=()=>globalThis.crypto?.randomUUID?.() || ("id-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
-  return {newId,clone,stable,equal,needsSourceCheckpoint,preferenceEqual,needOrder,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,autoLatest,conflicts,resolve,restore,importMerge,validateState,epochCmp};
+  return {newId,clone,stable,equal,needsSourceCheckpoint,preferenceEqual,needOrder,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,autoLatest,conflicts,resolve,restore,importMerge,validateState,epochCmp,optionAliasKey};
 });
 
 </script>
@@ -2655,7 +2707,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.14G";
+const APP_VERSION = "2026.11.15B";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -2767,14 +2819,24 @@ function copyLineSelection(e, el){
   e.preventDefault(); e.clipboardData.setData("text/plain", text);
 }
 
+function parkingDisplayName(raw){
+  if (!raw) return "";
+  const type = parseParking(raw).t;
+  const label = optionDisplayName("ptype", type);
+  return type && label !== type ? raw.replace(type, () => label) : raw;
+}
+function statusDisplayName(value){
+  return Array.isArray(value) ? value.map(v=>optionDisplayName("status",v)).join(",") : optionDisplayName("status",value);
+}
 function cardHTML(d){
   const sel = selected.has(d.id) ? " selected" : "";
   const nameHTML = d.cust ? segCopyHTML(d.cust) : `<span class="cv-empty">（未填稱呼）</span>`;
   const TELSVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.53 15.53 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"/></svg>`;
   const areaPri = fieldPrimary(d, "area"), roomsPri = fieldPrimary(d, "rooms"), catPri = fieldPrimary(d, "cat");
-  const areaTip = fieldVals(d, "area").join("、"), roomsTip = fieldVals(d, "rooms").join("／"), catTip = fieldVals(d, "cat").join("、");
+  const areaTip = fieldVals(d, "area").join("、"), roomsTip = fieldVals(d, "rooms").map(v=>optionDisplayName("rooms",v)).join("／"), catTip = fieldVals(d, "cat").map(v=>optionDisplayName("cat",v)).join("、");
+  const statusLabel = statusDisplayName(d.status), catLabel = optionDisplayName("cat",catPri), parkingLabel = parkingDisplayName(d.parking);
   const areaDot = fieldIsMulti(d, "area") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
-  const roomsHTML = fieldVals(d, "rooms").map(v => `<span class="card-room-value${typeof isOptOrphan === "function" && isOptOrphan("rooms", v) ? " opt-orphan" : ""}">${esc(v)}</span>`).join("／<wbr>");
+  const roomsHTML = fieldVals(d, "rooms").map(v => `<span class="card-room-value${typeof isOptOrphan === "function" && isOptOrphan("rooms", v) ? " opt-orphan" : ""}">${esc(optionDisplayName("rooms",v))}</span>`).join("／<wbr>");
   const catDot = fieldIsMulti(d, "cat") ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
   const areaOrphan = areaPri && typeof isOptOrphan === "function" && isOptOrphan("area", areaPri);
   const roomsOrphan = roomsPri && typeof isOptOrphan === "function" && isOptOrphan("rooms", roomsPri);
@@ -2783,15 +2845,15 @@ function cardHTML(d){
     const cbits = [];
     if (areaPri) cbits.push({t: areaPri, tip: areaTip, dot: areaDot, orphan: areaOrphan});
     if (roomsPri) cbits.push({t: roomsTip, tip: roomsTip, room: true});
-    if (d.parking) cbits.push({t: /車/.test(d.parking) ? d.parking : d.parking + "車位", tip: d.parking, dot: "", orphan: false});
+    if (d.parking) cbits.push({t: /車/.test(d.parking) ? parkingLabel : parkingLabel + "車位", tip: parkingLabel, dot: "", orphan: false});
     const csub = cbits.length ? cbits.map(p => { if(p.room) return `<span class="cv card-rooms" data-copy="${esc(roomsTip)}" title="${esc(roomsTip)}">${roomsHTML}</span>`; const v = normAsk(p.t); return `<span class="cv multi-wrap" data-copy="${esc(v)}" title="${esc(p.tip)}"><span class="multi-pri${p.orphan?" opt-orphan":""}">${esc(v)}</span>${p.dot}</span>`; }).join(`<span class="addr-sep">／</span>`) : "";
     return `<article class="card compact-card${sel}" data-id="${esc(d.id)}"${statusColorRowAttrs(d)}><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}
     <div class="body">
       <div class="card-head">
-        ${d.status ? `<span class="card-status${statusOrphan?" opt-orphan":""}" data-copy="${esc(d.status)}">${esc(d.status)}</span>` : ``}
+        ${d.status ? `<span class="card-status${statusOrphan?" opt-orphan":""}" data-copy="${esc(statusLabel)}">${esc(statusLabel)}</span>` : ``}
         <h3 class="name">${nameHTML}</h3>
-        <span class="badge multi-wrap" title="${esc(catTip)}"><span class="multi-pri">${esc(catPri)}</span>${catDot}</span>
+        <span class="badge multi-wrap" title="${esc(catTip)}"><span class="multi-pri">${esc(catLabel)}</span>${catDot}</span>
       </div>
       <div class="sub-row">
         <span class="addr">${csub}</span>
@@ -2803,6 +2865,8 @@ function cardHTML(d){
   const topBits = [];
   if (d.date) topBits.push(`<span class="ct-item">建檔 <span class="cv" data-copy="${esc(d.date)}">${esc(d.date)}</span></span>`);
   if (d.source) topBits.push(`<span class="ct-item card-source" title="${esc(d.source)}">來源 <span class="cv" data-copy="${esc(d.source)}">${esc(d.source)}</span></span>`);
+  const sharedText = fieldVals(d,"shared").join("／");
+  if (sharedText) topBits.push(`<span class="ct-item card-source" title="${esc(sharedText)}">共有 <span class="cv" data-copy="${esc(sharedText)}">${esc(sharedText)}</span></span>`);
   if (areaPri) topBits.push(`<span class="multi-wrap" data-copy="${esc(areaPri)}" title="${esc(areaOrphan ? areaTip + "（已從下拉移除）" : areaTip)}"><span class="multi-pri${areaOrphan?" opt-orphan":""}">${esc(areaPri)}</span>${areaDot}</span>`);
   const topHTML = topBits.length ? `<div class="card-top">${topBits.join('<span class="dot">／</span>')}</div>` : "";
   return `<article class="card${sel}" data-id="${esc(d.id)}"${statusColorRowAttrs(d)}><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
@@ -2810,16 +2874,16 @@ function cardHTML(d){
     <div class="body">
       ${topHTML}
       <div class="card-head">
-        ${d.status ? `<span class="card-status${statusOrphan?" opt-orphan":""}" data-copy="${esc(d.status)}">${esc(d.status)}</span>` : ``}
+        ${d.status ? `<span class="card-status${statusOrphan?" opt-orphan":""}" data-copy="${esc(statusLabel)}">${esc(statusLabel)}</span>` : ``}
         <h3 class="name">${nameHTML}</h3>
-        <span class="badge multi-wrap" title="${esc(catTip)}"><span class="multi-pri">${esc(catPri)}</span>${catDot}</span>
+        <span class="badge multi-wrap" title="${esc(catTip)}"><span class="multi-pri">${esc(catLabel)}</span>${catDot}</span>
       </div>
       ${d.budget ? `<div class="price">
         <span class="price-value"><span class="num" data-copy="${esc(d.budget)}">${esc(d.budget)}</span></span>
       </div>` : ``}
       ${(roomsPri || d.parking) ? `<div class="meta">
         ${roomsPri ? `<span class="card-room-chip" data-copy="${esc(roomsTip)}" title="${esc(roomsTip)}"><i class="ml">房數</i><span class="card-rooms">${roomsHTML}</span></span>` : ``}
-        ${d.parking ? `<span data-copy="${esc(d.parking)}"><i class="ml">車位</i> ${esc(d.parking)}</span>` : ``}
+        ${d.parking ? `<span data-copy="${esc(parkingLabel)}"><i class="ml">車位</i> ${esc(parkingLabel)}</span>` : ``}
       </div>` : ``}
       ${d.need ? `<div class="ov-need"><div class="ov-need-in">${needPreviewHTML(d.need)}</div></div>` : ``}
       ${(d.tel || d.line) ? `<div class="agent">
@@ -2831,6 +2895,32 @@ function cardHTML(d){
 }
 
 // ---- Storage (auto-saves on your own device; degrades to memory in preview) ----
+// Display names live in the v6 envelope; record values and their business meaning stay intact.
+var optionAliases = {};
+var optionAliasIndexes = new WeakMap();
+function optionDisplayName(field,raw,aliases=optionAliases){
+  const name=String(raw??""), group=aliases?.[String(field).toLowerCase()];
+  if(!group||!name)return name;
+  let counts=optionAliasIndexes.get(group);
+  if(!counts){
+    counts=new Map();
+    for(const label of Object.values(group))counts.set(label,(counts.get(label)||0)+1);
+    optionAliasIndexes.set(group,counts);
+  }
+  const label=group["v:"+name];
+  if(!label)return counts.has(name)?name+"（原選項）":name;
+  // Separate devices can pick the same name while offline. Both records remain distinguishable.
+  return counts.get(label)>1?label+"（"+name+"）":label;
+}
+function withOptionAlias(aliases,field,raw,label){
+  const result={...aliases}, key=String(field).toLowerCase(), group={...result[key]};
+  if(label===String(raw))delete group["v:"+raw];
+  else group["v:"+raw]=label;
+  if(Object.keys(group).length)result[key]=group;
+  else delete result[key];
+  return result;
+}
+function setOptionAliases(value){optionAliases=value||{};}
 // Snapshot legacy preference presence before UI initialization writes fallback mirrors.
 const PREFERENCE_STORAGE_KEYS={cats:"customer_app_cats_v4",density:"customer_app_density_v1",sort:"customer_app_sort_v1",colw:"customer_app_colw_v1",theme:"customer_app_theme_v1",opts:"customer_app_opts_v1",statusColors:"customer_app_status_colors_v1",fltorder:"customer_app_fltorder_v1",expfocus:"customer_app_expfocus_v1",optorder:"customer_app_optorder_v1",colFilter:"customer_app_filters_v1",fltB:"customer_app_filters_v1"};
 const bootPreferenceStorage=(()=>{const raw={};for(const [k,key] of Object.entries({...PREFERENCE_STORAGE_KEYS,catsAt:"customer_app_cats_ts_v1",settingsAt:"customer_app_settings_ts_v1"})){try{raw[k]=localStorage.getItem(key);}catch(e){raw[k]=null;}}return raw;})();
@@ -2870,7 +2960,12 @@ function loadItems(){
   if(!storageOK){window._saveError=true;return [];}
   const stateRaw=localStorage.getItem("customer_app_state_v6");
   if(stateRaw!==null){
-    try{window._bootState=CustomerDataCore.validateState(JSON.parse(stateRaw));return CustomerDataCore.project(window._bootState).items;}
+    try{
+      window._bootState=CustomerDataCore.validateState(JSON.parse(stateRaw));
+      const view=CustomerDataCore.project(window._bootState);
+      setOptionAliases(view.settings.optionAliases);
+      return view.items;
+    }
     catch(e){markCorruptStore("customer_app_state_v6",stateRaw,e);return [];}
   }
   const raw=localStorage.getItem(STORE_KEY);
@@ -2962,7 +3057,7 @@ function renderCover(){
   document.getElementById("cats").innerHTML = cats.map(c => `
     <button class="cat-btn" data-cat="${esc(c.key)}">
       <span class="cat-dot" style="background:${safeColor(c.color)}"></span>
-      <span class="cat-main"><b>${esc(c.key)}</b></span>
+      <span class="cat-main"><b>${esc(optionDisplayName("cat",c.key))}</b></span>
       <span class="cat-ct">${catCount(c.key)}</span>
       <span class="arrow">→</span>
     </button>`).join("");
@@ -2972,7 +3067,7 @@ function renderCover(){
 function renderTabs(){
   document.getElementById("tabs").innerHTML =
     `<button class="tab" data-cat="">全部</button>` +
-    cats.map(c => `<button class="tab" data-cat="${esc(c.key)}">${esc(c.key)}</button>`).join("");
+    cats.map(c => `<button class="tab" data-cat="${esc(c.key)}">${esc(optionDisplayName("cat",c.key))}</button>`).join("");
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.cat === currentCat));
 }
 function refreshCategories(){
@@ -3104,7 +3199,7 @@ function updateListCounts(list){
   if(Array.isArray(list))headerCountRows=list;
   const counts=new Map(cats.map(c=>[c.key,0]));
   for(const item of headerCountRows)for(const key of fieldVals(item,"cat"))if(counts.has(key))counts.set(key,counts.get(key)+1);
-  headerCountEntries=cats.map(c=>({key:c.key,count:counts.get(c.key)||0}));
+  headerCountEntries=cats.map(c=>({key:optionDisplayName("cat",c.key),count:counts.get(c.key)||0}));
   headerCountIndex=headerCountEntries.length?Math.min(headerCountIndex,headerCountEntries.length-1):0;
   const key=JSON.stringify(headerCountEntries);
   if(key!==headerCountDataKey){headerCountDataKey=key;headerCountWidths=[];headerCountProbe.innerHTML=headerCountEntries.map(headerCountPartHTML).join("");}
@@ -3223,7 +3318,7 @@ function setViewMode(vm){
 
 // ---- table rendering ----
 // 區域/類型/房數/車類/車數可多選:資料存字串(單值)或字串陣列(多值);顯示只秀優先項(第一個)+色點,懸浮看全部
-const MULTI_OPT_FIELDS = { area:1, cat:1, rooms:1, pType:1, pNum:1 };
+const MULTI_OPT_FIELDS = { area:1, cat:1, rooms:1, pType:1, pNum:1, shared:1 };
 function asFieldVals(v){
   if (v == null || v === "") return [];
   if (Array.isArray(v)){
@@ -3254,13 +3349,13 @@ function isOptOrphan(optKey, value){
   if (!optKey || value == null || value === "") return false;
   try {
     if (typeof optList !== "function") return false;
-    if (optKey === "source") return customOpts.hidden.source.includes(String(value));
+    if (optKey === "source" || optKey === "shared") return !!customOpts.hidden[optKey]?.includes(String(value));
     return !optList(optKey).includes(String(value));
   } catch (e) {
     return false;
   }
 }
-function multiInnerHTML(vals, optKey){
+function multiInnerHTML(vals, optKey, displayKey=optKey){
   const a = asFieldVals(vals);
   const primary = a[0] || "";
   const multi = a.length > 1;
@@ -3268,7 +3363,7 @@ function multiInnerHTML(vals, optKey){
   const orphan = !!optKey && isOptOrphan(optKey, primary);
   const dot = multi ? `<span class="multi-dot" aria-hidden="true"></span>` : "";
   const tip = orphan ? ` title="已從下拉選單移除（資料仍保留）"` : "";
-  return { a, primary, multi, orphan, html: `<span class="multi-wrap"><span class="multi-pri${orphan?" opt-orphan":""}"${tip}>${esc(primary)}</span>${dot}</span>` };
+  return { a, primary, multi, orphan, html: `<span class="multi-wrap"><span class="multi-pri${orphan?" opt-orphan":""}"${tip}>${esc(optionDisplayName(displayKey,primary))}</span>${dot}</span>` };
 }
 function toggleFieldVal(cur, v, asPrimary){
   const a = asFieldVals(cur);
@@ -3316,38 +3411,47 @@ function stripOrphansFromItem(it, field, optKey){
   it.updatedAt = Date.now();
   return true;
 }
-function buildOptMenuRowHTML(v, { multi, curArr, curSingle, renamable }){
+function renameOptionButton(key,value){
+  return '<button type="button" class="opt-rename-btn" data-rename-option="'+esc(value)+'" aria-label="重新命名「'+esc(optionDisplayName(key,value))+'」">重新命名</button>';
+}
+function namedOptionRow(option,key,value){
+  return '<div class="opt-rename-row">'+option+renameOptionButton(key,value)+'</div>';
+}
+function buildOptMenuRowHTML(v, { multi, curArr, curSingle, optKey }){
   const on = multi ? curArr.includes(v) : v === curSingle;
   const pri = multi && on && curArr[0] === v;
-  const shortcut = renamable ? ' aria-keyshortcuts="F2" title="F2 重新命名"' : "";
-  return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}" data-v="${esc(v)}"${shortcut}><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(v)}</span>${multi&&on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}${multi?`<span class="chk">✓</span>`:""}<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`;
+  const shortcut = ' aria-keyshortcuts="F2" title="F2 重新命名"';
+  return `<button type="button" class="cselect-opt opt-line${on?" sel":""}${pri?" is-pri":""}" data-v="${esc(v)}"${shortcut}><span class="opt-drag" aria-label="拖曳排序"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span><span class="opt-txt">${esc(optionDisplayName(optKey,v))}</span>${multi&&on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}${multi?`<span class="chk">✓</span>`:""}<span class="opt-del" data-del="${esc(v)}" title="刪除此選項" role="button">✕</span></button>`;
 }
-function canAddSourceOption(key, value){
-  if (key !== "source") return true;
-  if (value.length > 2000){ toast("來源名稱最多 2000 字"); return false; }
-  const known = DEF_OPTS.source.includes(value) || customOpts.source.includes(value) || items.some(d => d.source === value);
-  if (!known && customOpts.source.length >= 500){
-    toast("自訂來源已達 500 個"); return false;
+function canonicalOptionInput(key,value){
+  return optList(key).find(raw=>optionDisplayName(key,raw)===value)||value;
+}
+function usesRecordOptions(key){ return key==="source" || key==="shared"; }
+function canAddRecordOption(key, value){
+  if (!usesRecordOptions(key)) return true;
+  const label = key==="source" ? "來源" : "共有", custom = customOpts[key] || [];
+  if (value.length > 2000){ toast(label+"名稱最多 2000 字"); return false; }
+  const known = DEF_OPTS[key].includes(value) || custom.includes(value) || items.some(d => fieldHas(d,key,value));
+  if (!known && custom.length >= 500){
+    toast("自訂"+label+"已達 500 個"); return false;
   }
   return true;
 }
-function canRemoveSourceOption(key, value){
-  if (key !== "source" || customOpts.hidden.source.includes(value) || customOpts.hidden.source.length < 500) return true;
-  toast("已移除的來源已達 500 個"); return false;
+function canRemoveRecordOption(key, value){
+  const hidden = customOpts.hidden[key] || [];
+  if (!usesRecordOptions(key) || hidden.includes(value) || hidden.length < 500) return true;
+  toast("已移除的"+(key==="source"?"來源":"共有")+"已達 500 個"); return false;
 }
 function buildOptMenuHTML(optKey, curArr, multi, emptyOn, curSingle){
   return `<button type="button" class="cselect-opt topt-empty${emptyOn?" sel":""}" data-v="">－</button>`
     + optList(optKey).map(v => {
       if (optKey === "status" && !multi) return buildStatusColorMenuRow(v, curSingle);
-      const renamable=optKey === "area" || optKey === "source";
-      const option=buildOptMenuRowHTML(v, {multi,curArr,curSingle,renamable});
-      if (!renamable) return option;
-      return '<div class="opt-rename-row">'+option+'<button type="button" class="opt-rename-btn" data-rename-option="'+esc(v)+'" aria-label="重新命名「'+esc(v)+'」">重新命名</button></div>';
+      return namedOptionRow(buildOptMenuRowHTML(v,{multi,curArr,curSingle,optKey}),optKey,v);
     }).join("")
     + `<div class="opt-add"><input placeholder="自訂…"><button type="button">加入</button></div>`;
 }
-const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","來源","詢問","客戶需求"];
-const T_FIELDS = ["date","status","area","cat","budget","rooms","pType","pNum","cust","tel","line","source","ask","need"];
+const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","來源","詢問","共有","客戶需求"];
+const T_FIELDS = ["date","status","area","cat","budget","rooms","pType","pNum","cust","tel","line","source","ask","shared","need"];
 const DISCREET_KEY = "customer_app_discreet_v1";
 function loadDiscreet(){
   try {
@@ -3361,7 +3465,7 @@ function loadDiscreet(){
 }
 let discreet = loadDiscreet();
 function visibleTableFields(){ return discreet.on ? T_FIELDS.filter(f => !discreet.fields.includes(f)) : T_FIELDS; }
-const DEFAULT_COLW = {date:84,area:120,cat:80,budget:112,rooms:88,pType:96,pNum:64,status:88,cust:120,tel:104,line:96,source:88,ask:116};
+const DEFAULT_COLW = {date:84,area:120,cat:80,budget:112,rooms:88,pType:96,pNum:64,status:88,cust:120,tel:104,line:96,source:88,ask:116,shared:88};
 const COLW_MIN = 48, COLW_MAX = 640, NEED_MIN = 240, DEL_W = 40;
 function loadColW(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_colw_v1") || "null"); if (s && typeof s === "object") return {...DEFAULT_COLW, ...s}; } catch(e){} } return {...DEFAULT_COLW}; }
 function saveColW(){ if (storageOK){ try { localStorage.setItem("customer_app_colw_v1", JSON.stringify(colW)); } catch(e){} } }
@@ -3440,7 +3544,7 @@ function trowHTML(d, fields = visibleTableFields()){
   const catVals = fieldVals(d, "cat");
   const catPri = catVals[0] || "";
   const color = catColor(catPri);
-  const catM = multiInnerHTML(catVals);
+  const catM = multiInnerHTML(catVals, null, "cat");
   const ce = "false";
   const tTab = editMode ? ' tabindex="0"' : "";
   const catMultiAttr = catM.multi ? ` data-multifield="cat" data-multivals="${esc(catVals.join("\u001f"))}"` : "";
@@ -3497,7 +3601,7 @@ function renderTable(list){
     tableWrap.innerHTML = '<p class="discreet-empty">表格欄位已全部隱藏</p>';
     return;
   }
-  const FILTERABLE = {area:1, cat:1, budget:1, rooms:1, pType:1, pNum:1, status:1, source:1};
+  const FILTERABLE = {area:1, cat:1, budget:1, rooms:1, pType:1, pNum:1, status:1, source:1, shared:1};
   const head = fields.map(f => {
     const h = T_COLS[T_FIELDS.indexOf(f)];
     const rz = (f && f !== "need") ? `<span class="col-resize" data-field="${f}"></span>` : "";
@@ -3754,7 +3858,7 @@ function tGetFieldEl(tr, field){
   if (!tr || !tr.dataset.id) return null;
   if (field === "cat") return tr.querySelector(".tcat-trigger");
   if (field === "date") return tr.querySelector('.topt-trigger[data-field="date"]');
-  if (["status","source","area","rooms","pType","pNum"].includes(field)) return tr.querySelector(`.topt-trigger[data-field="${field}"]`);
+  if (["status","source","area","rooms","pType","pNum","shared"].includes(field)) return tr.querySelector(`.topt-trigger[data-field="${field}"]`);
   if (field === "need") return tr.querySelector(".tneed[data-need]");
   return tr.querySelector(`.tcell[data-field="${field}"]`);
 }
@@ -5975,7 +6079,7 @@ function autoFitColumn(field){
   // 內容:量每格「文字實際寬度」(不受目前欄寬影響) + tcell 內距
   bodyTbl.querySelectorAll("tbody tr").forEach(tr => {
     const td = tr.children[idx]; if (!td) return;
-    const cell = td.querySelector('.tcell, [data-full-date], .topt-trigger[data-field="source"]');
+    const cell = td.querySelector('.tcell, [data-full-date], .topt-trigger[data-field="source"], .topt-trigger[data-field="shared"]');
     if (cell){
       const cs = getComputedStyle(cell);
       const pad = (parseFloat(cs.paddingLeft)||0) + (parseFloat(cs.paddingRight)||0);
@@ -6238,17 +6342,17 @@ if (window.matchMedia && window.matchMedia("(hover: hover)").matches){
 
 // ---- 多選欄位懸浮:顯示完整選項(優先項標示) ----
 const multiHover = document.getElementById("multiHover");
-const MULTI_HOVER_NAME = { area:"區域", cat:"類型", rooms:"房數", pType:"車類", pNum:"車數", ptype:"車類", pnum:"車數" };
+const MULTI_HOVER_NAME = { area:"區域", cat:"類型", rooms:"房數", pType:"車類", pNum:"車數", ptype:"車類", pnum:"車數", shared:"共有" };
 function hideMultiHover(){ if (multiHover){ multiHover.classList.remove("show"); multiHover.setAttribute("aria-hidden","true"); } }
 function showMultiHover(el){
   if (!multiHover || !el) return;
   const raw = el.getAttribute("data-multivals") || "";
   const field = el.getAttribute("data-multifield") || "";
   const optKey = el.getAttribute("data-optkey") || "";
-  const vals = raw.split("\u001f").map(s => s.trim()).filter(Boolean).filter(v => !optKey || !isOptOrphan(optKey, v));
+  const vals = raw.split("\u001f").map(s => s.trim()).filter(Boolean).filter(v => field === "shared" || !optKey || !isOptOrphan(optKey, v));
   if (vals.length < 2){ hideMultiHover(); return; }
   const title = MULTI_HOVER_NAME[field] || "已選";
-  multiHover.innerHTML = `<div class="mh-tt">${esc(title)}（${vals.length}）</div><ul class="mh-list">${vals.map((v,i) => `<li class="${i===0?"pri":""}">${esc(v)}</li>`).join("")}</ul>`;
+  multiHover.innerHTML = `<div class="mh-tt">${esc(title)}（${vals.length}）</div><ul class="mh-list">${vals.map((v,i) => `<li class="${i===0?"pri":""}">${esc(optionDisplayName(field,v))}</li>`).join("")}</ul>`;
   multiHover.style.visibility = "hidden";
   multiHover.classList.add("show");
   multiHover.setAttribute("aria-hidden","false");
@@ -6374,7 +6478,7 @@ function applyCatChoice(key, opts){
 function paintCatTrigger(trigger, it){
   if (!trigger) return;
   const vals = fieldVals(it, "cat");
-  const m = multiInnerHTML(vals);
+  const m = multiInnerHTML(vals, null, "cat");
   const pri = m.primary;
   trigger.style.borderColor = pri ? catColor(pri) : "transparent";
   const lbl = trigger.querySelector(".tcat-label"); if (lbl) lbl.innerHTML = m.html;
@@ -6402,9 +6506,14 @@ function catMenuSyncIdx(){
   catMenuHighlight();
 }
 function onCatMenuKey(e){
+  if(e.target.closest("[data-rename-option],#optionRenameDialog"))return;
   if (!catmenu.classList.contains("show")) return;
   const opts = catmenu.querySelectorAll(".catmenu-opt");
   if (!opts.length) return;
+  if(e.key==="F2"){
+    const rename=opts[catMenuIdx]?.closest(".opt-rename-row")?.querySelector("[data-rename-option]");
+    if(rename){e.preventDefault();e.stopImmediatePropagation();rename.click();}return;
+  }
   if (e.key === "ArrowDown"){ e.preventDefault(); e.stopPropagation(); catMenuIdx = (catMenuIdx + 1) % opts.length; catMenuHighlight(); }
   else if (e.key === "ArrowUp"){ e.preventDefault(); e.stopPropagation(); catMenuIdx = (catMenuIdx - 1 + opts.length) % opts.length; catMenuHighlight(); }
   else if (e.key === "Enter" || e.key === " "){ e.preventDefault(); e.stopPropagation(); const opt = opts[catMenuIdx]; if (opt) applyCatChoice(opt.dataset.key, { shiftKey: e.shiftKey }); }
@@ -6423,7 +6532,8 @@ function renderCatMenu(){
   catmenu.innerHTML = cats.map(c => {
     const on = cur.includes(c.key);
     const pri = on && cur[0] === c.key;
-    return `<button type="button" class="catmenu-opt${on?" sel":""}${pri?" is-pri":""}" data-key="${esc(c.key)}"><span class="dot" style="background:${safeColor(c.color)}"></span><span class="nm">${esc(c.key)}</span>${on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}<span class="chk">✓</span></button>`;
+    const option=`<button type="button" aria-keyshortcuts="F2" class="catmenu-opt${on?" sel":""}${pri?" is-pri":""}" data-key="${esc(c.key)}"><span class="dot" style="background:${safeColor(c.color)}"></span><span class="nm">${esc(optionDisplayName("cat",c.key))}</span>${on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}<span class="chk">✓</span></button>`;
+    return namedOptionRow(option,"cat",c.key);
   }).join("");
   catMenuSyncIdx();
 }
@@ -6446,6 +6556,16 @@ function openCatMenu(trigger){
 function catMenuOutside(e){ if (eventWithin(e,catmenu) || e.target.closest(".tcat-trigger")) return; closeCatMenu(); }
 function closeCatMenu(){ document.removeEventListener("click", catMenuOutside); catmenu.classList.remove("show"); catTrigger = null;/* menu-scroll-anchor:start */catMenuAnchorBox=null;/* menu-scroll-anchor:end */ if (window.refreshLed) window.refreshLed(); }
 catmenu.addEventListener("click", e=>{
+  const rename=e.target.closest("[data-rename-option]");
+  if(rename){
+    e.stopPropagation();
+    const id=tFindItem(catTrigger)?.id;
+    closeCatMenu();
+    openOptionRenameDialog("cat",rename.dataset.renameOption,()=>{
+      const row=Array.from(tableWrap.querySelectorAll("tr[data-id]")).find(r=>r.dataset.id===id);
+      row?.querySelector(".tcat-trigger")?.focus({preventScroll:true});
+    });return;
+  }
   const pin = e.target.closest(".pri-pin");
   if (pin){ e.stopPropagation(); const opt = pin.closest(".catmenu-opt"); if (opt && catTrigger) applyCatChoice(opt.dataset.key, true); return; }
   const opt = e.target.closest(".catmenu-opt"); if (!opt || !catTrigger) return;
@@ -6540,7 +6660,7 @@ function openOptMenu(trigger){
 }
 function toptOutside(e){ if (eventWithin(e,toptmenu) || e.target.closest(".topt-trigger")) return; closeOptMenu(); }
 function closeOptMenu(){
-  if (toptField === "status" && toptTrigger) verifyAbandonedStatus();
+  if ((toptField === "status" || toptField === "shared") && toptTrigger) verifyAbandonedStatus();
   closeStatusColor(); document.removeEventListener("click", toptOutside); toptmenu.classList.remove("show"); toptTrigger = null;/* menu-scroll-anchor:start */optMenuAnchorBox=null;/* menu-scroll-anchor:end */ if (window.refreshLed) window.refreshLed(); }
 // 表格滾動時關閉格子下拉(fixed 選單不會跟著移);選單本身內部捲動不關
 document.addEventListener("scroll", e => {
@@ -6580,7 +6700,7 @@ function openTableCal(trigger){
   });
 }
 function clearStatusFailureToast(){
-  if (["狀態未儲存，請稍後重試","狀態與選項未儲存，請稍後重試"].includes(toastEl.textContent))
+  if (["狀態未儲存，請稍後重試","狀態與選項未儲存，請稍後重試","共有未儲存，請稍後重試","共有與選項未儲存，請稍後重試"].includes(toastEl.textContent))
     toastEl.classList.remove("show");
 }
 function verifyAbandonedStatus(){
@@ -6590,43 +6710,60 @@ function verifyAbandonedStatus(){
   clearStatusFailureToast();
   return true;
 }
-function commitTableStatus(it, value, previousOpts, remove){
+function commitTablePick(field,it,value,previousOpts,remove){
   if (!it){
     if (previousOpts) customOpts = previousOpts;
     toast("客戶資料已變更，請重新開啟選單");
     return false;
   }
-  const changed = !DataCore.equal(it.status || "",value || "");
-  const edit = changed || remove !== undefined ? {id:it.id,value,remove,changed,updatedAt:Date.now()} : null;
+  const label = field==="shared" ? "共有" : "狀態";
+  const changed = !DataCore.equal(it[field] || "",value || "");
+  const edit = changed || remove !== undefined ? {field,id:it.id,value,remove,changed,updatedAt:Date.now()} : null;
   const retrying = onlyStatusWriteFailed;
   if (previousOpts){
     // Save both the option and its assignment in the same v6 envelope.
-    if (!saveOpts(previousOpts, edit || {id:it.id, verifyOnly:true})) return false;
+    if (!saveOpts(previousOpts, edit || {field,id:it.id, verifyOnly:true})) return false;
   } else if (edit){
     if (!storeCurrentState(null, {}, edit)){
-      toast("狀態未儲存，請稍後重試");
+      toast(label+"未儲存，請稍後重試");
       return false;
     }
     window.scheduleSync();
   } else if (!verifyAbandonedStatus()){
-    toast("狀態未儲存，請稍後重試");
+    toast(label+"未儲存，請稍後重試");
     return false;
   }
   if (retrying) clearStatusFailureToast();
   if (edit){
-    if (edit.value === undefined) delete it.status;
-    else it.status = edit.value;
+    if (edit.value === undefined) delete it[field];
+    else it[field] = edit.value;
     it.updatedAt = edit.updatedAt;
     // The v6 envelope is authoritative; keep the legacy mirror on a best-effort basis.
     try { localStorage.setItem(STORE_KEY, JSON.stringify(DataCore.project(dataState).items)); } catch(e){}
-    paintOptTrigger(toptTrigger, it, "status");
-    paintStatusColorRows();
+    paintOptTrigger(toptTrigger, it, field);
+    if(field==="status")paintStatusColorRows();
   }
   return edit?.changed ? "changed" : true;
 }
-function setOptValue(v, opts){
+function setOptValue(v, opts, previousOpts){
   const it = tFindItem(toptTrigger);
-  if (toptField === "status") return commitTableStatus(it,v);
+  if (toptField === "status") return commitTablePick("status",it,v,previousOpts);
+  if (toptField === "shared"){
+    const next=v ? clickMultiFieldVal(it?.shared,v,opts) : "";
+    if (asFieldVals(next).length>500){
+      if(previousOpts)customOpts=previousOpts;
+      toast("每位客戶最多選擇 500 個共有名稱");return false;
+    }
+    const result=commitTablePick("shared",it,next,previousOpts);
+    if(!result)return false;
+    if(result==="changed" && (colFilterOn("shared") || searchEl.value.trim())){
+      applyFilter();
+      const row=Array.from(tableWrap.querySelectorAll("tr[data-id]")).find(tr=>tr.dataset.id===it.id);
+      const trigger=row?.querySelector('.topt-trigger[data-field="shared"]');
+      if(trigger)openOptMenu(trigger);else{closeOptMenu();tableWrap.querySelector('[data-flt="shared"]')?.focus({preventScroll:true});}
+    }else renderToptMenu();
+    return result;
+  }
   if (!it) return;
   if (toptField === "source"){
     if ((it.source || "") === v) return;
@@ -6671,32 +6808,33 @@ toptmenu.addEventListener("click", e => {
     closeOptMenu();
     openOptionRenameDialog(key,rename.dataset.renameOption,()=>{
       const row=Array.from(tableWrap.querySelectorAll("tr[data-id]")).find(r=>r.dataset.id===id);
-      (row?.querySelector('.topt-trigger[data-field="'+key+'"]')||tableWrap.querySelector('[data-flt="'+key+'"]'))?.focus({preventScroll:true});
+      const field=renameFieldCode(key);
+      (row?.querySelector('.topt-trigger[data-field="'+field+'"]')||tableWrap.querySelector('[data-flt="'+field+'"]'))?.focus({preventScroll:true});
     });
     return;
   }
   const del = e.target.closest(".opt-del");
   if (del){ e.stopPropagation(); const dv = del.dataset.del;
-    if (!canRemoveSourceOption(toptKey,dv)) return;
+    if (!canRemoveRecordOption(toptKey,dv)) return;
     const previous = DataCore.clone(customOpts);
-    customOpts[toptKey] = customOpts[toptKey].filter(x => String(x) !== dv);
-    if (toptKey === "source" || DEF_OPTS[toptKey].map(String).includes(dv)){
+    customOpts[toptKey] = (customOpts[toptKey]||[]).filter(x => String(x) !== dv);
+    if (usesRecordOptions(toptKey) || DEF_OPTS[toptKey].map(String).includes(dv)){
       customOpts.hidden[toptKey] = customOpts.hidden[toptKey] || [];
       if (!customOpts.hidden[toptKey].map(String).includes(dv)) customOpts.hidden[toptKey].push(dv);
     }
     const it = tFindItem(toptTrigger);
     let curPurged;
     if (toptField === "status"){
-      const result = commitTableStatus(it, it?.status, previous, dv);
+      const result = commitTablePick("status",it, it?.status, previous, dv);
       if (result === false) return;
       curPurged = result === "changed";
     } else {
       if (!saveOpts(previous)) return;
-      curPurged = it && toptField && toptField !== "source" && purgeOptFromItem(it, toptField, dv);
+      curPurged = it && toptField && !usesRecordOptions(toptField) && purgeOptFromItem(it, toptField, dv);
       if (curPurged){ saveItems(); onLocalChange("data"); paintOptTrigger(toptTrigger, it, toptField); }
     }
-    const still = items.filter(x => (toptField === "source" || x !== it) && asFieldVals(x[toptField]).includes(String(dv))).length;
-    if (typeof toast === "function") toast(still ? ((toptField === "source" ? "已從下拉移除；" : "已從下拉移除；其他 ") + still + " 筆仍保留（灰色顯示）") : (curPurged ? "已從下拉移除並取消此列選取" : "已從下拉移除選項"));
+    const still = items.filter(x => (usesRecordOptions(toptField) || x !== it) && asFieldVals(x[toptField]).includes(String(dv))).length;
+    if (typeof toast === "function") toast(still ? ((usesRecordOptions(toptField) ? "已從下拉移除；" : "已從下拉移除；其他 ") + still + " 筆仍保留（灰色顯示）") : (curPurged ? "已從下拉移除並取消此列選取" : "已從下拉移除選項"));
     const menuOpen = toptmenu.classList.contains("show");
     const rowId = toptTrigger && toptTrigger.closest("tr") && toptTrigger.closest("tr").dataset.id;
     const savedField = toptField;
@@ -6713,16 +6851,16 @@ toptmenu.addEventListener("click", e => {
   if (pin){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row) setOptValue(row.dataset.v, true); return; }
   const add = e.target.closest(".opt-add");
   if (add){ e.stopPropagation();
-    if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = inp.value.trim();
+    if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = canonicalOptionInput(toptKey,inp.value.trim());
       if (v){
-        if (!canAddSourceOption(toptKey,v)) return;
+        if (!canAddRecordOption(toptKey,v)) return;
         const rowId=toptTrigger?.closest("tr")?.dataset.id,savedField=toptField,multi=toptIsMulti();
         const wasEditing=toptmenu.classList.contains("opt-editing");
         const previous = DataCore.clone(customOpts);
         let ch = unhideOpt(toptKey, v);                                        // 先解除隱藏,否則加了也不會顯示
-        if (!optList(toptKey).includes(v)){ customOpts[toptKey].push(v); ch = true; }
-        if (toptField === "status"){
-          if (!commitTableStatus(tFindItem(toptTrigger),v,ch ? previous : null)) return;
+        if (!optList(toptKey).includes(v)){ (customOpts[toptKey] ||= []).push(v); ch = true; }
+        if (toptField === "status" || toptField === "shared"){
+          if (!setOptValue(v,true,ch ? previous : null)) return;
         } else {
           if (ch && !saveOpts(previous)) return;
           setOptValue(v, true);
@@ -6756,7 +6894,7 @@ toptmenu.addEventListener("keydown", e => { if (e.target.matches(".opt-add input
 (function(){
   let t=null,row=null,px=0,py=0;
   const clr=()=>toptmenu.querySelectorAll(".opt-line.reveal").forEach(el=>el.classList.remove("reveal"));
-  const start=(cx,cy,target)=>{ toptmenu.__lp=false; if(target.closest("[data-status-color]")||target.closest(".opt-del")||target.closest(".opt-add")||target.closest(".opt-drag"))return; const r=target.closest(".opt-line"); if(!r)return; row=r;px=cx;py=cy;clearTimeout(t); t=setTimeout(()=>{toptmenu.__lp=true;row=null;toptmenu.classList.add("opt-editing");try{navigator.vibrate&&navigator.vibrate(12);}catch(_){}} ,400); };
+  const start=(cx,cy,target)=>{ toptmenu.__lp=false; if(target.closest("[data-status-color],[data-rename-option]")||target.closest(".opt-del")||target.closest(".opt-add")||target.closest(".opt-drag"))return; const r=target.closest(".opt-line"); if(!r)return; row=r;px=cx;py=cy;clearTimeout(t); t=setTimeout(()=>{toptmenu.__lp=true;row=null;toptmenu.classList.add("opt-editing");try{navigator.vibrate&&navigator.vibrate(12);}catch(_){}} ,400); };
   const move=(cx,cy)=>{ if(row&&(Math.abs(cx-px)>10||Math.abs(cy-py)>10)){clearTimeout(t);row=null;} };
   const end=()=>{clearTimeout(t);row=null;};
   toptmenu.addEventListener("pointerdown",e=>start(e.clientX,e.clientY,e.target));
@@ -7214,7 +7352,7 @@ const discreetDialog = document.getElementById("discreetDialog");
     setDiscreet(!discreet.on,discreet.fields);
   });
   button.addEventListener("keydown", e => {
-    if (e.key === "ArrowDown" || e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")){
+    if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")){
       e.preventDefault(); openDialog();
     }
   });
@@ -7235,7 +7373,7 @@ document.getElementById("fltClearAll").addEventListener("click", () => {
 });
 
 // ---- 表格欄位篩選(區域/類型/預算/車位) ----
-const colFilter = { area:null, cat:null, rooms:null, pType:null, pNum:null, status:null, source:null };
+const colFilter = { area:null, cat:null, rooms:null, pType:null, pNum:null, status:null, source:null, shared:null };
 // 是否有任何欄位篩選生效(含預算上下限);供工具列的「清除所有欄位篩選」鈕顯示與清除
 function anyColFilter(){
   if (typeof fltB !== "undefined" && (fltB.lo != null || fltB.hi != null)) return true;
@@ -7294,12 +7432,6 @@ function loadColFilterState(){
     if (s) applyColFilterState(s);
   } catch(e){}
 }
-function remapColFilterCat(oldKey, newKey){
-  const st = colFilter.cat;
-  if (!st || !st.has(oldKey)) return;
-  st.delete(oldKey); st.add(newKey);
-  if (!st.size) colFilter.cat = null;
-}
 // 篩選選項的自訂順序(每欄一份);拖曳調整後記住並同步。新出現的值自動補在後面(照筆劃)。
 function loadFltOrder(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_fltorder_v1") || "null"); if (s && typeof s === "object") return s; } catch(e){} } return {}; }
 let filterOrder = loadFltOrder();
@@ -7313,14 +7445,14 @@ function orderedFilterVals(f){
 const fltB = { lo:null, hi:null };
 loadColFilterState();
 let fltField = null;
-const FLT_NAME = { area:"區域", cat:"類型", budget:"預算（萬）", rooms:"房數", pType:"車類", pNum:"車數", status:"狀態", source:"來源" };
+const FLT_NAME = { area:"區域", cat:"類型", budget:"預算（萬）", rooms:"房數", pType:"車類", pNum:"車數", status:"狀態", source:"來源", shared:"共有" };
 function colFilterOn(f){ return f === "budget" ? (fltB.lo != null || fltB.hi != null) : !!(colFilter[f] && colFilter[f].size); }
 function applyColFilters(list){
-  ["area","cat","rooms","pType","pNum","status","source"].forEach(f => {
+  Object.keys(colFilter).forEach(f => {
     const st = colFilter[f]; if (!st || !st.size) return;
     list = list.filter(d => {
       const vals = MULTI_OPT_FIELDS[f] ? fieldVals(d, f) : [String(d[f]||"").trim()].filter(Boolean);
-      if (!vals.length) return st.has(f === "source" ? "" : "__EMPTY__");
+      if (!vals.length) return st.has(f === "source" || f === "shared" ? "" : "__EMPTY__");
       return vals.some(v => st.has(v));
     });
   });
@@ -7355,14 +7487,14 @@ function renderFltBody(){
   const vals = orderedFilterVals(f);
   const hasEmpty = items.some(d => !(MULTI_OPT_FIELDS[f] ? fieldVals(d, f).length : String(d[f]||"").trim()));
   const st = colFilter[f];
-  const blank = f === "source" ? "" : "__EMPTY__";
+  const blank = f === "source" || f === "shared" ? "" : "__EMPTY__";
   const present = new Set(vals);
   // A checked condition can outlive its last matching customer. Keep it available to uncheck.
   const missing = st ? [...st].filter(v => v !== blank && !present.has(v)) : [];
   const GRIP = `<span class="fopt-drag" aria-label="拖曳排序" title="拖曳排序"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span>`;
   const row = (v, label, drag) => `<div class="fopt${drag ? " fopt-draggable" : ""}" data-val="${esc(v)}">${drag ? GRIP : `<span class="fopt-drag-sp"></span>`}<label class="fopt-main"><input type="checkbox" value="${esc(v)}"${st && st.has(v) ? " checked" : ""}><span>${esc(label)}</span></label></div>`;
-  body.innerHTML = vals.map(v => row(v, v, true)).join("")
-    + missing.map(v => row(v, v, false)).join("")
+  body.innerHTML = vals.map(v => row(v, optionDisplayName(f,v), true)).join("")
+    + missing.map(v => row(v, optionDisplayName(f,v), false)).join("")
     + (hasEmpty || st?.has(blank) ? row(blank, "（空白）", false) : "");
   body.querySelectorAll("input[type=checkbox]").forEach(cb => cb.addEventListener("change", () => {
     let stt = colFilter[f] || new Set();
@@ -7464,7 +7596,7 @@ document.addEventListener("pointercancel", endFltDrag);
 //   · undefined + "北屯區"   → 得到 "undefined北屯區",搜「und」誤中
 // 這裡一律先轉成字串;欄位之間夾一個使用者打不出來的分隔字元(US, U+001F),
 // 避免相鄰欄位頭尾相接湊出不存在的字串而假命中。
-const SEARCH_FIELDS = ["cust","area","budget","rooms","parking","pType","pNum","source","ask","need","need2","need3","t1","t2","t3","cat","status","tel","line"];
+const SEARCH_FIELDS = ["cust","area","budget","rooms","parking","pType","pNum","source","ask","shared","need","need2","need3","t1","t2","t3","cat","status","tel","line"];
 // ("parking" 是車位欄拆分前的舊鍵,舊資料仍帶著 → 保留相容;拆分後的新資料寫在 pType/pNum,補進來才搜得到「平面/機械」等字)
 const SEARCH_NEED_KEYS = { need:1, need2:1, need3:1 };
 const SEARCH_URL_RE = /https?:\/\/[A-Za-z0-9\-._~:\/?#\[\]@!$&'()*+,;=%]+/gi;   // 與 linkify 同一套;搜尋略過連結網址
@@ -7472,7 +7604,8 @@ function searchHay(d){
   let s = "";
   for (const k of SEARCH_FIELDS){
     let v;
-    if (MULTI_OPT_FIELDS[k]) v = fieldVals(d, k).join(" ");
+    if (MULTI_OPT_FIELDS[k] || k === "status") v = fieldVals(d,k).map(raw=>optionDisplayName(k,raw)).join(" ");
+    else if (k === "parking") v = parkingDisplayName(d.parking);
     else v = d[k];
     v = (v == null) ? "" : String(v);
     if (SEARCH_NEED_KEYS[k]) v = v.replace(SEARCH_URL_RE, " ");   // 需求三段:不比對「連結」背後的網址
@@ -7493,7 +7626,7 @@ function applyFilter(){
   list = applyColFilters(list);
   list = sortList(list);
   updateListCounts(list);
-  titleEl.textContent = currentCat ? currentCat + "需求" : "全部需求";
+  titleEl.textContent = currentCat ? optionDisplayName("cat",currentCat) + "需求" : "全部需求";
   scheduleHeaderCountLayout();
   document.querySelectorAll(".tab").forEach(t =>
     t.classList.toggle("active", t.dataset.cat === currentCat));
@@ -7872,21 +8005,22 @@ function renderCatOptions(){
   catSelMenu.innerHTML = cats.map(c => {
     const on = formCats.includes(c.key);
     const pri = on && formCats[0] === c.key;
-    return `
-    <button type="button" class="cselect-opt${on?" sel":""}${pri?" is-pri":""}" data-key="${esc(c.key)}" role="option">
+    const option=`
+    <button type="button" aria-keyshortcuts="F2" class="cselect-opt${on?" sel":""}${pri?" is-pri":""}" data-key="${esc(c.key)}" role="option">
       <span class="dot" style="background:${safeColor(c.color)}"></span>
-      <span class="nm">${esc(c.key)}</span>
+      <span class="nm">${esc(optionDisplayName("cat",c.key))}</span>
       ${on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}
       <span class="chk">✓</span>
     </button>`;
+    return namedOptionRow(option,"cat",c.key);
   }).join("");
 }
 function showFormCat(){
   const p = formCats[0] || "";
   if (formCats.length){
     catSelTxt.innerHTML = formCats.length > 1
-      ? `<span class="multi-wrap"><span class="multi-pri">${esc(p)}</span><span class="multi-dot" aria-hidden="true"></span></span>`
-      : esc(p);
+      ? `<span class="multi-wrap"><span class="multi-pri">${esc(optionDisplayName("cat",p))}</span><span class="multi-dot" aria-hidden="true"></span></span>`
+      : esc(optionDisplayName("cat",p));
   } else catSelTxt.textContent = "選擇類別";
   catSelBtn.classList.toggle("is-multi", formCats.length > 1);
   if (formCats.length > 1){ catSelBtn.setAttribute("data-multifield","cat"); catSelBtn.setAttribute("data-multivals", formCats.join("\u001f")); }
@@ -7901,12 +8035,22 @@ function openCatSel(){ renderCatOptions(); catSel.classList.add("open"); catSelB
 function closeCatSel(){ catSel.classList.remove("open"); catSelBtn.setAttribute("aria-expanded","false"); }
 catSelBtn.addEventListener("click", e => { e.stopPropagation(); catSel.classList.contains("open") ? closeCatSel() : openCatSel(); });
 catSelMenu.addEventListener("click", e => {
+  const rename=e.target.closest("[data-rename-option]");
+  if(rename){
+    e.stopPropagation();closeCatSel();
+    openOptionRenameDialog("cat",rename.dataset.renameOption,()=>catSelBtn.focus({preventScroll:true}));return;
+  }
   const pin = e.target.closest(".pri-pin");
   if (pin){ e.stopPropagation(); const o = pin.closest(".cselect-opt"); if (o){ setFormCat(toggleFieldVal(formCats, o.dataset.key, true)); saveFormDraft(); } return; }
   const o = e.target.closest(".cselect-opt"); if (!o) return;
   const chkClick = !!(e.target.closest(".chk") && formCats.includes(o.dataset.key));
   setFormCat(clickMultiFieldVal(formCats, o.dataset.key, { shiftKey: e.shiftKey, chkClick }));
   saveFormDraft();
+});
+catSelMenu.addEventListener("keydown",e=>{
+  if(e.key!=="F2")return;
+  const rename=e.target.closest(".opt-rename-row")?.querySelector("[data-rename-option]");
+  if(rename){e.preventDefault();e.stopPropagation();rename.click();}
 });
 // ---- 建檔日:自製日曆選擇(民國年顯示 + 西元/民國轉換) ----
 (function(){
@@ -7987,6 +8131,7 @@ const DEF_OPTS = {
   ptype:["平面車位","機械車位"],
   pnum:["1","2","3","4","5"],
   source:["591","轉介紹","來店"],
+  shared:[],
   status:[]   // 客戶分級/狀態:不給預設,選項全由使用者在下拉的「自訂…」自行新增(例:A級、要帶看、無效客)
 };
 let customOpts = loadOpts();
@@ -8089,8 +8234,8 @@ function paintStatusColorRows(){
   });
 }
 function buildStatusColorMenuRow(v,curSingle){
-  const value=statusColorFor(v), on=v===curSingle;
-  return '<div class="opt-line status-color-line'+(on?' sel':'')+'" data-v="'+esc(v)+'"><span class="opt-drag" aria-label="拖曳排序">☰</span><button type="button" class="cselect-opt'+(on?' sel':'')+'" data-v="'+esc(v)+'"><span class="opt-txt">'+esc(v)+'</span></button><button type="button" class="status-color-button" data-status-color="'+esc(v)+'" title="調整 '+esc(v)+' 的底色" aria-label="調整 '+esc(v)+' 的底色"><span class="status-color-dot'+(!value||!value.alpha?' none':'')+'" style="--dot:'+(value?.hex||'#64748b')+'"></span></button><span class="opt-del" data-del="'+esc(v)+'" title="刪除此選項" role="button">✕</span></div>';
+  const value=statusColorFor(v), on=v===curSingle, label=esc(optionDisplayName("status",v));
+  return '<div class="opt-line opt-rename-row status-color-line'+(on?' sel':'')+'" data-v="'+esc(v)+'"><span class="opt-drag" aria-label="拖曳排序">☰</span><button type="button" aria-keyshortcuts="F2" class="cselect-opt'+(on?' sel':'')+'" data-v="'+esc(v)+'"><span class="opt-txt">'+label+'</span></button><button type="button" class="status-color-button" data-status-color="'+esc(v)+'" title="調整 '+label+' 的底色" aria-label="調整 '+label+' 的底色"><span class="status-color-dot'+(!value||!value.alpha?' none':'')+'" style="--dot:'+(value?.hex||'#64748b')+'"></span></button>'+renameOptionButton("status",v)+'<span class="opt-del" data-del="'+esc(v)+'" title="刪除此選項" role="button">✕</span></div>';
 }
 const statusColorPanel=document.createElement("section");
 statusColorPanel.id="tint-panel";
@@ -8160,7 +8305,7 @@ function openStatusColor(name,anchor){
   statusColorAnchor=anchor;
   statusColorDraft={name,value:{...(statusColorFor(name,false)||{hex:"#7c3aed",alpha:15})}};
   const value=statusColorDraft.value;
-  statusColorPanel.innerHTML='<h3>'+esc(name)+' 的底色</h3><div class="tint-label">純色</div><div class="tint-colors">'+STATUS_PURE_COLORS.map(c=>'<button type="button" class="tint-pure" data-pure="'+c.hex+'" aria-label="'+c.name+'" title="'+c.name+'"><span style="background:'+c.hex+'"></span></button>').join('')+'</div><label class="tint-custom-row"><span>自訂顏色</span><input aria-label="自訂純色" type="color" value="'+value.hex+'"></label><div class="tint-label"><label for="tint-range">底色濃度</label><label class="tint-percent"><input class="tint-percent-input" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-label="底色濃度百分比"><span aria-hidden="true">%</span></label></div><input id="tint-range" class="tint-range" type="range" min="0" max="100" step="1" list="tint-stops" aria-label="底色濃度"><datalist id="tint-stops">'+Array.from({length:21},(_,i)=>'<option value="'+i*5+'"></option>').join('')+'</datalist><div class="tint-ticks" aria-hidden="true">'+'<i></i>'.repeat(21)+'</div><div class="tint-range-hint"><span>0% 無底色</span><span>100% 純色</span></div><div class="tint-quick">'+[10,15,20,30].map(n=>'<button type="button" data-level="'+n+'">'+n+'%</button>').join('')+'</div><div class="tint-label">即時預覽</div><div class="tint-preview"><b><i class="tint-dot"></i>'+esc(name)+'</b><span>林小姐</span><span>2,000 萬</span></div><div class="tint-footer"><button type="button" data-tint-clear>無底色</button><button type="button" class="tint-done">完成</button></div>';
+  statusColorPanel.innerHTML='<h3>'+esc(optionDisplayName("status",name))+' 的底色</h3><div class="tint-label">純色</div><div class="tint-colors">'+STATUS_PURE_COLORS.map(c=>'<button type="button" class="tint-pure" data-pure="'+c.hex+'" aria-label="'+c.name+'" title="'+c.name+'"><span style="background:'+c.hex+'"></span></button>').join('')+'</div><label class="tint-custom-row"><span>自訂顏色</span><input aria-label="自訂純色" type="color" value="'+value.hex+'"></label><div class="tint-label"><label for="tint-range">底色濃度</label><label class="tint-percent"><input class="tint-percent-input" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-label="底色濃度百分比"><span aria-hidden="true">%</span></label></div><input id="tint-range" class="tint-range" type="range" min="0" max="100" step="1" list="tint-stops" aria-label="底色濃度"><datalist id="tint-stops">'+Array.from({length:21},(_,i)=>'<option value="'+i*5+'"></option>').join('')+'</datalist><div class="tint-ticks" aria-hidden="true">'+'<i></i>'.repeat(21)+'</div><div class="tint-range-hint"><span>0% 無底色</span><span>100% 純色</span></div><div class="tint-quick">'+[10,15,20,30].map(n=>'<button type="button" data-level="'+n+'">'+n+'%</button>').join('')+'</div><div class="tint-label">即時預覽</div><div class="tint-preview"><b><i class="tint-dot"></i>'+esc(optionDisplayName("status",name))+'</b><span>林小姐</span><span>2,000 萬</span></div><div class="tint-footer"><button type="button" data-tint-clear>無底色</button><button type="button" class="tint-done">完成</button></div>';
   statusColorPanel.style.display="block";
   updateStatusColorPanel();
   statusColorViewportWidth=innerWidth;
@@ -8281,12 +8426,20 @@ function unhideOpt(key, v){
   });
   if (ch){ try { localStorage.setItem("customer_app_opts_v1", JSON.stringify(customOpts)); } catch(e){} }
 })();
-function normOpts(o){ o = o || {}; const h = o.hidden || {}; return {area:o.area||[],rooms:o.rooms||[],ptype:o.ptype||[],pnum:o.pnum||[],status:o.status||[],source:o.source||[],hidden:{area:h.area||[],rooms:h.rooms||[],ptype:h.ptype||[],pnum:h.pnum||[],status:h.status||[],source:h.source||[]}}; }
+function normOpts(o){
+  o=o||{};const h=o.hidden||{};
+  const opts={area:o.area||[],rooms:o.rooms||[],ptype:o.ptype||[],pnum:o.pnum||[],status:o.status||[],source:o.source||[],
+    hidden:{area:h.area||[],rooms:h.rooms||[],ptype:h.ptype||[],pnum:h.pnum||[],status:h.status||[],source:h.source||[]}};
+  // Keep untouched older backups readable by versions that do not know this option group.
+  if(o.shared?.length)opts.shared=o.shared;
+  if(h.shared?.length)opts.hidden.shared=h.shared;
+  return opts;
+}
 function loadOpts(){ try { return normOpts(JSON.parse(localStorage.getItem("customer_app_opts_v1")||"{}")); } catch(e){ return normOpts(null); } }
 function saveOpts(previous, statusEdit){
   if (!storeCurrentState(null, {opts:customOpts}, statusEdit)){
     customOpts = previous;
-    toast(statusEdit ? "狀態與選項未儲存，請稍後重試" : "選項未儲存，請稍後重試");
+    toast(statusEdit ? (statusEdit.field==="shared"?"共有":"狀態")+"與選項未儲存，請稍後重試" : "選項未儲存，請稍後重試");
     return false;
   }
   try { localStorage.setItem("customer_app_opts_v1", JSON.stringify(customOpts)); } catch(e){}
@@ -8301,8 +8454,9 @@ statusColorsReady = true;
 function saveOptOrder(){ if (storageOK){ try { localStorage.setItem("customer_app_optorder_v1", JSON.stringify(optOrder)); } catch(e){} } }
 function optList(key,options=customOpts,records=items,order=optOrder){
   const hid = new Set((options.hidden[key]||[]).map(String)); const seen = new Set();
-  // 已填的來源可能來自備份或另一台裝置；清單偏好沒有這個名稱時仍可選用。
-  const candidates = DEF_OPTS[key].concat(options[key], key === "source" ? records.map(d => d.source || "") : []);
+  // 來源與共有也納入從備份或其他裝置取得的客戶選項。
+  const recorded=key==="source"?records.map(d=>d.source||""):key==="shared"?records.flatMap(d=>fieldVals(d,key)):[];
+  const candidates = DEF_OPTS[key].concat(options[key]||[],recorded);
   const present = candidates.map(String).filter(v => { if (!v || seen.has(v) || hid.has(v)) return false; seen.add(v); return true; });
   const ord = order[key];
   if (ord && ord.length){
@@ -8324,8 +8478,8 @@ function makeOptSel(key, emptyLabel, multi){
     const orphan = p && isOptOrphan(key, p);
     if (vals.length){
       txt.innerHTML = vals.length > 1
-        ? `<span class="multi-wrap"><span class="multi-pri${orphan?" opt-orphan":""}">${esc(p)}</span><span class="multi-dot" aria-hidden="true"></span></span>`
-        : `<span class="multi-pri${orphan?" opt-orphan":""}">${esc(p)}</span>`;
+        ? `<span class="multi-wrap"><span class="multi-pri${orphan?" opt-orphan":""}">${esc(optionDisplayName(key,p))}</span><span class="multi-dot" aria-hidden="true"></span></span>`
+        : `<span class="multi-pri${orphan?" opt-orphan":""}">${esc(optionDisplayName(key,p))}</span>`;
       txt.classList.remove("ph");
       if (orphan) txt.title = "已從下拉選單移除（資料仍保留）";
       else txt.removeAttribute("title");
@@ -8335,7 +8489,10 @@ function makeOptSel(key, emptyLabel, multi){
     else { btn.removeAttribute("data-multifield"); btn.removeAttribute("data-multivals"); btn.removeAttribute("data-optkey"); }
   }
   function set(v){ vals = asFieldVals(v); if (!multi && vals.length > 1) vals = [vals[0]]; show(); }
-  function setFromUser(v){ set(v); saveFormDraft(); }
+  function setFromUser(v){
+    if(key==="shared" && asFieldVals(v).length>500){toast("每位客戶最多選擇 500 個共有名稱");return;}
+    set(v); saveFormDraft();
+  }
   function get(){ return packFieldVals(vals); }
   menu.addEventListener("keydown", e => {
     if (e.key !== "F2" || menu.classList.contains("opt-editing")) return;
@@ -8354,20 +8511,20 @@ function makeOptSel(key, emptyLabel, multi){
     }
     const del = e.target.closest(".opt-del");
     if (del){ e.stopPropagation(); const dv = del.dataset.del;
-      if (!canRemoveSourceOption(key,dv)) return;
+      if (!canRemoveRecordOption(key,dv)) return;
       const previous = DataCore.clone(customOpts);
-      customOpts[key] = customOpts[key].filter(x => String(x) !== dv);
-      if (key === "source" || DEF_OPTS[key].map(String).includes(dv)){
+      customOpts[key] = (customOpts[key]||[]).filter(x => String(x) !== dv);
+      if (usesRecordOptions(key) || DEF_OPTS[key].map(String).includes(dv)){
         customOpts.hidden[key] = customOpts.hidden[key] || [];
         if (!customOpts.hidden[key].map(String).includes(dv)) customOpts.hidden[key].push(dv);
       }
       if (!saveOpts(previous)) return;
-      if (vals.includes(String(dv))){ if (key !== "source") vals = asFieldVals(toggleFieldVal(vals, dv, false)); show(); }
+      if (vals.includes(String(dv))){ if (!usesRecordOptions(key)) vals = asFieldVals(toggleFieldVal(vals, dv, false)); show(); }
       const still = items.filter(it => {
-        const f = ({area:"area",rooms:"rooms",ptype:"pType",pnum:"pNum",status:"status",source:"source"})[key];
+        const f = ({area:"area",rooms:"rooms",ptype:"pType",pnum:"pNum",status:"status",source:"source",shared:"shared"})[key];
         return f && asFieldVals(it[f]).includes(String(dv));
       }).length;
-      if (typeof toast === "function") toast(still ? ((key === "source" ? "已從下拉移除；" : "已從下拉移除；其他 ") + still + " 筆仍保留（灰色顯示）") : "已從下拉移除選項");
+      if (typeof toast === "function") toast(still ? ((usesRecordOptions(key) ? "已從下拉移除；" : "已從下拉移除；其他 ") + still + " 筆仍保留（灰色顯示）") : "已從下拉移除選項");
       renderMenu();
       saveFormDraft();
       if (typeof applyFilter === "function") applyFilter();
@@ -8376,12 +8533,12 @@ function makeOptSel(key, emptyLabel, multi){
     if (pin && multi){ e.stopPropagation(); const row = pin.closest(".cselect-opt"); if (row){ setFromUser(toggleFieldVal(vals, row.dataset.v, true)); renderMenu(); } return; }
     const add = e.target.closest(".opt-add");
     if (add){ e.stopPropagation();
-      if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = inp.value.trim();
+      if (e.target.tagName === "BUTTON"){ const inp = add.querySelector("input"); const v = canonicalOptionInput(key,inp.value.trim());
         if (v){
-          if (!canAddSourceOption(key,v)) return;
+          if (!canAddRecordOption(key,v)) return;
           const previous = DataCore.clone(customOpts);
           let ch = unhideOpt(key, v);
-          if (!optList(key).includes(v)){ customOpts[key].push(v); ch = true; }
+          if (!optList(key).includes(v)){ (customOpts[key] ||= []).push(v); ch = true; }
           if (ch && !saveOpts(previous)) return;
           if (multi){ setFromUser(toggleFieldVal(vals, v, true)); renderMenu(); inp.value = ""; }
           else { setFromUser(v); sel.classList.remove("open"); }
@@ -8405,7 +8562,7 @@ function makeOptSel(key, emptyLabel, multi){
   const clearReveal = () => { menu.querySelectorAll(".opt-line.reveal").forEach(x => x.classList.remove("reveal")); };
   menu.addEventListener("pointerdown", e => {
     menu.__lp = false;
-    if (e.target.closest("[data-status-color]") || e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag") || e.target.closest(".pri-pin")) return;
+    if (e.target.closest("[data-status-color],[data-rename-option]") || e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag") || e.target.closest(".pri-pin")) return;
     const row = e.target.closest(".opt-line"); if (!row) return;
     _lpRow = row; _lpX = e.clientX; _lpY = e.clientY; clearTimeout(_lpTimer);
     _lpTimer = setTimeout(() => { menu.__lp = true; _lpRow = null; menu.classList.add("opt-editing"); try { navigator.vibrate && navigator.vibrate(12); } catch(_){} }, 400);
@@ -8416,7 +8573,7 @@ function makeOptSel(key, emptyLabel, multi){
   menu.addEventListener("pointercancel", endLp);
   menu.addEventListener("touchstart", e => {
     menu.__lp = false;
-    if (e.target.closest("[data-status-color]") || e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag")) return;
+    if (e.target.closest("[data-status-color],[data-rename-option]") || e.target.closest(".opt-del") || e.target.closest(".opt-add") || e.target.closest(".opt-drag")) return;
     const row = e.target.closest(".opt-line"); if (!row) return;
     const tc = e.touches[0]; _lpX = tc.clientX; _lpY = tc.clientY; _lpRow = row; clearTimeout(_lpTimer);
     _lpTimer = setTimeout(() => { menu.__lp = true; _lpRow = null; menu.classList.add("opt-editing"); try { navigator.vibrate && navigator.vibrate(12); } catch(_){} }, 380);
@@ -8471,7 +8628,8 @@ function makeOptSel(key, emptyLabel, multi){
 }
 const areaPick = makeOptSel("area","選擇區域", true), roomsPick = makeOptSel("rooms","選擇房數", true),
       ptypePick = makeOptSel("ptype","選擇車位", true), pnumPick = makeOptSel("pnum","數量", true),
-      statusPick = makeOptSel("status","選擇狀態", false), sourcePick = makeOptSel("source","選擇來源", false);
+      statusPick = makeOptSel("status","選擇狀態", false), sourcePick = makeOptSel("source","選擇來源", false),
+      sharedPick = makeOptSel("shared","選擇共有", true);
 // 選項清單就緒後重繪一次,讓「已移除選項」的灰字正確套上(開頁早期 render 時 opts 尚未就緒)
 if (typeof applyFilter === "function") applyFilter();
 document.addEventListener("click", e => { document.querySelectorAll(".opt-sel.open").forEach(el => { if (!eventWithin(e,el)) el.classList.remove("open"); }); });
@@ -8551,6 +8709,7 @@ function openForm(id){
   areaPick.set(d ? d.area||"" : "");
   statusPick.set(d ? (d.status || "") : "");
   sourcePick.set(d?.source || "");
+  sharedPick.set(d?.shared || "");
   F.budget.value = d ? (d.budget || "") : "";   // 預算合併為單一欄位:直接吃顯示字串(2000-2500、1500以內、2600以上…)
   roomsPick.set(d ? d.rooms||"" : "");
   const _pk = d ? ((d.pType != null || d.pNum != null) ? {t:d.pType||"", n:(d.pNum==null?"":d.pNum)} : (function(){ const p = parseParking(d.parking); return {t:p.t, n:p.n>0?String(p.n):""}; })()) : {t:"", n:""};
@@ -8572,7 +8731,7 @@ function openForm(id){
   const draft=loadFormDraft();
   if(draft && (draft.editingId||null)===(id||null)){
     applyFormDraft(draft.rec||draft);
-    if(draft.base)formBaseRec={source:formBaseRec.source,...draft.base,line:normalizeLineSymbols(draft.base.line)};
+    if(draft.base)formBaseRec={source:formBaseRec.source,shared:formBaseRec.shared,...draft.base,line:normalizeLineSymbols(draft.base.line)};
     toast("已還原未儲存草稿；按儲存才會套用");
   }
   if(!id)setTimeout(()=>F.cust.focus(),50);
@@ -8598,7 +8757,7 @@ const detailBg = document.getElementById("detailBg");
 function openDetail(id){
   closeNeedOrderUI();
   const d = items.find(x => x.id === id); if (!d) return;
-  const _stPill = d.status ? `<span class="dtl-status">${esc(d.status)}</span>` : "";   // 狀態小標放在名字前;無狀態則不顯示
+  const _stPill = d.status ? `<span class="dtl-status">${esc(statusDisplayName(d.status))}</span>` : "";   // 狀態小標放在名字前;無狀態則不顯示
   document.getElementById("detailTitle").innerHTML = _stPill + `<span class="dtl-name">${esc(d.cust || "（未填稱呼）")}</span>`;
   // 小圖示(區段標題/格內)
   const IC_USER  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5"/></svg>';
@@ -8618,8 +8777,8 @@ function openDetail(id){
   const cellMulti = (k, field, ic) => {
     const vals = fieldVals(_d, field);
     if (!vals.length) return cell(k, "", ic);
-    const m = multiInnerHTML(vals);
-    const copy = vals.join("、");
+    const m = multiInnerHTML(vals, null, field);
+    const copy = vals.map(v=>optionDisplayName(field,v)).join("、");
     const attrs = m.multi ? ` data-multifield="${field}" data-multivals="${esc(vals.join("\u001f"))}"` : "";
     return `<div class="dtl-cell">${ic||""}<span class="dtl-k">${esc(k)}</span><span class="dtl-v dtl-copy" data-copy="${esc(copy)}"${attrs}>${m.html}</span></div>`;
   };
@@ -8629,7 +8788,7 @@ function openDetail(id){
     <div class="dtl-card">${cell("電話", d.tel, IC_TEL)}${cell("LINE", normalizeLineSymbols(d.line))}</div>
     <div class="dtl-meta" id="dtlMeta">
       <div class="dtl-h" style="color:var(--ink-soft);">建檔資訊</div>
-      <div class="dtl-card">${cell("建檔日", d.date)}${cell("來源", d.source)}${cell("詢問案名", d.ask)}</div>
+      <div class="dtl-card">${cell("建檔日", d.date)}${cell("來源", d.source)}${cell("詢問案名", d.ask)}${cell("共有", fieldVals(d,"shared").join("／"))}</div>
     </div>
   </div>`;
   // 購屋需求:三排 → 區域/類型、預算/房數、車位/車數(狀態已移到標題,不再入格)
@@ -8688,6 +8847,7 @@ function buildFormRec(){
     area: areaPick.get(),
     status: statusPick.get(),
     source: sourcePick.get(),
+    shared: sharedPick.get(),
     budget: F.budget.value.trim(),
     bMin: (function(){ const r = parseBudget(F.budget.value); return (r && isFinite(r[0]) && r[0] > 0) ? r[0] : null; })(),
     bMax: (function(){ const r = parseBudget(F.budget.value); return (r && isFinite(r[1])) ? r[1] : null; })(),
@@ -8710,7 +8870,7 @@ function buildFormRec(){
 const FORM_DRAFT_KEY = "customer_app_form_draft_v1";
 function formDraftHasContent(rec){
   const hasText=["cust","date","budget","need","need2","need3","tel","line","ask"].some(k=>String(rec[k]??"").trim());
-  const hasChoice=["cat","area","status","source","rooms","pType","pNum"].some(k=>asFieldVals(rec[k]).length);
+  const hasChoice=["cat","area","status","source","shared","rooms","pType","pNum"].some(k=>asFieldVals(rec[k]).length);
   const hasTitle=[1,2,3].some(sg=>String(rec["t"+sg]??needDefTitle(sg))!==needDefTitle(sg));
   return hasText||hasChoice||hasTitle||!CustomerDataCore.equal(needOrder(rec),[1,2,3])||[1,2,3].some(sg=>needFontPercent(rec,sg)!==100);
 }
@@ -8735,6 +8895,7 @@ function applyFormDraft(d){
   areaPick.set(d.area || "");
   statusPick.set(d.status || "");
   if (Object.hasOwn(d,"source")) sourcePick.set(d.source);
+  if (Object.hasOwn(d,"shared")) sharedPick.set(d.shared);
   F.budget.value = d.budget || "";
   roomsPick.set(d.rooms || "");
   ptypePick.set(d.pType || "");
@@ -8786,6 +8947,7 @@ function saveForm(){
   } else {
     const now = Date.now();
     if (!rec.source) delete rec.source;
+    if (!rec.shared) delete rec.shared;
     items.push({...rec, id: uid(), createdAt: now, updatedAt: now});
   }
   if(saveItems()===false){items=previousItems;saveFormDraft();toast("尚未儲存成功，表單草稿已保留，請稍後重試");return;}
@@ -9286,10 +9448,11 @@ document.addEventListener("keydown", e => {
 // 注意:applySettings 只做「純本機儲存+畫面套用」,不呼叫 onLocalChange——由呼叫端決定要不要觸發同步,避免回授迴圈。
 function collectSettings(){
   const fs = serializeColFilterState();
-  return { density: density, sort: currentSort, colw: colW, theme: theme, opts: customOpts, statusColors: statusColors, fltorder: filterOrder, expfocus: expFocus, optorder: optOrder, colFilter: fs.colFilter, fltB: fs.fltB };
+  return { density: density, sort: currentSort, colw: colW, theme: theme, opts: customOpts, statusColors: statusColors, ...(Object.keys(optionAliases).length?{optionAliases}:{}), fltorder: filterOrder, expfocus: expFocus, optorder: optOrder, colFilter: fs.colFilter, fltB: fs.fltB };
 }
 function applySettings(s){
   if (!s || typeof s !== "object") return;
+  if (Object.prototype.hasOwnProperty.call(s,"optionAliases")) setOptionAliases(s.optionAliases);
   if (s.density === "compact" || s.density === "normal"){ setDensity(s.density); }
   if (typeof s.sort === "string" && SORTS.some(x => x.key === s.sort)){
     currentSort = s.sort; saveSort();
@@ -9369,7 +9532,10 @@ async function applyBackup(parsed,mode="replace"){
   await CustomerRecovery.put(mode==="replace"?"完整還原前":"合併匯入前",backupData());
   if(mode==="merge")await CustomerRecovery.put("合併匯入的來源備份",parsed);
   if(!unchanged())throw new Error("資料剛有更新，請重新選擇匯入");
-  const v={...normalized,cats:normalized.cats??cats,settings:{...collectSettings(),...normalized.settings}};
+  const fallback=collectSettings();
+  // Backups preceding display names must restore the original names, even on a renamed device.
+  delete fallback.optionAliases;
+  const v={...normalized,cats:normalized.cats??cats,settings:{...fallback,...normalized.settings}};
   let next;
   if(mode==="merge")next=DataCore.importMerge(dataState,v,DataCore.newId());
   else{
@@ -9713,7 +9879,8 @@ function renderCatList(){
     <div class="cat-item" data-key="${esc(c.key)}">
       <span class="cat-drag" aria-label="拖曳排序" title="拖曳排序"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><g fill="currentColor"><circle cx="6" cy="4" r="1.25"/><circle cx="10" cy="4" r="1.25"/><circle cx="6" cy="8" r="1.25"/><circle cx="10" cy="8" r="1.25"/><circle cx="6" cy="12" r="1.25"/><circle cx="10" cy="12" r="1.25"/></g></svg></span>
       <button type="button" class="cat-color" data-color="${esc(safeColor(c.color))}" style="background:${safeColor(c.color)}" aria-label="顏色"></button>
-      <input type="text" class="cat-name" value="${esc(c.key)}" aria-label="類別名稱">
+      <span class="cat-name" title="${esc(optionDisplayName("cat",c.key))}">${esc(optionDisplayName("cat",c.key))}</span>
+      ${renameOptionButton("cat",c.key)}
       <span class="cat-count">${catCount(c.key)} 筆</span>
       <button class="cat-del" aria-label="刪除類別">🗑</button>
     </div>`).join("");
@@ -9728,7 +9895,7 @@ catBg.addEventListener("click", e => { if (e.target === catBg) closeCatManager()
 function addCategory(){
   const name = catNewEl.value.trim();
   if (!name){ catNewEl.focus(); return; }
-  if (cats.some(c => c.key === name)){ toast("類別名稱重複"); return; }
+  if (cats.some(c => c.key===name||optionDisplayName("cat",c.key)===name)){ toast("類別名稱重複"); return; }
   cats.push({ key: name, label: "", color: nextColor() });
   refreshCategories();
   renderCatList();
@@ -9832,38 +9999,22 @@ catListEl.addEventListener("change", e => {
     refreshCategories();
     return;
   }
-  if (e.target.classList.contains("cat-name")){
-    const newKey = e.target.value.trim();
-    if (!newKey){ e.target.value = oldKey; return; }
-    if (newKey === oldKey) return;
-    if (cats.some(c => c.key === newKey)){ toast("類別名稱重複"); e.target.value = oldKey; return; }
-    cat.key = newKey;
-    item.dataset.key = newKey;
-    // 改名要一併更新受影響資料的 updatedAt:先前只改 it.cat 不動時間戳,兩台裝置變成
-    // 「同 id、同時間戳、內容不同」,配合舊的偏本機平手裁決 → 互相推翻,改名永遠傳不到另一台。
-    const _renameTs = Date.now();
-    items.forEach(it => {
-      const vals = fieldVals(it, "cat");
-      if (!vals.includes(oldKey)) return;
-      it.cat = packFieldVals(vals.map(v => v === oldKey ? newKey : v));
-      it.updatedAt = _renameTs;
-    });
-    remapColFilterCat(oldKey, newKey);
-    if (currentCat === oldKey) currentCat = newKey;
-    saveItems();
-    refreshCategories();
-    onLocalChange("data");
-    toast("已改名");
-  }
 });
 catListEl.addEventListener("click", e => {
+  const rename=e.target.closest("[data-rename-option]");
+  if(rename){
+    const key=rename.dataset.renameOption;
+    openOptionRenameDialog("cat",key,()=>{
+      Array.from(catListEl.querySelectorAll("[data-rename-option]")).find(btn=>btn.dataset.renameOption===key)?.focus({preventScroll:true});
+    });return;
+  }
   const del = e.target.closest(".cat-del");
   if (!del) return;
   const item = e.target.closest(".cat-item");
   const key = item.dataset.key;
   const n = catCount(key);
   askConfirm(
-    `刪除類別「${key}」？`,
+    `刪除類別「${optionDisplayName("cat",key)}」？`,
     n > 0 ? `該類別的 ${n} 筆需求會變成未分類，仍可在「全部」中找到。` : "",
     () => {
       const ts = Date.now();
@@ -10046,7 +10197,7 @@ const DATA_V6_KEY = "customer_app_state_v6";
 const DataCore = CustomerDataCore;
 const editActor = deviceId + "-" + DataCore.newId();
 let applyingDataState = false;
-function defaultPreferenceView(){return {cats:DataCore.clone(DEFAULT_CATS),settings:{density:"normal",sort:"default",colw:{...DEFAULT_COLW},theme:"light",opts:normOpts(null),statusColors:{},fltorder:{},expfocus:false,optorder:{},colFilter:{area:null,cat:null,rooms:null,pType:null,pNum:null,status:null,source:null},fltB:{lo:null,hi:null}}};}
+function defaultPreferenceView(){return {cats:DataCore.clone(DEFAULT_CATS),settings:{density:"normal",sort:"default",colw:{...DEFAULT_COLW},theme:"light",opts:normOpts(null),statusColors:{},optionAliases:{},fltorder:{},expfocus:false,optorder:{},colFilter:{area:null,cat:null,rooms:null,pType:null,pNum:null,status:null,source:null},fltB:{lo:null,hi:null}}};}
 function legacyPreferenceView(){
   const all=collectSettings(),settings={};
   for(const key of Object.keys(all))if(bootPreferenceStorage[key]!==null)settings[key]=all[key];
@@ -10104,7 +10255,8 @@ function storeCurrentState(observed, changedSettings, statusEdit){
           row.id === id ? {...row,status:latest.status,updatedAt:latest.updatedAt} : row)};
       }
       // Start with the saved view so a menu click never commits another editor's pending fields.
-      view.items = view.items.map(row => row.id === id ? {...row,status:statusEdit.value,updatedAt:statusEdit.updatedAt} : row);
+      const field=statusEdit.field==="shared"?"shared":"status";
+      view.items = view.items.map(row => row.id === id ? {...row,[field]:statusEdit.value,updatedAt:statusEdit.updatedAt} : row);
     }
     const local=captureViewState(base,view,previousView);
     if(DataCore.epochCmp(base.epoch,savedViewState.epoch)>0&&!DataCore.equal(local,savedViewState)){
@@ -10134,7 +10286,7 @@ window._persistData = storeCurrentState;
 // A rename is one local v6 write. Build it from confirmed records and options;
 // keep input values that are still in a form out of the saved transaction.
 function readOptionRenameState(key){
-  if(key!=="area"&&key!=="source")throw new Error("此欄位無法重新命名");
+  if(!Object.hasOwn(RENAME_FIELDS,key))throw new Error("此欄位無法重新命名");
   if(!storageOK||window._storageCorrupt||window._saveError)throw new Error("請先確認本機資料已安全儲存");
   let state=dataState;
   const raw=localStorage.getItem(DATA_V6_KEY);
@@ -10149,24 +10301,51 @@ function readOptionRenameState(key){
     throw new Error("另一台裝置已還原整份資料，請關閉視窗並等候更新後重試");
   const view=DataCore.project(DataCore.autoLatest(state));
   const settings={...defaultPreferenceView().settings,...view.settings,opts:normOpts(view.settings.opts)};
-  const names=optList(key,settings.opts,view.items,settings.optorder);
+  const names=key==="cat"?(state.prefs.cats?view.cats:DEFAULT_CATS).map(c=>c.key):optList(key,settings.opts,view.items,settings.optorder);
   return {state,view,settings,names};
 }
+const RENAME_FIELDS={status:"狀態",area:"區域",cat:"類型",rooms:"房數",ptype:"車類",pnum:"車數",source:"來源",shared:"共有"};
+function renameUsesAlias(key){return key!=="area"&&key!=="source"&&key!=="shared";}
+function renameFieldCode(key){return key==="ptype"?"pType":key==="pnum"?"pNum":key;}
+function contradictoryQuantity(key,raw,label){
+  if(key!=="pnum"&&key!=="rooms")return false;
+  const unit=key==="rooms"?"房":"(?:車位|車)";
+  const re=new RegExp("^(\\d+|[零一二兩雙三四五六七八九十]+)\\s*(?:"+unit+")?$");
+  const quantity=value=>{
+    const m=re.exec(value.normalize("NFKC").trim());
+    if(!m)return null;
+    if(/^\d+$/.test(m[1]))return Number(m[1]);
+    const digits={零:0,一:1,二:2,兩:2,雙:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9};
+    if(Object.hasOwn(digits,m[1]))return digits[m[1]];
+    const parts=m[1].split("十");
+    if(parts.length!==2)return null;
+    const tens=parts[0]?digits[parts[0]]:1,ones=parts[1]?digits[parts[1]]:0;
+    return Number.isInteger(tens)&&Number.isInteger(ones)?10*tens+ones:null;
+  };
+  const a=quantity(raw),b=quantity(label);
+  return a!==null&&b!==null&&a!==b;
+}
 function planOptionRename(snapshot,key,oldName,newName){
-  const rows=[];
-  let collision=false;
+  const rows=[],names=new Set(snapshot.names);
+  const display=value=>optionDisplayName(key,value,snapshot.settings.optionAliases||{});
   for(const row of snapshot.view.items){
-    const before=fieldVals(row,key);
-    if(before.includes(newName))collision=true;
-    if(before.includes(oldName))rows.push({id:row.id,cust:row.cust||"",before,after:before.map(v=>v===oldName?(newName||oldName):v)});
+    let before=fieldVals(row,renameFieldCode(key));
+    if(!before.length&&(key==="ptype"||key==="pnum")&&row.parking){
+      const parking=parseParking(row.parking);
+      before=asFieldVals(key==="ptype"?parking.t:(parking.n?String(parking.n):""));
+    }
+    for(const value of before)names.add(value);
+    if(before.includes(oldName))rows.push({id:row.id,before,after:before.map(v=>v===oldName?(newName||oldName):v)});
   }
+  const original=display(oldName);
   let error="";
   if(!snapshot.names.includes(oldName))error="這個選項已經變更，請重新開啟選單";
   else if(!newName)error="請輸入新名稱";
-  else if(newName===oldName)error="請輸入不同的名稱";
+  else if(newName===original)error="請輸入不同的名稱";
   else if(newName.length>2000)error="選項名稱最多 2000 字";
-  else if(collision||snapshot.names.includes(newName))error="這個名稱已經存在，請使用其他名稱";
-  return {rows,error};
+  else if([...names].some(v=>v!==oldName&&(v===newName||display(v)===newName)))error="這個名稱已經存在，請使用其他名稱";
+  else if(contradictoryQuantity(key,oldName,newName))error="新名稱的數量與原選項不同";
+  return {rows,error,original};
 }
 function renamedList(list,oldName,newName){
   if(!Array.isArray(list)||!list.includes(oldName))return list;
@@ -10174,14 +10353,14 @@ function renamedList(list,oldName,newName){
 }
 function renamedOptionSettings(snapshot,key,oldName,newName){
   const settings=snapshot.settings,opts=DataCore.clone(settings.opts);
-  opts[key]=opts[key].filter(v=>v!==oldName&&v!==newName);
+  opts[key]=(opts[key]||[]).filter(v=>v!==oldName&&v!==newName);
   if(!DEF_OPTS[key].includes(newName))opts[key].push(newName);
-  opts.hidden[key]=opts.hidden[key].filter(v=>v!==newName);
-  if((key==="source"||DEF_OPTS[key].includes(oldName))&&!opts.hidden[key].includes(oldName))opts.hidden[key].push(oldName);
+  opts.hidden[key]=(opts.hidden[key]||[]).filter(v=>v!==newName);
+  if((key==="source"||key==="shared"||DEF_OPTS[key].includes(oldName))&&!opts.hidden[key].includes(oldName))opts.hidden[key].push(oldName);
   const changes={opts};
   const currentOrder=settings.optorder[key];
   // An old multi-device options list can be longer than a writable area order.
-  const ordering=key==="area"&&snapshot.names.length>500?currentOrder:snapshot.names;
+  const ordering=(key==="area"||key==="shared")&&snapshot.names.length>500?currentOrder:snapshot.names;
   const ordered=renamedList(ordering,oldName,newName);
   if(ordered&&!DataCore.equal(ordered,currentOrder))changes.optorder={...settings.optorder,[key]:ordered};
   for(const group of ["colFilter","fltorder"]){
@@ -10193,7 +10372,7 @@ function renamedOptionSettings(snapshot,key,oldName,newName){
 function renameFormSelection(key,oldName,newName){
   const remap=v=>packFieldVals(renamedList(asFieldVals(v),oldName,newName));
   if(modalBg.classList.contains("open")){
-    const picker=key==="area"?areaPick:sourcePick;
+    const picker=key==="area"?areaPick:key==="shared"?sharedPick:sourcePick;
     if(asFieldVals(picker.get()).includes(oldName))picker.set(remap(picker.get()));
     if(formBaseRec&&asFieldVals(formBaseRec[key]).includes(oldName))formBaseRec[key]=remap(formBaseRec[key]);
     saveFormDraft();
@@ -10216,6 +10395,7 @@ function optionRenameNeedsRecovery(snapshot,key,oldName,newName,rows,changes){
     const first=project(cell.choices[0].value);
     return cell.choices.slice(1).some(choice=>!DataCore.equal(first,project(choice.value)));
   };
+  if(renameUsesAlias(key))return competing(prefs[DataCore.optionAliasKey(key,oldName)]);
   if(rows.some(row=>competing(records[row.id]?.[key])||competing(records[row.id]?.$alive)))return true;
   const names=[oldName,newName];
   if(names.some(name=>competing(prefs["option:"+JSON.stringify([key,name])])))return true;
@@ -10231,9 +10411,10 @@ function commitOptionRename(snapshot,key,oldName,newName,plan){
   try{
     current=readOptionRenameState(key);
     const fresh=planOptionRename(current,key,oldName,newName);
-    if(fresh.error||!DataCore.equal(fresh.rows,plan.rows))
-      return {ok:false,snapshot:current,message:fresh.error||"受影響的客戶已變動，請確認最新清單後再按一次"};
-    changes=renamedOptionSettings(current,key,oldName,newName);
+    if(fresh.error||fresh.original!==plan.original||!DataCore.equal(fresh.rows,plan.rows))
+      return {ok:false,snapshot:current,message:fresh.error||"資料已變動，請再次確認原名稱與影響人數"};
+    const alias=renameUsesAlias(key);
+    changes=alias?{optionAliases:withOptionAlias(current.settings.optionAliases||{},key,oldName,newName)}:renamedOptionSettings(current,key,oldName,newName);
     if(optionRenameNeedsRecovery(current,key,oldName,newName,fresh.rows,changes)){
       queueMergedState(current.state);scheduleAutoLatest();
       const formOpen=modalBg.classList.contains("open");
@@ -10242,7 +10423,7 @@ function commitOptionRename(snapshot,key,oldName,newName,plan){
         :"改名尚未執行。正在整理兩台裝置的修改，請等同步完成後再改名"};
     }
     DataCore.settings(changes,true);
-    updated=new Map(fresh.rows.map(row=>[row.id,packFieldVals(row.after)]));
+    updated=new Map(alias?[]:fresh.rows.map(row=>[row.id,packFieldVals(row.after)]));
     stamp=Date.now();
     const after={...current.view,settings:{...current.settings,...changes},items:current.view.items.map(row=>
       updated.has(row.id)?{...row,[key]:updated.get(row.id),updatedAt:stamp}:row)};
@@ -10263,12 +10444,25 @@ function commitOptionRename(snapshot,key,oldName,newName,plan){
   dataState=next;savedViewState=DataCore.clone(next);
   if(recoveryBefore)pendingLocalBackup=recoveryBefore;
   if(received||needsDataPaint){needsDataPaint=true;queueMergedState(next);scheduleAutoLatest();}
-  customOpts=changes.opts;
+  if(changes.optionAliases)setOptionAliases(changes.optionAliases);
+  if(changes.opts)customOpts=changes.opts;
   if(changes.optorder){optOrder=changes.optorder;saveOptOrder();}
   if(changes.fltorder){filterOrder=changes.fltorder;saveFltOrder();}
   if(changes.colFilter){applyColFilterState(changes);saveColFilterState();}
-  try{localStorage.setItem("customer_app_opts_v1",JSON.stringify(customOpts));localStorage.setItem(STORE_KEY,JSON.stringify(DataCore.project(next).items));}catch(e){}
-  renameFormSelection(key,oldName,newName);
+  if(changes.opts){
+    try{localStorage.setItem("customer_app_opts_v1",JSON.stringify(customOpts));localStorage.setItem(STORE_KEY,JSON.stringify(DataCore.project(next).items));}catch(e){}
+    renameFormSelection(key,oldName,newName);
+  }else if(modalBg.classList.contains("open")){
+    if(key==="cat")setFormCat(formCats);
+    else{
+      const picker={status:statusPick,rooms:roomsPick,ptype:ptypePick,pnum:pnumPick}[key];
+      picker.set(picker.get());
+    }
+  }
+  if(key==="cat"){
+    renderTabs();renderCatOptions();
+    if(catBg.classList.contains("open"))renderCatList();
+  }
   renderCover();applyFilter();window.touchSettings();window.scheduleSync();
   return {ok:true};
 }
@@ -10355,11 +10549,11 @@ function dataDialog(title){
   document.body.append(d);d.showModal();return {dialog:d,body:d.querySelector(".data-dialog-body")};
 }
 function openOptionRenameDialog(key,oldName,returnFocus){
-  if (key !== "area" && key !== "source") return;
+  if(!Object.hasOwn(RENAME_FIELDS,key))return;
   let snapshot;
   try { snapshot=readOptionRenameState(key); }
   catch(error){ toast(error.message || "無法讀取選項，請稍後重試"); returnFocus?.(); return; }
-  const label=key === "area" ? "區域" : "來源";
+  const label=RENAME_FIELDS[key];
   const {dialog,body}=dataDialog("重新命名"+label);
   dialog.id="optionRenameDialog";
   const heading=dialog.querySelector("h2");
@@ -10367,34 +10561,23 @@ function openOptionRenameDialog(key,oldName,returnFocus){
   dialog.setAttribute("aria-labelledby",heading.id);
   const original=document.createElement("div");
   original.className="rename-from";
-  original.textContent="原名稱　"+oldName;
   const group=document.createElement("div");
   heading.before(group); group.append(heading,original);
   body.innerHTML='<label for="optionRenameName">新名稱</label><input id="optionRenameName" autocomplete="off" aria-describedby="optionRenameNote">'+
     '<p id="optionRenameNote" class="rename-feedback" role="status" hidden></p><p id="optionRenameCount" aria-live="polite"></p>'+
-    '<div class="rename-preview"><table aria-label="改名前後預覽"><thead><tr><th scope="col">客戶</th><th scope="col">目前名稱</th><th scope="col">改名後</th></tr></thead><tbody></tbody></table></div>'+
     '<div class="rename-actions"><button type="button" id="optionRenameCancel" class="s-btn">取消</button><button type="button" id="optionRenameConfirm" class="s-btn s-btn-primary">確認改名</button></div>';
   const input=body.querySelector("input"), count=body.querySelector("#optionRenameCount"), note=body.querySelector("#optionRenameNote");
-  const confirm=body.querySelector("#optionRenameConfirm"), tbody=body.querySelector("tbody"), preview=body.querySelector(".rename-preview");
+  const confirm=body.querySelector("#optionRenameConfirm");
   let plan;
   function updatePreview(message=""){
     const next=input.value.trim();
     plan=planOptionRename(snapshot,key,oldName,next);
-    confirm.disabled=!!plan.error || !next || next===oldName;
-    const feedback=message || (next!==oldName ? plan.error : "");
+    original.textContent="原名稱　"+plan.original;
+    confirm.disabled=!!plan.error;
+    const feedback=message || (next!==plan.original ? plan.error : "");
     note.textContent=feedback||"";note.hidden=!feedback;
-    input.setAttribute("aria-invalid",String(!!plan.error && next!==oldName));
+    input.setAttribute("aria-invalid",String(!!plan.error && next!==plan.original));
     count.textContent="會更新 "+plan.rows.length+" 位客戶";
-    preview.hidden=!plan.rows.length;
-    const fragment=document.createDocumentFragment();
-    for(const row of plan.rows){
-      const tr=document.createElement("tr");
-      for(const value of [row.cust||"未命名",row.before.join("／"),row.after.join("／")]){
-        const td=document.createElement("td");td.textContent=value;tr.append(td);
-      }
-      fragment.append(tr);
-    }
-    tbody.replaceChildren(fragment);
   }
   confirm.onclick=()=>{
     if(confirm.disabled || !dialog.open)return;
@@ -10410,7 +10593,7 @@ function openOptionRenameDialog(key,oldName,returnFocus){
   });
   body.querySelector("#optionRenameCancel").onclick=()=>dialog.close();
   dialog.addEventListener("close",()=>returnFocus?.(),{once:true});
-  input.value=oldName;updatePreview();input.focus();input.select();
+  input.value=optionDisplayName(key,oldName,snapshot.settings.optionAliases||{});updatePreview();input.focus();input.select();
 }
 function updateDataNotice(){/* completion-check:start */window.refreshCompletionCheck?.();/* completion-check:end */
   const el=document.getElementById("dataNotice");if(!el)return;
