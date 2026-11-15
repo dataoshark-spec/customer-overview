@@ -1173,6 +1173,7 @@
   .fopt{display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:10px;transition:transform .16s ease;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
   .fopt-main{flex:1;min-width:0;display:flex;align-items:center;gap:11px;padding:5px 2px;font-size:.94rem;color:var(--ink);cursor:pointer;}
   .fopt-main span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fopt-count{flex:none;color:var(--ink-soft);font-size:.84em;font-variant-numeric:tabular-nums;}
   .fopt-drag{flex:none;width:22px;height:32px;display:none;place-items:center;color:var(--text-faint);cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;}
   #fltBody.editing .fopt-drag{display:grid;}
   #fltBody.editing .fopt-main{pointer-events:none;}   /* 排序模式:禁止勾選 */
@@ -2729,7 +2730,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.15G";
+const APP_VERSION = "2026.11.15H";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3627,7 +3628,7 @@ function renderTable(list){
     tableWrap.innerHTML = '<p class="discreet-empty">表格欄位已全部隱藏</p>';
     return;
   }
-  const FILTERABLE = {area:1, cat:1, budget:1, rooms:1, pType:1, pNum:1, status:1, source:1, shared:1};
+  const FILTERABLE = {area:1, cat:1, budget:1, rooms:1, pType:1, pNum:1, status:1, line:1, source:1, shared:1};
   const head = fields.map(f => {
     const h = T_COLS[T_FIELDS.indexOf(f)];
     const rz = (f && f !== "need") ? `<span class="col-resize" data-field="${f}"></span>` : "";
@@ -3765,15 +3766,29 @@ function tCommitCell(cell){                       // 回傳 true=值有變更(�
   if (field === "line") val = normalizeLineSymbols(val);
   if (!((field === "ask" || field === "line") && tCellIsEditing(cell))) setCellText(cell, val);   // 編輯中不重寫 DOM,避免 normAsk 大寫化時游標跳回開頭
   cell.title = val;   // trowHTML 初繪寫入 title;inline 編輯後須同步,懸浮提示才會即時更新
-  if ((field === "line" ? normalizeLineSymbols(it[field]) : it[field]) !== val){
+  const changed = (field === "line" ? normalizeLineSymbols(it[field]) : it[field]) !== val;
+  if (changed){
     it[field] = val;
     if (field === "budget"){ const r = parseBudget(val); it.bMin = (r && isFinite(r[0]) && r[0] > 0) ? r[0] : null; it.bMax = (r && isFinite(r[1])) ? r[1] : null; }
     if (field === "pType"){ it.parking = fmtParking(val, it.pNum); }
     else if (field === "pNum"){ it.pNum = val || ""; it.parking = fmtParking(it.pType, val); setCellText(cell, val || ""); }   // 車數自由文字:保留原始選項(「1車」不再剝成 1);車位描述 fmtParking 內部仍自動抓數字
     it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
-    return true;
   }
-  return false;
+  if(!tCellIsEditing(cell) && colFilter.line?.size && !colFilter.line.has(columnFilterValues(it,"line")[0]||"")){
+    // Let Enter/Tab move focus first. Remove only the row that left the
+    // filter so an editor on a different customer keeps its caret and draft.
+    requestAnimationFrame(()=>{
+      const row=cell.closest("tr");
+      if(!row?.isConnected || row.querySelector('.tcell[contenteditable="true"]') || window._saveError)return;
+      if(!colFilter.line?.size || colFilter.line.has(columnFilterValues(it,"line")[0]||""))return;
+      if(openNeedId===it.id && closeNeedExp()===false)return;
+      const remaining=headerCountRows.filter(d=>d.id!==it.id);
+      if(!remaining.length){applyFilter();return;}
+      row.remove();
+      updateListCounts(remaining);
+    });
+  }
+  return changed;
 }
 function caretEnd(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(false); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
 function caretStart(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(true); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
@@ -7401,7 +7416,7 @@ document.getElementById("fltClearAll").addEventListener("click", () => {
 });
 
 // ---- 表格欄位篩選(區域/類型/預算/車位) ----
-const colFilter = { area:null, cat:null, rooms:null, pType:null, pNum:null, status:null, source:null, shared:null };
+const colFilter = { area:null, cat:null, rooms:null, pType:null, pNum:null, status:null, line:null, source:null, shared:null };
 // 是否有任何欄位篩選生效(含預算上下限);供工具列的「清除所有欄位篩選」鈕顯示與清除
 function anyColFilter(){
   if (typeof fltB !== "undefined" && (fltB.lo != null || fltB.hi != null)) return true;
@@ -7417,16 +7432,44 @@ function resetListFilters(){
   clearAllColFilters();
 }
 const FILTER_STATE_KEY = "customer_app_filters_v1";
+// G accepts 500 strings of 2,000 code units per filter/order key. Use extra
+// keys only for unusually large LINE preferences so G can still read the backup.
+function packLinePreference(group){
+  const values=group.line;
+  if(!values || (values.length<=500 && values.every(v=>v.length<=2000)))return group;
+  const packed={...group}, text=JSON.stringify(values);
+  delete packed.line;
+  for(let i=0;i<text.length;i+=2000){
+    const key="line:part"+Math.floor(i/1000000);
+    (packed[key] ||= []).push(text.slice(i,i+2000));
+  }
+  return packed;
+}
+function unpackLinePreference(group){
+  if(!Array.isArray(group?.["line:part0"]))return group;
+  const result={...group}, parts=[];
+  for(let i=0;Array.isArray(result["line:part"+i]);i++){
+    const key="line:part"+i;
+    parts.push(result[key].join(""));
+    delete result[key];
+  }
+  try{
+    const values=JSON.parse(parts.join(""));
+    if(Array.isArray(values)&&values.every(v=>typeof v==="string"))result.line=values;
+  }catch(e){/* An incomplete filter must not prevent other preferences from loading. */}
+  return result;
+}
 function serializeColFilterState(){
   const o = {};
-  Object.keys(colFilter).forEach(k => { const s = colFilter[k]; o[k] = s && s.size ? [...s] : null; });
-  return { colFilter: o, fltB: { lo: fltB.lo, hi: fltB.hi } };
+  Object.keys(colFilter).forEach(k => { const s = colFilter[k]; if(k!=="line" || s?.size)o[k] = s && s.size ? [...s] : null; });
+  return { colFilter: packLinePreference(o), fltB: { lo: fltB.lo, hi: fltB.hi } };
 }
 function applyColFilterState(s){
   if (!s || typeof s !== "object") return;
   if (s.colFilter && typeof s.colFilter === "object"){
+    const saved=unpackLinePreference(s.colFilter);
     Object.keys(colFilter).forEach(k => {
-      const a = s.colFilter[k];
+      const a = saved[k];
       colFilter[k] = (Array.isArray(a) && a.length) ? new Set(a) : null;
     });
   }
@@ -7464,23 +7507,34 @@ function loadColFilterState(){
 function loadFltOrder(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_fltorder_v1") || "null"); if (s && typeof s === "object") return s; } catch(e){} } return {}; }
 let filterOrder = loadFltOrder();
 function saveFltOrder(){ if (storageOK){ try { localStorage.setItem("customer_app_fltorder_v1", JSON.stringify(filterOrder)); } catch(e){} } }
+const COUNTED_FILTER_FIELDS = new Set(["area","rooms","pType","line","source","shared"]);
+function columnFilterValues(d,f){
+  if (MULTI_OPT_FIELDS[f]) return fieldVals(d,f);
+  const value = (f==="line" ? normalizeLineSymbols(d.line) : String(d[f]||"")).trim();
+  return value ? [value] : [];
+}
+function blankFilterValue(f){return f==="source" || f==="shared" || f==="line" ? "" : "__EMPTY__";}
+const compareFilterValues = new Intl.Collator("zh-Hant").compare;
 function orderedFilterVals(f){
-  const present = [...new Set(items.flatMap(d => MULTI_OPT_FIELDS[f] ? fieldVals(d, f) : [String(d[f]||"").trim()]).filter(Boolean))];
-  const saved = (filterOrder[f] || []).filter(v => present.includes(v));          // 已存順序(只留還存在的值)
-  const rest = present.filter(v => !saved.includes(v)).sort((a,b)=>a.localeCompare(b,"zh-Hant")); // 新值照筆劃補後面
+  const present = new Set();
+  for(const customer of items)for(const value of columnFilterValues(customer,f))present.add(value);
+  const orders = f==="line" ? unpackLinePreference(filterOrder) : filterOrder;
+  const saved = (orders[f] || []).filter(v => present.has(v));
+  const ordered = new Set(saved);
+  const rest = [...present].filter(v => !ordered.has(v)).sort(compareFilterValues);
   return saved.concat(rest);
 }
 const fltB = { lo:null, hi:null };
 loadColFilterState();
 let fltField = null;
-const FLT_NAME = { area:"區域", cat:"類型", budget:"預算（萬）", rooms:"房數", pType:"車類", pNum:"車數", status:"狀態", source:"來源", shared:"共有" };
+const FLT_NAME = { area:"區域", cat:"類型", budget:"預算（萬）", rooms:"房數", pType:"車類", pNum:"車數", status:"狀態", line:"LINE", source:"來源", shared:"共有" };
 function colFilterOn(f){ return f === "budget" ? (fltB.lo != null || fltB.hi != null) : !!(colFilter[f] && colFilter[f].size); }
-function applyColFilters(list){
+function applyColFilters(list,skipField){
   Object.keys(colFilter).forEach(f => {
-    const st = colFilter[f]; if (!st || !st.size) return;
+    const st = colFilter[f]; if (f === skipField || !st || !st.size) return;
     list = list.filter(d => {
-      const vals = MULTI_OPT_FIELDS[f] ? fieldVals(d, f) : [String(d[f]||"").trim()].filter(Boolean);
-      if (!vals.length) return st.has(f === "source" || f === "shared" ? "" : "__EMPTY__");
+      const vals = columnFilterValues(d,f);
+      if (!vals.length) return st.has(blankFilterValue(f));
       return vals.some(v => st.has(v));
     });
   });
@@ -7489,6 +7543,16 @@ function applyColFilters(list){
     list = list.filter(d => { const r = itemBRange(d); return r && r[0] <= fhi && r[1] >= flo; });
   }
   return list;
+}
+function columnOptionCounts(f){
+  const counts = new Map();
+  for (const customer of applyColFilters(customersMatchingSearch(),f)){
+    const values = columnFilterValues(customer,f);
+    for (const value of values.length ? values : [""]){
+      counts.set(value,(counts.get(value)||0)+1);
+    }
+  }
+  return counts;
 }
 const fltBg = document.getElementById("fltBg");
 function openColFlt(f){
@@ -7513,24 +7577,35 @@ function renderFltBody(){
   }
   const f = fltField;
   const vals = orderedFilterVals(f);
-  const hasEmpty = items.some(d => !(MULTI_OPT_FIELDS[f] ? fieldVals(d, f).length : String(d[f]||"").trim()));
+  const counts = COUNTED_FILTER_FIELDS.has(f) ? columnOptionCounts(f) : null;
+  const showBlank = counts !== null || items.some(d => !columnFilterValues(d,f).length);
   const st = colFilter[f];
-  const blank = f === "source" || f === "shared" ? "" : "__EMPTY__";
+  const blank = blankFilterValue(f);
   const present = new Set(vals);
   // A checked condition can outlive its last matching customer. Keep it available to uncheck.
   const missing = st ? [...st].filter(v => v !== blank && !present.has(v)) : [];
   const GRIP = `<span class="fopt-drag" aria-label="拖曳排序" title="拖曳排序"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="3.5" y1="5" x2="12.5" y2="5"/><line x1="3.5" y1="8" x2="12.5" y2="8"/><line x1="3.5" y1="11" x2="12.5" y2="11"/></g></svg></span>`;
-  const row = (v, label, drag) => `<div class="fopt${drag ? " fopt-draggable" : ""}" data-val="${esc(v)}">${drag ? GRIP : `<span class="fopt-drag-sp"></span>`}<label class="fopt-main"><input type="checkbox" value="${esc(v)}"${st && st.has(v) ? " checked" : ""}><span>${esc(label)}</span></label></div>`;
+  const rowValues = [];
+  const row = (v, label, drag, countKey=v) => {
+    rowValues.push(v);
+    const amount = counts ? `<small class="fopt-count">${counts.get(countKey)||0} 筆</small>` : "";
+    return `<div class="fopt${drag ? " fopt-draggable" : ""}">${drag ? GRIP : `<span class="fopt-drag-sp"></span>`}<label class="fopt-main"><input type="checkbox"${st && st.has(v) ? " checked" : ""}><span>${esc(label)}</span>${amount}</label></div>`;
+  };
   body.innerHTML = vals.map(v => row(v, optionDisplayName(f,v), true)).join("")
     + missing.map(v => row(v, optionDisplayName(f,v), false)).join("")
-    + (hasEmpty || st?.has(blank) ? row(blank, "（空白）", false) : "");
-  body.querySelectorAll("input[type=checkbox]").forEach(cb => cb.addEventListener("change", () => {
-    let stt = colFilter[f] || new Set();
-    if (cb.checked) stt.add(cb.value); else stt.delete(cb.value);
-    colFilter[f] = stt.size ? stt : null;
-    commitColFilterState();
-    applyFilter();
-  }));
+    + (showBlank || st?.has(blank) ? row(blank, "（空白）", false, "") : "");
+  body.querySelectorAll("input[type=checkbox]").forEach((cb,i) => {
+    // The HTML parser would rewrite CR/LF in an attribute for pasted LINE text.
+    cb.value = rowValues[i];
+    cb.closest(".fopt").dataset.val = cb.value;
+    cb.addEventListener("change", () => {
+      const selected = colFilter[f] || new Set();
+      if (cb.checked) selected.add(cb.value); else selected.delete(cb.value);
+      colFilter[f] = selected.size ? selected : null;
+      commitColFilterState();
+      applyFilter();
+    });
+  });
 }
 document.getElementById("fltX").addEventListener("click", closeColFlt);
 document.getElementById("fltDone").addEventListener("click", closeColFlt);
@@ -7610,9 +7685,22 @@ function endFltDrag(){
     const order = rows.map(r => r.dataset.val);
     const moved = order.splice(from, 1)[0];
     order.splice(to, 0, moved);
-    filterOrder[f] = order;
-    saveFltOrder();
-    onLocalChange("settings");   // 自訂順序同步到雲端
+    if(f==="line"){
+      const next=packLinePreference({...unpackLinePreference(filterOrder),line:order});
+      if(!storeCurrentState(null,{fltorder:next})){
+        toast("LINE 篩選排序未儲存，已恢復原順序");
+        renderFltBody();
+        return;
+      }
+      filterOrder=next;
+      saveFltOrder();
+      window.touchSettings();
+      window.scheduleSync();
+    }else{
+      filterOrder[f] = order;
+      saveFltOrder();
+      onLocalChange("settings");
+    }
     renderFltBody();             // 依新順序重繪
   }
 }
@@ -7641,17 +7729,20 @@ function searchHay(d){
   }
   return s.toLowerCase();
 }
-function applyFilter(){
-  syncToggleUI();
-  { const sc = document.getElementById("searchClear"); if (sc) sc.classList.toggle("show", !!searchEl.value); }   // 清除鈕:有字才顯示
-  tableWrap.classList.toggle("search-hint", !!searchEl.value || document.activeElement === searchEl);   // 搜尋中:點亮會被比對的欄位標題
+function customersMatchingSearch(){
   // 多關鍵字搜尋:「/」(半形或全形皆可)分隔多個條件,「全部命中」才顯示(AND)。
   // 例:「A/平面車位/北屯」= 同時含這三個字串的資料。「/」本身只是分隔符,不參與比對;
   // 沒打「/」時行為與原本完全相同(單一關鍵字)。
   const terms = searchEl.value.toLowerCase().split(/[\/／]/).map(t => t.trim()).filter(Boolean);
   let list = currentCat ? items.filter(d => fieldHas(d, "cat", currentCat)) : items.slice();
   if (terms.length) list = list.filter(d => { const hay = searchHay(d); return terms.every(t => hay.includes(t) || lineSearchMatches(d.line, t)); });
-  list = applyColFilters(list);
+  return list;
+}
+function applyFilter(){
+  syncToggleUI();
+  { const sc = document.getElementById("searchClear"); if (sc) sc.classList.toggle("show", !!searchEl.value); }
+  tableWrap.classList.toggle("search-hint", !!searchEl.value || document.activeElement === searchEl);
+  let list = applyColFilters(customersMatchingSearch());
   list = sortList(list);
   updateListCounts(list);
   titleEl.textContent = currentCat ? optionDisplayName("cat",currentCat) + "需求" : "全部需求";
