@@ -1671,7 +1671,7 @@
         <!-- search-help:start -->
         <button type="button" class="search-help-btn" id="searchHelpBtn" aria-label="搜尋說明" aria-expanded="false" aria-controls="searchHelpPop" title="搜尋說明"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><circle cx="12" cy="7.5" r=".75" fill="currentColor" stroke="none"/></svg></button>
         <div class="search-help-pop" id="searchHelpPop" role="region" aria-label="搜尋說明" hidden>
-          <p>輸入部分文字即可搜尋。多個條件用 / 或 ／ 隔開，必須全部符合。</p>
+          <p>輸入部分文字即可搜尋；多個條件用 /（半形或全形都可） 隔開，而且必須全部符合。</p>
           <p class="search-help-fields"><strong>會搜尋：</strong><span>客戶稱呼、電話、LINE、狀態、區域、類型、預算、房數、車類、車數、來源、詢問、共有，以及客戶需求三欄的內容與自訂標題。</span></p>
           <p class="search-help-fields"><strong>不搜尋：</strong><span>建檔日、連結欄的網址，以及客戶需求內的連結網址。</span></p>
         </div>
@@ -2729,7 +2729,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.15D";
+const APP_VERSION = "2026.11.15E";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
