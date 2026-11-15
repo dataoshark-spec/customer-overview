@@ -1478,7 +1478,7 @@
 .data-history-row span{overflow-wrap:anywhere;min-width:0}.backup-row-info{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;color:var(--ink-soft);font-size:.88em}
 .backup-history-title,.backup-source-preview{overflow-wrap:anywhere}.backup-history-title{margin-top:0}.backup-source-preview summary{cursor:pointer}.backup-source-preview p{max-height:8em;overflow:auto;margin:.5em 0}
 .data-history-row button{flex-shrink:0}.data-import-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
-#optionRenameDialog{width:min(470px,calc(100vw - 24px));background:var(--card);color:var(--ink);max-height:85dvh;overflow:auto;}
+#optionRenameDialog{position:fixed;inset:0;margin:auto;width:min(470px,calc(100vw - 24px));background:var(--card);color:var(--ink);max-height:85dvh;overflow:auto;}
 #optionRenameDialog .data-dialog-head{align-items:start;}
 #optionRenameDialog .rename-from{font-size:.86rem;color:var(--ink-soft);overflow-wrap:anywhere;margin-top:4px;}
 #optionRenameDialog .data-dialog-body{padding:14px 16px 16px;}
@@ -2729,7 +2729,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.15F";
+const APP_VERSION = "2026.11.15G";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -10402,7 +10402,11 @@ function contradictoryQuantity(key,raw,label){
 }
 function planOptionRename(snapshot,key,oldName,newName){
   const rows=[],names=new Set(snapshot.names);
-  const display=value=>optionDisplayName(key,value,snapshot.settings.optionAliases||{});
+  const aliases=snapshot.settings.optionAliases||{};
+  const fieldAliases=aliases[key]||{};
+  const display=value=>optionDisplayName(key,value,aliases);
+  // Saved aliases also take part in display-name disambiguation after a menu option is hidden.
+  for(const entry of Object.keys(fieldAliases))names.add(entry.slice(2));
   for(const row of snapshot.view.items){
     let before=fieldVals(row,renameFieldCode(key));
     if(!before.length&&(key==="ptype"||key==="pnum")&&row.parking){
@@ -10418,7 +10422,7 @@ function planOptionRename(snapshot,key,oldName,newName){
   else if(!newName)error="請輸入新名稱";
   else if(newName===original)error="請輸入不同的名稱";
   else if(newName.length>2000)error="選項名稱最多 2000 字";
-  else if([...names].some(v=>v!==oldName&&(v===newName||display(v)===newName)))error="這個名稱已經存在，請使用其他名稱";
+  else if([...names].some(v=>v!==oldName&&((fieldAliases["v:"+v]||v)===newName||display(v)===newName)))error="這個名稱已經存在，請使用其他名稱";
   else if(contradictoryQuantity(key,oldName,newName))error="新名稱的數量與原選項不同";
   return {rows,error,original};
 }
