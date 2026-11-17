@@ -433,8 +433,17 @@
   .list-gear{appearance:none;display:grid;place-items:center;flex:none;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--card);color:var(--ink-soft);cursor:pointer;}
   .list-gear svg{width:19px;height:19px;}
   .list-gear:hover{background:var(--surface-2);border-color:var(--border-2);color:var(--ink);}
+  @media(max-width:819px){.topbar .ttl{min-width:4em;}}
   @media(max-width:480px){.topbar{gap:7px;padding-left:12px;padding-right:12px;}}
-  @media(max-width:360px){.header-count .count-item,.list-count-probe .count-item{padding-left:3px;padding-right:3px;gap:3px;}}
+  @media(max-width:360px){
+    .topbar{gap:4px;padding-left:8px;padding-right:8px;}
+    .count-arrow{width:20px;flex-basis:20px;}
+    .header-count .count-item,.list-count-probe .count-item{padding-left:3px;padding-right:3px;gap:3px;}
+  }
+  @media(max-width:340px){
+    .topbar{gap:3px;padding-left:4px;padding-right:4px;}
+    .header-count .count-item,.list-count-probe .count-item{padding-left:1px;padding-right:1px;gap:2px;}
+  }
   /* list-header-count:end */
 
   .search{display:flex;align-items:center;gap:10px;padding:12px 18px 0;}
@@ -1292,9 +1301,7 @@
   .tchip:not(.on):hover::after{content:"＋";position:absolute;top:-5px;right:-5px;width:14px;height:14px;font-size:.6rem;line-height:14px;text-align:center;border-radius:50%;background:var(--ink-soft);color:#fff;}
   .tdel{padding:7px;text-align:center;}
   .tdel button{position:relative;display:flex;align-items:center;justify-content:center;margin-inline:auto;width:32px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);cursor:pointer;transition:all .15s;
-    touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
-  /* Extend the hit area to this cell's edges, leaving the row divider outside. */
-  .tdel button::before{content:"";position:absolute;inset:-2.5px -1px;}
+    touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
   .tdel button svg{display:block;}
   .tdel button:hover{border-color:var(--danger-tint-bd);color:#B4472E;background:var(--danger-tint);}
   .tbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line-soft);background:var(--surface-1);flex-wrap:wrap;}
@@ -2732,7 +2739,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.17A";
+const APP_VERSION = "2026.11.17B";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3186,7 +3193,9 @@ function layoutHeaderCounts(){
   const width=bar.clientWidth-(parseFloat(style.paddingLeft)||0)-(parseFloat(style.paddingRight)||0);
   const peers=[document.getElementById("backBtn"),document.getElementById("listGear"),document.getElementById("listLed")];
   const fixed=peers.reduce((sum,el)=>sum+(el?el.getBoundingClientRect().width:0),0)+gap*4;
-  const available=Math.max(0,Math.floor(width-fixed-36)),border=2;
+  const singleType=window.matchMedia("(max-width:819px)").matches;
+  const titleReserve=parseFloat(getComputedStyle(titleEl).minWidth);
+  const available=Math.max(0,Math.floor(width-fixed-titleReserve)),border=2;
   const detail=headerCountMode==="types"&&headerCountEntries.length>0;
   if(headerCountWrap.classList.contains("is-detail")!==detail)headerCountWrap.classList.toggle("is-detail",detail);
   countEl.disabled=!headerCountEntries.length;
@@ -3194,10 +3203,13 @@ function layoutHeaderCounts(){
   let desired=0;
   if(detail){
     if(headerCountWidths.length!==headerCountEntries.length)headerCountWidths=Array.from(headerCountProbe.children,el=>el.getBoundingClientRect().width);
-    const full=headerCountWidths.reduce((sum,value)=>sum+value,0),paged=headerCountEntries.length>1&&Math.ceil(full)+border>available;
+    const full=headerCountWidths.reduce((sum,value)=>sum+value,0);
+    const paged=headerCountEntries.length>1&&(singleType||Math.ceil(full)+border>available);
     headerCountPrev.hidden=headerCountNext.hidden=!paged;
     const arrows=paged?headerCountPrev.getBoundingClientRect().width+headerCountNext.getBoundingClientRect().width:0;
-    headerCountPages=makeHeaderCountPages(headerCountWidths,Math.max(0,available-border-arrows));
+    headerCountPages=singleType
+      ?headerCountWidths.map((width,start)=>({start,end:start+1,width}))
+      :makeHeaderCountPages(headerCountWidths,Math.max(0,available-border-arrows));
     headerCountPage=headerCountPages.findIndex(group=>group.end>headerCountIndex);
     if(headerCountPage<0)headerCountPage=Math.max(0,headerCountPages.length-1);
     const group=headerCountPages[headerCountPage];headerCountIndex=group.start;
@@ -3206,7 +3218,9 @@ function layoutHeaderCounts(){
     const description=selectedEntries.map(entry=>entry.key+" "+entry.count+" 筆").join("；");
     const pageHint=headerCountPages.length>1?"・第 "+(headerCountPage+1)+" 頁，共 "+headerCountPages.length+" 頁":"";
     paintHeaderCount(selectedEntries.map(headerCountPartHTML).join(""),description+pageHint+"・點一下顯示總筆數");
-    desired=group.width+arrows+border;
+    // Keep the arrows in place as the user pages through labels of different lengths.
+    const pageWidth=singleType?headerCountWidths.reduce((largest,value)=>Math.max(largest,value),0):group.width;
+    desired=pageWidth+arrows+border;
   }else{
     headerCountPages=[];headerCountPage=0;headerCountIndex=0;
     headerCountPrev.hidden=headerCountNext.hidden=true;
@@ -7097,6 +7111,68 @@ document.getElementById("lpPaste").addEventListener("click", ()=>{
 });
 lpOpenBtn.addEventListener("click", ()=>{ const u=lpInput.value.trim(); if (u) openExtUrl(u); });
 
+// 瀏覽器可能把列線上的接觸派給附近的按鈕；只接受實際在同一顆按鈕內起落的觸控。
+const tableActionSelector = '.tdel button[data-act="del"], .tcat-trigger, .topt-trigger, .tneed[data-need], .gen-btn, .tchip, .need-link, .need-link-chip';
+let tableActionTouch = null;
+function insideTableAction(button, point){
+  if (!button || !button.isConnected) return false;
+  const r = button.getBoundingClientRect();
+  return point.clientX >= r.left && point.clientX < r.right &&
+         point.clientY >= r.top && point.clientY < r.bottom;
+}
+document.addEventListener("pointerdown", e => {
+  if (!e.isPrimary){
+    // 第二指即使落在表格外，也要中止第一指待判定的點按或長按。
+    if (e.pointerType === "touch" && tableActionTouch){
+      tableActionTouch.blocked = true;
+      if (_tdelLp.t) _tdelLpCancel();
+    }
+    return;
+  }
+  tableActionTouch = null;
+  if (!tableWrap.contains(e.target)) return;
+  _tselSwallow = false; // 上一次長按放手後，瀏覽器可能沒有產生 click。
+  if (e.pointerType !== "touch" || tselMode) return;
+  const button = e.target.closest(tableActionSelector);
+  const scroller = e.target.closest(".tbody-wrap");
+  if (!scroller || (!button && !e.target.closest("td.tdel"))) return;
+  tableActionTouch = {id:e.pointerId, button, x:e.clientX, y:e.clientY, scroller,
+    top:scroller.scrollTop, left:scroller.scrollLeft, blocked:!insideTableAction(button,e),
+    moved:false, held:false, released:false};
+}, true);
+function trackTableActionTouch(e){
+  const t = tableActionTouch;
+  if (!t || t.id !== e.pointerId || t.held || t.released) return;
+  const dx = t.x - e.clientX, dy = t.y - e.clientY;
+  if (!t.moved && Math.hypot(dx,dy) >= 3){
+    t.moved = true;
+    if (_tdelLp.t) _tdelLpCancel();
+  }
+  if (e.type !== "pointerup") return;
+  t.released = true;
+  const alreadyScrolled = t.scroller.scrollTop !== t.top || t.scroller.scrollLeft !== t.left;
+  t.blocked ||= t.moved || alreadyScrolled || !insideTableAction(t.button,e);
+  // 一般拖曳由瀏覽器原生捲動並送出 pointercancel。極短的拖曳可能只送 pointerup。
+  if (t.moved && t.scroller.isConnected && !alreadyScrolled){
+    t.scroller.scrollBy(dx,dy);
+  }
+}
+tableWrap.addEventListener("pointermove", trackTableActionTouch, true);
+tableWrap.addEventListener("pointerup", trackTableActionTouch, true);
+tableWrap.addEventListener("pointercancel", e => {
+  if (tableActionTouch?.id === e.pointerId) tableActionTouch.blocked = true;
+}, true);
+document.addEventListener("click", e => {
+  const t = tableActionTouch;
+  // 真正的滑鼠按下會先清空 t；鍵盤或輔助操作的 click 沒有點擊次數。
+  if (!t || e.detail === 0 || !tableWrap.contains(e.target)) return;
+  tableActionTouch = null;
+  if (t.blocked || t.held || !t.released || e.target.closest(tableActionSelector) !== t.button){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (t.held) _tselSwallow = false;
+  }
+}, true);
 // 需求內容裡的「連結」:點擊一律開新分頁,並阻止冒泡(避免同時觸發展開/選取等)。
 // 編輯模式的原子標籤(.need-link-chip)也一併支援 —— 先前只有正常模式的 <a> 能點。
 document.addEventListener("click", e => {
@@ -9357,6 +9433,7 @@ function _tdelLpCancel(){
 tableWrap.addEventListener("pointerdown", e => {
   const btn = e.target.closest('button[data-act="del"]');
   if (!btn || tselMode) return;
+  if (e.pointerType === "touch" && (!tableActionTouch || tableActionTouch.blocked)) return;
   if (e.isPrimary === false){ _tdelLpCancel(); return; }   // 第二根手指(雙指縮放):取消長按
   _tdelLpCancel();                                          // 先清乾淨上一輪殘留的描邊
   _tdelLp.btn = btn; _tdelLp.x = e.clientX; _tdelLp.y = e.clientY;
@@ -9364,7 +9441,17 @@ tableWrap.addEventListener("pointerdown", e => {
   btn.classList.add("lp-run");
   clearTimeout(_tdelLp.t);
   _tdelLp.t = setTimeout(() => {
-    _tdelLp.t = null; _tdelLp.btn = null; _tselSwallow = true;
+    _tdelLp.t = null; _tdelLp.btn = null;
+    if (!tableWrap.contains(btn)) return;
+    if (tableActionTouch?.button === btn){
+      const t = tableActionTouch;
+      if (t.blocked || t.scroller.scrollTop !== t.top || t.scroller.scrollLeft !== t.left){
+        _tdelLpCancel();
+        return;
+      }
+      t.held = true;
+    }
+    _tselSwallow = true;
     const tr = btn.closest("tr[data-id]");
     btn.classList.remove("lp-run"); btn.classList.add("lp-done");
     setTimeout(() => { btn.classList.remove("lp-done"); const g = btn.querySelector(".lp-ring"); if (g) g.remove(); }, 460);
@@ -9422,11 +9509,12 @@ function _tselDragPaint(){
   if (nearEdge) d.raf = requestAnimationFrame(_tselDragPaint);   // 靠邊時持續捲動+重算範圍
 }
 function _tselDragMove(e){
-  if (!tselDrag) return;
+  if (e.isPrimary === false || !tselDrag) return;
   tselDrag.x = e.clientX; tselDrag.y = e.clientY;
   if (tselDrag.raf == null) tselDrag.raf = requestAnimationFrame(_tselDragPaint);
 }
-function _tselDragEnd(){
+function _tselDragEnd(e){
+  if (e && e.isPrimary === false) return;
   if (!tselDrag) return;
   if (tselDrag.raf != null) cancelAnimationFrame(tselDrag.raf);
   tselDrag = null;
@@ -9435,6 +9523,10 @@ function _tselDragEnd(){
 document.addEventListener("pointermove", _tselDragMove);
 document.addEventListener("pointerup", _tselDragEnd);
 document.addEventListener("pointercancel", _tselDragEnd);
+// 長按垃圾桶進入批選後，保留拖曳選列；一般觸控仍交由瀏覽器捲動。
+tableWrap.addEventListener("touchmove", e => {
+  if (tableActionTouch?.held && tselDrag && e.cancelable) e.preventDefault();
+}, {passive:false});
 // ---- 表格批次刪除主體結束 ----
 
 // ---- 客戶需求:拖曳選字、放開自動複製(正常模式) ----
