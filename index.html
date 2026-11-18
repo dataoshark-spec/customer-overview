@@ -1027,7 +1027,7 @@
   .thead-wrap{flex:none;overflow-x:auto;overflow-y:hidden;background:var(--accent-deep);padding-right:var(--sbw,0px);scrollbar-width:none;}
   .thead-wrap::-webkit-scrollbar{display:none;}
   [data-theme="dark"] .thead-wrap{background:#1B2A46;}
-  .tbody-wrap{overflow:auto;scrollbar-gutter:stable;max-height:max(220px, calc(100dvh - var(--lh,240px) - 140px));scrollbar-width:thin;scrollbar-color:var(--border-2) transparent;}
+  .tbody-wrap{overflow:auto;scrollbar-gutter:auto;max-height:max(220px, calc(100dvh - var(--lh,240px) - 140px));scrollbar-width:thin;scrollbar-color:var(--border-2) transparent;}
   /* 需求欄選字中:禁水平自動捲,避免與還原 scrollLeft 震盪造成表頭狂晃 */
   .table-wrap.need-sel-hlock .tbody-wrap{overflow-x:hidden;}
   .table-wrap.need-sel-hlock .thead-wrap{overflow-x:hidden;}
@@ -2739,7 +2739,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.17B";
+const APP_VERSION = "2026.11.18A";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3505,11 +3505,18 @@ function loadDiscreet(){
 let discreet = loadDiscreet();
 function visibleTableFields(){ return discreet.on ? T_FIELDS.filter(f => !discreet.fields.includes(f)) : T_FIELDS; }
 const DEFAULT_COLW = {date:84,area:120,cat:80,budget:112,rooms:88,pType:96,pNum:64,status:88,cust:120,tel:104,line:96,source:88,ask:116,shared:88};
-const COLW_MIN = 48, COLW_MAX = 640, NEED_MIN = 240, DEL_W = 40;
+const COLW_MIN = 48, COLW_MAX = 640, DEL_W = 40;
 function loadColW(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_colw_v1") || "null"); if (s && typeof s === "object") return {...DEFAULT_COLW, ...s}; } catch(e){} } return {...DEFAULT_COLW}; }
 function saveColW(){ if (storageOK){ try { localStorage.setItem("customer_app_colw_v1", JSON.stringify(colW)); } catch(e){} } }
 let colW = loadColW();
-function colSumMinWidth(fields = visibleTableFields()){ return fields.reduce((w,f) => w + (f === "need" ? NEED_MIN : colW[f] || DEFAULT_COLW[f]), DEL_W); }
+function needMinWidth(){
+  const th = tableWrap.querySelector('.thead-wrap th[data-field="need"]');
+  const labelWidth = th?.querySelector(".th-label")?.getBoundingClientRect().width;
+  if (!labelWidth) return 80;
+  const style = getComputedStyle(th);
+  return Math.ceil(labelWidth + (parseFloat(style.paddingLeft)||0) + (parseFloat(style.paddingRight)||0) + 6);
+}
+function colSumMinWidth(fields = visibleTableFields()){ return fields.reduce((w,f) => w + (f === "need" ? needMinWidth() : colW[f] || DEFAULT_COLW[f]), DEL_W); }
 function tchip(url, label, cls){
   const on = url && String(url).trim();
   const u = on ? String(url) : "";
@@ -3633,6 +3640,7 @@ function trowHTML(d, fields = visibleTableFields()){
 }
 function renderTable(list){
   if(!commitOpenNeedEditors())return false;
+  tableLayoutObserver?.disconnect();
   closeNeedOrderUI();
   const oldScroll = tableWrap.querySelector(".tbody-wrap");
   const sTop = oldScroll ? oldScroll.scrollTop : 0, sLeft = oldScroll ? oldScroll.scrollLeft : 0;
@@ -3668,7 +3676,13 @@ function renderTable(list){
     `<div class="tbody-wrap"><table class="ptable ${cls}" style="min-width:${mw}px"><colgroup>${cols}</colgroup><tbody>${rows}</tbody></table></div>`;
   const headWrap = tableWrap.querySelector(".thead-wrap");
   const bodyWrap = tableWrap.querySelector(".tbody-wrap");
+  if (tableLayoutObserver && bodyWrap){
+    tableLayoutObserver.observe(tableWrap);
+    tableLayoutObserver.observe(bodyWrap);
+    tableLayoutObserver.observe(bodyWrap.querySelector(".ptable"));
+  }
   bindTableDates();
+  syncTableChrome();
   if (headWrap && bodyWrap) bindTableScrollSync(headWrap, bodyWrap);
   // 切模式/重繪後還原原本展開的那一列(不搶焦點)
   if (openNeedId && bodyWrap){
@@ -3684,9 +3698,24 @@ function renderTable(list){
 function syncTableChrome(){
   const bw = tableWrap.querySelector(".tbody-wrap");
   if (!bw) return;
+  // Measure the final column after its header is laid out, including hidden-column changes.
+  const minWidth = colSumMinWidth() + "px";
+  tableWrap.querySelectorAll(".ptable").forEach(table => {
+    if (table.style.minWidth !== minWidth) table.style.minWidth = minWidth;
+  });
   const sbw = Math.max(0, bw.offsetWidth - bw.clientWidth);
-  tableWrap.style.setProperty("--sbw", sbw + "px");
+  if (tableWrap.style.getPropertyValue("--sbw") !== sbw + "px") tableWrap.style.setProperty("--sbw", sbw + "px");
 }
+// Content height can change the scrollbar without resizing the outer table.
+let tableLayoutFrame = 0;
+const tableLayoutObserver = window.ResizeObserver ? new ResizeObserver(() => {
+  if (tableLayoutFrame) return;
+  tableLayoutFrame = requestAnimationFrame(() => {
+    tableLayoutFrame = 0;
+    syncTableChrome();
+    sizeNeedExp();
+  });
+}) : null;
 function bindTableScrollSync(headWrap, bodyWrap){
   if (tableWrap._scrollUnbind){ tableWrap._scrollUnbind(); tableWrap._scrollUnbind = null; }
   let syncing = false;
@@ -5346,9 +5375,8 @@ function toggleNeedExp(tr){
 function sizeNeedExp(){
   const bw = tableWrap.querySelector(".tbody-wrap"); if (!bw) return;
   const w = bw.clientWidth; if (w < 40) return;
-  tableWrap.querySelectorAll(".needexp-wrap").forEach(wr => { wr.style.width = w + "px"; });
+  tableWrap.querySelectorAll(".needexp-wrap").forEach(wr => { if (wr.style.width !== w + "px") wr.style.width = w + "px"; });
 }
-if (window.ResizeObserver){ try { new ResizeObserver(() => requestAnimationFrame(sizeNeedExp)).observe(tableWrap); } catch(e){} }
 function needToPlain(t){ return (t||"").split("\n").map(ln => ln.replace(/^#\s+/,"")).join("\n"); }
 // 把純文字切成 [文字 / 網址] 片段;網址比對只吃合法 ASCII 字元,遇中文/全形符號自然斷開。
 function needTokens(s){
