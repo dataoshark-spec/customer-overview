@@ -1307,10 +1307,12 @@
   .tchip.on.n591{background:#2C6FB0;border-color:#2C6FB0;}
   .tchip:not(.on):hover::after{content:"＋";position:absolute;top:-5px;right:-5px;width:14px;height:14px;font-size:.6rem;line-height:14px;text-align:center;border-radius:50%;background:var(--ink-soft);color:#fff;}
   .tdel{padding:7px;text-align:center;}
-  .tdel button{position:relative;display:flex;align-items:center;justify-content:center;margin-inline:auto;width:32px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);cursor:pointer;transition:all .15s;
+  .tdel button{position:relative;display:flex;align-items:center;justify-content:center;margin-inline:auto;width:32px;height:28px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--ink-soft);cursor:pointer;transition:all .15s;
     touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
   .tdel button svg{display:block;}
-  .tdel button:hover{border-color:var(--danger-tint-bd);color:#B4472E;background:var(--danger-tint);}
+  .table-wrap:not(.tsel-on) .tdel button:active,
+  .table-wrap:not(.tsel-on) .tdel button.lp-run{background:color-mix(in srgb,currentColor 8%,transparent);}
+  @media(hover:hover){.table-wrap:not(.tsel-on) .tdel button:hover{background:color-mix(in srgb,currentColor 8%,transparent);}}
   .tbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line-soft);background:var(--surface-1);flex-wrap:wrap;}
   .tbar .tcount{font-size:.84rem;color:var(--ink-soft);}
   .tadd{font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:10px;padding:9px 15px;transition:background .15s;white-space:nowrap;flex:none;}
@@ -1561,6 +1563,7 @@
 /* Derived text colors apply only where the saved status background is visible. */
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) :is(.tcell:not([contenteditable="true"]:focus),.topt-trigger,.tcat-trigger,.tcat-badge){color:var(--status-ink)}
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) :is(.tcell[data-field="date"],.topt-trigger[data-field="date"]):not([contenteditable="true"]:focus){color:var(--status-soft)}
+.ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) .tdel button{color:var(--status-soft)}
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) .tcell:not([contenteditable="true"]:focus) .need-h{color:var(--status-accent)}
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) .tcell:not([contenteditable="true"]:focus) .seg-plain{color:var(--status-ink)}
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) :is(.tcell:not([contenteditable="true"]:focus),.topt-trigger,.tcat-trigger,.tcat-badge) .opt-orphan,
@@ -2758,7 +2761,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.20B";
+const APP_VERSION = "2026.11.20C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
