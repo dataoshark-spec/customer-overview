@@ -1379,6 +1379,10 @@
   @media (hover:hover){ .exp-open .topt-trigger:hover{background:transparent;} }
   /* 狀態欄(A/S/C 等):表格內一律粗體;空值「—」仍由下方 empty::before 鎖 font-weight:400 */
   .tcell[data-field="status"],.topt-trigger[data-field="status"]{font-weight:700;}
+  /* Center the actual option box, independent of the loaded font's baseline. */
+  .tcell:is([data-field="status"],[data-field="area"]),
+  .topt-trigger:is([data-field="status"],[data-field="area"]){display:flex;align-items:center;justify-content:center;}
+  .topt-trigger:is([data-field="status"],[data-field="area"]) .topt-label{display:flex;align-items:center;justify-content:center;min-width:0;}
   .topt-label:empty::before{content:"—";}
   /* 空白輸入欄一律顯示「—」佔位:正常/編輯兩種模式、全欄位一致(選單類已由 .topt-label 處理) */
   .tcell:empty::before{content:"—";transition:opacity .12s;}
@@ -1539,7 +1543,6 @@
 #cards > .card[data-status-tint]{background:var(--status-bg)}
 /* Status tint changes cell backgrounds, preserving selected/expanded/editor states. */
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row)>td{background:var(--status-bg)}
-.ptable tbody tr[data-status-tint] [data-field="status"]::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--status-dot);margin-right:6px;vertical-align:middle;flex-shrink:0}
 @media(hover:hover){
  .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row):hover>td{background:var(--status-hover-bg)}
  .ptable tbody tr[data-status-tint] .tcell:not([contenteditable="true"]):hover,
@@ -1613,8 +1616,15 @@
 .tint-quick button{font:12px inherit;flex:1;padding:7px 3px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--ink-soft);cursor:pointer}
 .tint-quick button:hover{background:var(--card)}
 .tint-quick button.on{color:var(--accent-deep);background:var(--card);border-color:var(--line);box-shadow:0 2px 5px #1b375510;font-weight:700}
-.tint-preview{display:flex;align-items:center;flex-wrap:wrap;min-height:46px;padding:13px 14px;border:1px solid var(--line);border-radius:11px;font-size:12px;margin:0 0 22px;gap:17px;overflow-wrap:anywhere}
-.tint-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
+.tint-text-modes{display:flex;gap:4px;padding:4px;border-radius:11px;background:var(--surface-2);margin:0 0 22px}
+.tint-text-modes button{flex:1;min-width:0;min-height:35px;padding:7px 3px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--ink-soft);font:inherit;font-size:13px;cursor:pointer}
+.tint-text-modes button:hover{background:var(--card)}
+.tint-text-modes button[aria-pressed="true"]{background:var(--card);border-color:var(--line);color:var(--accent-deep);font-weight:700;box-shadow:0 1px 3px #00000008}
+.tint-preview{display:grid;grid-template-columns:36px minmax(0,1fr) 42px 38px 74px;align-items:center;min-height:34px;padding:0 10px;border:1px solid var(--line);border-radius:11px;font-size:.85rem;line-height:22px;margin:0 0 22px;text-align:center;overflow:hidden}
+.tint-preview>*{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tint-preview-status{display:flex;align-items:center;justify-content:center;gap:5px}
+.tint-preview-status span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.tint-preview .tint-preview-budget{text-align:right}
 .tint-footer{display:flex;gap:9px}
 .tint-footer button{padding:11px 15px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);color:var(--ink-soft);background:var(--card);cursor:pointer}
 .tint-footer button:hover{background:var(--surface-1)}
@@ -1622,6 +1632,8 @@
 .tint-footer .tint-done:hover{background:var(--accent-deep)}
 #tint-panel button:focus-visible,#tint-panel input[type=color]:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:370px){#tint-panel{padding:18px}.tint-colors{gap:2px}.tint-pure{width:30px;height:30px;padding:3px}.tint-pure.on{padding:2px}}
+@media(max-width:370px){.tint-preview{grid-template-columns:29px minmax(0,1fr) 34px 32px 66px;padding-left:6px;padding-right:6px}}
+@media(pointer:coarse){.tint-text-modes button{min-height:44px}}
 @media(prefers-reduced-motion:reduce){#tint-panel *,#tint-panel .tint-range::-webkit-slider-thumb{transition:none!important}}
 
 </style>
@@ -1742,7 +1754,7 @@
       </div>
 
       <div class="set-card">
-        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。使用自訂選項或完整還原前，請將同一帳號的手機和電腦都更新至 2026.11.14E 或更新版本。</p>
+        <div class="set-card-title">資料與備份</div><p class="set-card-desc">新安裝保持空白，未修改的預設設定會沿用雲端已有設定。使用自訂選項、手動文字顏色或完整還原前，請將同一帳號的手機和電腦都更新至 2026.11.20A 或更新版本。</p>
         <p class="set-card-desc">變更會自動儲存在此瀏覽器。建議定期備份，或匯入先前的備份檔。</p>
         <div class="set-actions">
           <button class="s-btn" id="historyBtn">依日期還原備份</button>
@@ -2098,7 +2110,7 @@
       if(k==="statusColors"){
         if(!object(v))fail("狀態底色設定不正確"); if(Object.keys(v).length>500)unsupported("超過上限的狀態底色");
         for(const [name,color] of Object.entries(v)){
-          if(!name.startsWith("s:")||name.length<3||name.length>2002||!object(color)||Object.keys(color).some(k=>!["hex","alpha"].includes(k))||typeof color.hex!=="string"||!/^#[0-9a-f]{6}$/i.test(color.hex)||!Number.isInteger(color.alpha)||color.alpha<0||color.alpha>100)fail("狀態底色設定不正確");
+          if(!name.startsWith("s:")||name.length<3||name.length>2002||!object(color)||Object.keys(color).some(k=>!["hex","alpha","textMode"].includes(k))||typeof color.hex!=="string"||!/^#[0-9a-f]{6}$/i.test(color.hex)||!Number.isInteger(color.alpha)||color.alpha<0||color.alpha>100||(own(color,"textMode")&&!["auto","black","white"].includes(color.textMode)))fail("狀態底色設定不正確");
         }
       }
       if(k==="opts"&&object(v)){
@@ -2739,7 +2751,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.18A";
+const APP_VERSION = "2026.11.20A";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -8466,13 +8478,14 @@ function statusReadableText(original,backgrounds,opacity=1){
 }
 function statusTextColors(value){
   const root=getComputedStyle(document.documentElement),keys=["--card","--ink","--ink-soft","--text-faint","--accent-deep"];
-  const colors=keys.map(key=>root.getPropertyValue(key).trim()),cacheKey=[value.hex,value.alpha,...colors].join("|");
+  const mode=value.textMode||"auto";
+  const colors=keys.map(key=>root.getPropertyValue(key).trim()),cacheKey=[value.hex,value.alpha,mode,...colors].join("|");
   if(statusTextColorCache.has(cacheKey))return statusTextColorCache.get(cacheKey);
   const [card,ink,soft,faint,accent]=colors.map(statusColorRGB),pure=statusColorRGB(value.hex);
   const background=statusColorMix(pure,card,value.alpha/100);
   let hover=statusColorMix(pure,background,.03);
   const maximum=Math.max(...[[0,0,0],[255,255,255]].map(fg=>Math.min(statusColorContrast(fg,background),statusColorContrast(fg,hover))));
-  const keepHover=maximum<4.55;
+  const keepHover=maximum<4.55||value.alpha===0;
   if(keepHover)hover=background;
   const surfaces=[background,hover],result={"--status-bg":statusColorBackground(value),"--status-dot":value.hex,
     "--status-hover-bg":keepHover?"var(--status-bg)":"color-mix(in srgb,var(--status-bg) 97%,var(--status-dot) 3%)"};
@@ -8482,19 +8495,25 @@ function statusTextColors(value){
   const badge=statusReadableText(faint,surfaces,.72);
   result["--status-badge"]=badge.color||"var(--text-faint)";
   result["--status-badge-opacity"]=String(badge.opacity);
+  // Auto retains the existing adaptive palette; explicit choices override text only.
+  if(mode==="black"||mode==="white"){
+    for(const key of ["ink","soft","faint","accent","badge"])result["--status-"+key]=mode==="white"?"#ffffff":"#000000";
+    result["--status-badge-opacity"]="1";
+  }
   if(statusTextColorCache.size>=512)statusTextColorCache.clear();
   statusTextColorCache.set(cacheKey,result);return result;
 }
+function hasStatusColorStyle(value){return !!(value&&(value.alpha||value.textMode==="black"||value.textMode==="white"));}
 function statusColorRowAttrs(d){
   const value=statusColorFor(fieldPrimary(d,"status"));
-  return value&&value.alpha ? ' data-status-tint="1" style="'+Object.entries(statusTextColors(value)).map(([key,v])=>key+":"+v).join(";")+'"' : "";
+  return hasStatusColorStyle(value) ? ' data-status-tint="1" style="'+Object.entries(statusTextColors(value)).map(([key,v])=>key+":"+v).join(";")+'"' : "";
 }
 function paintStatusColorRows(){
   const map=new Map(items.map(it=>[String(it.id),it]));
   document.querySelectorAll("tr[data-id], #cards > .card[data-id]").forEach(row=>{
     const item=map.get(row.dataset.id), value=item&&statusColorFor(fieldPrimary(item,"status"));
-    row.toggleAttribute("data-status-tint",!!(value&&value.alpha));
-    if(value&&value.alpha){for(const [key,v] of Object.entries(statusTextColors(value)))row.style.setProperty(key,v);}
+    row.toggleAttribute("data-status-tint",hasStatusColorStyle(value));
+    if(hasStatusColorStyle(value)){for(const [key,v] of Object.entries(statusTextColors(value)))row.style.setProperty(key,v);}
     else {for(const key of STATUS_ROW_STYLE_KEYS)row.style.removeProperty(key);}
   });
   document.querySelectorAll("[data-status-color]").forEach(button=>{
@@ -8509,7 +8528,7 @@ function buildStatusColorMenuRow(v,curSingle){
 const statusColorPanel=document.createElement("section");
 statusColorPanel.id="tint-panel";
 statusColorPanel.setAttribute("role","dialog");
-statusColorPanel.setAttribute("aria-label","狀態顏色與底色濃度");
+statusColorPanel.setAttribute("aria-label","狀態底色與文字顏色");
 document.body.appendChild(statusColorPanel);
 function readStatusColorPercent(text){
   const raw=String(text).replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).trim().replace(/[%％]$/,"" ).trim();
@@ -8563,9 +8582,9 @@ function updateStatusColorPanel(forcePercent=false){
   const preview=statusColorPanel.querySelector(".tint-preview");
   preview.style.background=statusColorBackground(value);
   preview.style.color=statusTextColors(value)["--status-ink"];
-  statusColorPanel.querySelector(".tint-dot").style.background=value.hex;
   statusColorPanel.querySelectorAll("[data-pure]").forEach(b=>b.classList.toggle("on",b.dataset.pure===value.hex.toLowerCase()));
   statusColorPanel.querySelectorAll("[data-level]").forEach(b=>b.classList.toggle("on",Number(b.dataset.level)===value.alpha));
+  statusColorPanel.querySelectorAll("[data-text-mode]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.textMode===(value.textMode||"auto"))));
   paintStatusColorRows();
 }
 function openStatusColor(name,anchor){
@@ -8574,7 +8593,7 @@ function openStatusColor(name,anchor){
   statusColorAnchor=anchor;
   statusColorDraft={name,value:{...(statusColorFor(name,false)||{hex:"#7c3aed",alpha:15})}};
   const value=statusColorDraft.value;
-  statusColorPanel.innerHTML='<h3>'+esc(optionDisplayName("status",name))+' 的底色</h3><div class="tint-label">純色</div><div class="tint-colors">'+STATUS_PURE_COLORS.map(c=>'<button type="button" class="tint-pure" data-pure="'+c.hex+'" aria-label="'+c.name+'" title="'+c.name+'"><span style="background:'+c.hex+'"></span></button>').join('')+'</div><label class="tint-custom-row"><span>自訂顏色</span><input aria-label="自訂純色" type="color" value="'+value.hex+'"></label><div class="tint-label"><label for="tint-range">底色濃度</label><label class="tint-percent"><input class="tint-percent-input" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-label="底色濃度百分比"><span aria-hidden="true">%</span></label></div><input id="tint-range" class="tint-range" type="range" min="0" max="100" step="1" list="tint-stops" aria-label="底色濃度"><datalist id="tint-stops">'+Array.from({length:21},(_,i)=>'<option value="'+i*5+'"></option>').join('')+'</datalist><div class="tint-ticks" aria-hidden="true">'+'<i></i>'.repeat(21)+'</div><div class="tint-range-hint"><span>0% 無底色</span><span>100% 純色</span></div><div class="tint-quick">'+[10,15,20,30].map(n=>'<button type="button" data-level="'+n+'">'+n+'%</button>').join('')+'</div><div class="tint-label">即時預覽</div><div class="tint-preview"><b><i class="tint-dot"></i>'+esc(optionDisplayName("status",name))+'</b><span>林小姐</span><span>2,000 萬</span></div><div class="tint-footer"><button type="button" data-tint-clear>無底色</button><button type="button" class="tint-done">完成</button></div>';
+  statusColorPanel.innerHTML='<h3>'+esc(optionDisplayName("status",name))+' 的底色</h3><div class="tint-label">純色</div><div class="tint-colors">'+STATUS_PURE_COLORS.map(c=>'<button type="button" class="tint-pure" data-pure="'+c.hex+'" aria-label="'+c.name+'" title="'+c.name+'"><span style="background:'+c.hex+'"></span></button>').join('')+'</div><label class="tint-custom-row"><span>自訂顏色</span><input aria-label="自訂純色" type="color" value="'+value.hex+'"></label><div class="tint-label"><label for="tint-range">底色濃度</label><label class="tint-percent"><input class="tint-percent-input" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-label="底色濃度百分比"><span aria-hidden="true">%</span></label></div><input id="tint-range" class="tint-range" type="range" min="0" max="100" step="1" list="tint-stops" aria-label="底色濃度"><datalist id="tint-stops">'+Array.from({length:21},(_,i)=>'<option value="'+i*5+'"></option>').join('')+'</datalist><div class="tint-ticks" aria-hidden="true">'+'<i></i>'.repeat(21)+'</div><div class="tint-range-hint"><span>0% 無底色</span><span>100% 純色</span></div><div class="tint-quick">'+[10,15,20,30].map(n=>'<button type="button" data-level="'+n+'">'+n+'%</button>').join('')+'</div><div class="tint-label">文字顏色</div><div class="tint-text-modes" role="group" aria-label="文字顏色"><button type="button" data-text-mode="auto" aria-pressed="false">自動</button><button type="button" data-text-mode="black" aria-pressed="false">黑字</button><button type="button" data-text-mode="white" aria-pressed="false">白字</button></div><div class="tint-label">即時預覽</div><div class="tint-preview"><b class="tint-preview-status" title="'+esc(optionDisplayName("status",name))+'"><span>'+esc(optionDisplayName("status",name))+'</span></b><b>林小姐</b><span>北屯</span><span>3房</span><b class="tint-preview-budget">2,000萬</b></div><div class="tint-footer"><button type="button" data-tint-clear>無底色</button><button type="button" class="tint-done">完成</button></div>';
   statusColorPanel.style.display="block";
   updateStatusColorPanel();
   statusColorViewportWidth=innerWidth;
@@ -8593,11 +8612,12 @@ function commitStatusColor(){
   if(!statusColorDraft||!finishStatusColorPercent(true))return;
   const previous=statusColors, next={...statusColors};
   next[statusColorKey(statusColorDraft.name)]={...statusColorDraft.value};
+  if(next[statusColorKey(statusColorDraft.name)].textMode==="auto")delete next[statusColorKey(statusColorDraft.name)].textMode;
   if(JSON.stringify(previous)!==JSON.stringify(next)){
     statusColors=normalizeStatusColors(next);
-    if(!storeCurrentState()){statusColors=previous;toast("底色尚未儲存，請稍後再試");return;}
+    if(!storeCurrentState(undefined,{statusColors})){statusColors=previous;toast("顏色設定尚未儲存，請稍後再試");return;}
     try{localStorage.setItem(STATUS_COLORS_KEY,JSON.stringify(statusColors));}catch(e){}
-    onLocalChange("settings");
+    window.touchSettings();window.scheduleSync();
   }
   closeStatusColor(true);
 }
@@ -8633,9 +8653,10 @@ statusColorPanel.addEventListener("focusout",e=>{
 });
 statusColorPanel.addEventListener("click",e=>{
   e.stopPropagation();if(!statusColorDraft)return;
-  const pure=e.target.closest("[data-pure]"),level=e.target.closest("[data-level]");
+  const pure=e.target.closest("[data-pure]"),level=e.target.closest("[data-level]"),textMode=e.target.closest("[data-text-mode]");
   if(pure)statusColorDraft.value.hex=pure.dataset.pure;
   else if(level)statusColorDraft.value.alpha=Number(level.dataset.level);
+  else if(textMode)statusColorDraft.value.textMode=textMode.dataset.textMode;
   else if(e.target.closest("[data-tint-clear]"))statusColorDraft.value.alpha=0;
   else if(e.target.closest(".tint-done")){commitStatusColor();return;}
   // Touch controls need not take focus; explicit alpha choices replace any prior number text.
