@@ -482,8 +482,9 @@
   /* 編輯/正常:一顆切換鈕(亮起=編輯模式);清除篩選鈕:有篩選時才出現 */
   .mode-btn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink-soft);cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .1s;}
   .mode-btn svg{width:18px;height:18px;}
-  .mode-btn.on{background:var(--ink);border-color:var(--ink);color:#fff;}
-  @media (hover:hover){ .mode-btn:not(.on):hover{border-color:var(--border-2);color:var(--ink);} }
+  .mode-btn.on{background:#16222A;border-color:#16222A;color:#fff;}
+  .mode-btn.quick-edit{background:var(--accent-tint);border-color:var(--accent-tint-bd);color:var(--accent-deep);}
+  @media (hover:hover){ .mode-btn:not(.on):not(.quick-edit):hover{border-color:var(--border-2);color:var(--ink);} }
   .mode-btn:active{transform:scale(.94);}
   /* 工具列「清除所有欄位篩選」漏斗鈕:有篩選才出現。
      實心琥珀底 = 與搜尋範圍提示(#FFE08A)同色系,形成「黃色=搜尋/篩選生效中」的一致語言,
@@ -1059,7 +1060,7 @@
   .ptable tbody tr[data-id]>td{height:var(--row-height);}
   .ptable tbody td.tneedcell{border-right:none;}
   .ptable td.tdel{border-left:none;}
-  .ptable thead th:nth-last-child(2){border-right:none;}
+  .ptable:not(.ro) thead th:nth-last-child(2){border-right:none;}
   @media (hover:hover){ .ptable tbody tr:not(.exp-open):not(.needexp):hover td{background:var(--surface-1);} }
   .tcell{padding:var(--cell-pad) 10px;height:var(--cell-height);line-height:var(--cell-line);outline:none;cursor:text;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -1271,8 +1272,8 @@
   .gen-btn{position:absolute;left:0;top:0;bottom:0;width:calc(100% + 1px);display:inline-flex;align-items:center;justify-content:center;
     border:none;border-right:1px solid var(--accent-tint-bd);background:var(--accent-tint);color:var(--accent-deep);cursor:pointer;
     opacity:0;pointer-events:none;transform:translateX(-100%);transition:transform .16s ease, background .12s;z-index:5;box-shadow:2px 0 7px rgba(0,0,0,.16);}
-  .gen-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;flex:none;}
-  .gen-label{font-size:.82rem;font-weight:700;margin-left:5px;letter-spacing:.02em;}
+  .gen-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;flex:none;}
+  .gen-label{font-size:.76rem;font-weight:700;margin-left:3px;letter-spacing:0;}
   .gen-edge:hover ~ .gen-btn, .gen-btn:hover{opacity:1;pointer-events:auto;transform:translateX(0);}
   .gen-btn:active{filter:brightness(1.05);}
   .gen-btn.gen-flash{animation:genFlash .5s ease;}
@@ -1546,6 +1547,8 @@
 .compact-card .sub-row .addr .cv{vertical-align:baseline}
 .compact-card .sub-row .addr .cv.multi-wrap{display:inline-flex}
 
+
+  .ptable.ro [data-quick-edit] .tcell[contenteditable="true"]{cursor:text;user-select:text;-webkit-user-select:text;box-shadow:var(--focus-ring-inset);background:var(--card);color:var(--ink)}
 </style>
 <style id="status-row-colors">
 /* Share the saved status tint with both card densities without changing selection or copy feedback. */
@@ -2761,7 +2764,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.20C";
+const APP_VERSION = "2026.11.21C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3547,7 +3550,8 @@ function needMinWidth(){
   const style = getComputedStyle(th);
   return Math.ceil(labelWidth + (parseFloat(style.paddingLeft)||0) + (parseFloat(style.paddingRight)||0) + 6);
 }
-function colSumMinWidth(fields = visibleTableFields()){ return fields.reduce((w,f) => w + (f === "need" ? needMinWidth() : colW[f] || DEFAULT_COLW[f]), DEL_W); }
+// Keep the overall width when needs are visible: normal mode gives the delete space to needs.
+function colSumMinWidth(fields = visibleTableFields()){ return fields.reduce((w,f) => w + (f === "need" ? needMinWidth() : colW[f] || DEFAULT_COLW[f]), (editMode || fields.includes("need")) ? DEL_W : 0); }
 function tchip(url, label, cls){
   const on = url && String(url).trim();
   const u = on ? String(url) : "";
@@ -3635,7 +3639,7 @@ function trowHTML(d, fields = visibleTableFields()){
     : `<td class="tcat"><span class="tcat-badge" style="border-color:${catPri ? color : "transparent"}"${catMultiAttr}>${catM.html}</span></td>`;
   const delCell = editMode
     ? `<td class="tdel"><button data-act="del" title="刪除此列">${ICON_TRASH}</button></td>`
-    : `<td class="tdel"></td>`;
+    : "";
   const cell = (f, cls) => { const value = f === "line" ? normalizeLineSymbols(d[f]) : d[f]; return `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}" title="${esc(value)}">${esc(value)}</div></td>`; };
   const segCell = (f, cls) => editMode
     ? `<td><div class="tcell${cls?" "+cls:""}" contenteditable="${ce}"${tTab} data-field="${f}" title="${esc(d[f])}">${esc(d[f])}</div></td>`
@@ -3692,13 +3696,13 @@ function renderTable(list){
       : `<span class="th-label">${h}</span>`;
     const gc = (f === "date") ? '<span class="gen-caret" aria-hidden="true">▾</span>' : "";
     return `<th data-field="${f}">${lab}${gc}${rz}</th>`;
-  }).join("") + `<th></th>`;
+  }).join("") + (editMode ? `<th></th>` : "");
   const cols = fields.map(f => f === "need"
     ? `<col data-field="need">`
     : `<col data-field="${f}" style="width:${colW[f] || DEFAULT_COLW[f]}px">`
-  ).join("") + `<col data-field="_del" style="width:${DEL_W}px">`;
+  ).join("") + (editMode ? `<col data-field="_del" style="width:${DEL_W}px">` : "");
   const rows = list.length ? list.map(d => trowHTML(d,fields)).join("")
-    : `<tr><td colspan="${fields.length+1}" class="tempty">${items.length ? "找不到符合的需求" : "還沒有需求，點右上「＋ 新增客戶」開始建立。"}</td></tr>`;
+    : `<tr><td colspan="${fields.length+(editMode ? 1 : 0)}" class="tempty">${items.length ? "找不到符合的需求" : "還沒有需求，點右上「＋ 新增客戶」開始建立。"}</td></tr>`;
   const mw = colSumMinWidth(fields);
   const cls = editMode ? "" : "ro";
   // 兩層:表頭層固定填滿到圓角、捲軸只長在表身層;兩表共用同一份 colgroup 與 min-width 才對齊
@@ -11582,5 +11586,123 @@ let syncConnected = false, syncEmail = null;
     <div class="rg-s">客戶總覽為手機直向設計</div>
   </div>
 </div>
+<!-- desktop-quick-edit:start -->
+<script>
+/* Desktop right-click editing; reuse the normal editors and persistence paths. */
+(()=>{
+ const quickCells=new Set();let quickNeedId=null,quickRenameDialog=null;
+ function hasQuickEditing(){
+  return [...quickCells].some(td=>td.isConnected)||!!(quickNeedId&&[...tableWrap.querySelectorAll('tr.needexp.editing')].some(ex=>ex.dataset.for===quickNeedId))||!!(quickRenameDialog?.isConnected&&quickRenameDialog.open);
+ }
+ function refreshQuickModeIndicator(){
+  const button=document.getElementById('modeBtn');if(!button)return;
+  const local=!editMode&&hasQuickEditing(),active=editMode||local;
+  // Show actual editing activity without changing how other cells handle left clicks.
+  if(button.classList.contains('on')!==editMode)button.classList.toggle('on',editMode);
+  if(button.classList.contains('quick-edit')!==local)button.classList.toggle('quick-edit',local);
+  const title=local?'臨時編輯：點一下結束編輯':editMode?'編輯模式：可修改資料（點一下或按 TAB 切回正常）':'正常模式：點內容可複製（點一下或按 TAB 切為編輯）';
+  for(const [name,value] of Object.entries({'aria-pressed':String(active),'aria-label':title,title}))if(button.getAttribute(name)!==value)button.setAttribute(name,value);
+ }
+ const originalSyncToggleUI=syncToggleUI;
+ syncToggleUI=function(...args){const result=originalSyncToggleUI.apply(this,args);refreshQuickModeIndicator();return result;};
+ const originalOpenOptionRename=openOptionRenameDialog;
+ openOptionRenameDialog=function(...args){
+  const local=!editMode&&hasQuickEditing();const result=originalOpenOptionRename.apply(this,args);
+  const dialog=document.getElementById('optionRenameDialog');
+  if(local&&dialog?.open){quickRenameDialog=dialog;dialog.addEventListener('close',()=>{if(quickRenameDialog===dialog)quickRenameDialog=null;refreshQuickModeIndicator();},{once:true});}
+  refreshQuickModeIndicator();return result;
+ };
+ const withEditing=fn=>{const previous=editMode;try{editMode=true;return fn();}finally{editMode=previous;}};
+ const getItem=id=>items.find(x=>x.id===id);
+ function cellHTML(item,field,editing){const previous=editMode;try{editMode=editing;const table=document.createElement('table');table.innerHTML='<tbody>'+trowHTML(item,[field])+'</tbody>';return table.rows[0].cells[0];}finally{editMode=previous;}}
+ function restoreCell(td){
+  if(!td||!td.isConnected){quickCells.delete(td);return;}
+  const id=td.closest('tr[data-id]')?.dataset.id,field=td.dataset.quickEdit,item=getItem(id);
+  if(!field||!item){quickCells.delete(td);return;}
+  const active=td.querySelector('.tcell[contenteditable="true"]');if(active)tCellExitEdit(active,{flash:false});
+  if(window._saveError)return;
+  const fresh=cellHTML(item,field,editMode);quickCells.delete(td);td.replaceWith(fresh);
+  if(field==='date'){const date=fresh.querySelector('[data-full-date]');if(date){observeTableDate(date);fitTableDateCells([date]);}}
+ }
+ function cleanCells(){for(const td of [...quickCells]){
+  if(!td.isConnected){quickCells.delete(td);continue;}
+  if(td.contains(document.activeElement)&&td.querySelector('[contenteditable="true"]'))continue;
+  if(toptmenu.classList.contains('show')&&toptTrigger&&td.contains(toptTrigger))continue;
+  if(catmenu.classList.contains('show')&&catTrigger&&td.contains(catTrigger))continue;
+  if(td.dataset.quickEdit==='date'&&document.getElementById('calBg').classList.contains('open'))continue;
+  restoreCell(td);
+ }refreshQuickModeIndicator();}
+ function finishCellEditing(){const c=document.activeElement;if(c?.closest('[data-quick-edit]')&&tCellIsEditing(c)){tCellExitEdit(c,{flash:false});c.blur();}cleanCells();return !window._saveError;}
+ function tempCell(tr,field){const fields=visibleTableFields(),idx=fields.indexOf(field),it=getItem(tr.dataset.id);if(idx<0||!it)return null;const fresh=cellHTML(it,field,true);fresh.dataset.quickEdit=field;tr.cells[idx].replaceWith(fresh);quickCells.add(fresh);return fresh;}
+ const originalOpenNeed=openNeedExp;
+ openNeedExp=function(tr,focus){return quickNeedId===tr?.dataset.id&&!editMode?withEditing(()=>originalOpenNeed(tr,focus)):originalOpenNeed(tr,focus);};
+ function commitOpenLinkDraft(){
+  if(!lpop.classList.contains('show'))return true;
+  commitLink();return !window._saveError&&commitOpenNeedEditors();
+ }
+ const originalCloseNeed=closeNeedExp;
+ closeNeedExp=function(){if(quickNeedId&&!editMode&&!commitOpenLinkDraft())return false;const result=originalCloseNeed();if(result!==false)quickNeedId=null;refreshQuickModeIndicator();return result;};
+ function openQuickNeeds(id,sg=1){
+  if(!finishCellEditing())return;closeOptMenu();closeCatMenu();closeLinkPop();
+  const current=tableWrap.querySelector(`tr.needexp[data-for="${id}"]`);
+  if(quickNeedId===id&&current?.classList.contains('editing')){current.querySelector(`.nseg-ed[data-seg="${sg}"]`)?.focus({preventScroll:true});return;}
+  if(!commitOpenNeedEditors())return;
+  quickNeedId=id;const tr=tableWrap.querySelector(`tr[data-id="${id}"]`);if(!tr)return;
+  openNeedExp(tr,false);const exp=tableWrap.querySelector(`tr.needexp[data-for="${id}"]`);
+  if(!exp)return;
+  sizeNeedExp();
+  const ed=exp.querySelector(`.nseg-ed[data-seg="${sg}"]`);ed?.focus({preventScroll:true});
+ }
+ function identify(target){
+  if(!tableWrap.contains(target)||tselMode)return null;
+  if(target.closest('thead,.tdel,.col-resize,.gen-btn,.gen-edge,button.nseg-hbtn,.need-order-menu'))return null;
+  if(target.closest('input,textarea,[contenteditable="true"]'))return null;
+  const selected=getSelection();if(selected&&!selected.isCollapsed&&tableWrap.contains(selected.anchorNode))return null;
+  const exp=target.closest('tr.needexp');
+  if(exp){const seg=target.closest('[data-seg],[data-need-font-seg]');return {id:exp.dataset.for,field:'need',sg:Number(seg?.dataset.seg||seg?.dataset.needFontSeg||1),link:target.closest('.need-link')?.getAttribute('data-url')};}
+  const tr=target.closest('tr[data-id]'),td=target.closest('td');if(!tr||!td)return null;
+  const field=visibleTableFields()[td.cellIndex];return field?{id:tr.dataset.id,field}:null;
+ }
+ function beginQuick(info,e){
+  // A right click does not trigger the link panel's normal outside-click save.
+  if(!commitOpenLinkDraft())return;
+  if(editMode){const trigger=e.target.closest('.topt-trigger,.tcat-trigger');if(trigger){trigger.classList.contains('tcat-trigger')?openCatMenu(trigger):trigger.dataset.cal?openTableCal(trigger):openOptMenu(trigger);}else if(info.field==='need')openQuickNeeds(info.id,info.sg);else{const c=e.target.closest('.tcell[data-field]');if(c)tCellEdit(c,e.clientX,e.clientY);}return;}
+  if(info.field==='need'){openQuickNeeds(info.id,info.sg);if(info.link){const chip=[...tableWrap.querySelectorAll('.needexp .nseg-ed')].filter(ed=>ed.closest('.needexp').dataset.for===info.id&&Number(ed.dataset.seg)===Number(info.sg||1)).flatMap(ed=>[...ed.querySelectorAll('.need-link-chip')]).find(x=>x.dataset.url===info.link);if(chip)openLinkPopNeed(chip);}return;}
+  if(!finishCellEditing()||closeNeedExp()===false)return;
+  closeOptMenu();closeCatMenu();closeLinkPop();cleanCells();hideNeedHover();
+  const tr=tableWrap.querySelector(`tr[data-id="${info.id}"]`);if(!tr)return;
+  const td=tempCell(tr,info.field);if(!td)return;
+  const cat=td.querySelector('.tcat-trigger'),opt=td.querySelector('.topt-trigger'),text=td.querySelector('.tcell[data-field]');
+  if(cat)openCatMenu(cat);else if(opt){if(opt.dataset.cal)openTableCal(opt);else openOptMenu(opt);}else if(text)withEditing(()=>tCellEdit(text,e.clientX,e.clientY,{syncCaret:true}));
+ }
+ let quickPointerType='';
+ window.addEventListener('pointerdown',e=>{quickPointerType=e.pointerType||'mouse';if(e.button!==2||quickPointerType!=='mouse')return;const info=identify(e.target);if(!info)return;e.preventDefault();e.stopImmediatePropagation();},true);
+ window.addEventListener('contextmenu',e=>{if(e.button!==2||(e.pointerType&&e.pointerType!=='mouse')||(!e.pointerType&&quickPointerType==='touch'))return;const info=identify(e.target);if(!info)return;e.preventDefault();e.stopImmediatePropagation();try{beginQuick(info,e);}finally{refreshQuickModeIndicator();}},true);
+ // A temporary-edit pencil ends the local edit; it must not unexpectedly enable whole-table editing.
+ let pencilEndsQuick=false;
+ window.addEventListener('pointerdown',e=>{pencilEndsQuick=e.button===0&&!!e.target.closest('#modeBtn')&&!editMode&&hasQuickEditing();},true);
+ window.addEventListener('pointerup',e=>{if(!e.target.closest('#modeBtn'))pencilEndsQuick=false;},true);
+ window.addEventListener('pointercancel',()=>{pencilEndsQuick=false;},true);
+ window.addEventListener('click',e=>{
+  const endQuick=!!e.target.closest('#modeBtn')&&!editMode&&(pencilEndsQuick||hasQuickEditing());pencilEndsQuick=false;
+  if(!endQuick)return;
+  e.preventDefault();e.stopImmediatePropagation();
+  if(!commitOpenLinkDraft()||!finishCellEditing()||closeNeedExp()===false){refreshQuickModeIndicator();return;}
+  closeOptMenu();closeCatMenu();closeLinkPop();if(window.closeCal)window.closeCal();cleanCells();
+ },true);
+ // Preserve native editing gestures and clipboard menu in the one editable cell.
+ window.addEventListener('click',e=>{const td=e.target.closest('[data-quick-edit]');if(!td)return;const c=e.target.closest('.tcell[contenteditable="true"]');if(c){e.stopImmediatePropagation();return;}if(editMode)return;
+  e.preventDefault();e.stopImmediatePropagation();const id=td.closest('tr').dataset.id,field=td.dataset.quickEdit;
+  closeOptMenu();closeCatMenu();restoreCell(td);const tr=tableWrap.querySelector(`tr[data-id="${id}"]`),normal=tr?.cells[visibleTableFields().indexOf(field)]?.querySelector('.tcell');if(normal)copyCellText(normal);
+ },true);
+ window.addEventListener('keydown',e=>{const c=e.target.closest('[data-quick-edit] .tcell[contenteditable="true"]');if(!c||e.isComposing||e.keyCode===229)return;if(['Enter','Escape','Tab'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();const td=c.closest('td');tCellExitEdit(c);c.blur();restoreCell(td);}},true);
+ window.addEventListener('paste',e=>{const c=e.target.closest('[data-quick-edit] .tcell[contenteditable="true"]');if(!c)return;e.preventDefault();e.stopImmediatePropagation();withEditing(()=>tCellPastePlain(c,tCellExtractPasteText(e)));},true);
+ window.addEventListener('blur',e=>{if(e.target.closest?.('[data-quick-edit]'))queueMicrotask(cleanCells);},true);
+ for(const node of [toptmenu,catmenu,document.getElementById('calBg')])new MutationObserver(()=>queueMicrotask(cleanCells)).observe(node,{attributes:true,attributeFilter:['class']});
+ new MutationObserver(()=>{if(toptTrigger&&!toptTrigger.isConnected)closeOptMenu();if(catTrigger&&!catTrigger.isConnected)closeCatMenu();for(const td of [...quickCells])if(!td.isConnected)quickCells.delete(td);if(quickNeedId&&(editMode||![...tableWrap.querySelectorAll('tr.needexp.editing')].some(ex=>ex.dataset.for===quickNeedId)))quickNeedId=null;refreshQuickModeIndicator();}).observe(tableWrap,{childList:true,subtree:true});
+ refreshQuickModeIndicator();
+})();
+</script>
+<!-- desktop-quick-edit:end -->
 </body>
 </html>
