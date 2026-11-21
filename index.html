@@ -483,7 +483,7 @@
   .mode-btn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink-soft);cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .1s;}
   .mode-btn svg{width:18px;height:18px;}
   .mode-btn.on{background:#16222A;border-color:#16222A;color:#fff;}
-  .mode-btn.quick-edit{background:var(--accent-tint);border-color:var(--accent-tint-bd);color:var(--accent-deep);}
+  .mode-btn.quick-edit:not(.on){background:#d1d5db;border-color:#d1d5db;color:#16222a;}
   @media (hover:hover){ .mode-btn:not(.on):not(.quick-edit):hover{border-color:var(--border-2);color:var(--ink);} }
   .mode-btn:active{transform:scale(.94);}
   /* 工具列「清除所有欄位篩選」漏斗鈕:有篩選才出現。
@@ -2764,7 +2764,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.21C";
+const APP_VERSION = "2026.11.21F";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -4066,8 +4066,19 @@ function needTitle(it, sg){
 }
 // 每位客戶只保存欄位身分的順序；內容、標題、字級不改名、不互相覆寫。
 function needOrder(it){return CustomerDataCore.needOrder(it&&it.needOrder)}
-// 摘要跟隨每位客戶最左欄；只讀取原欄位，不搬移內容或改變儲存資料。
-function needSummaryText(it){return needToPlain(needSeg(it,needOrder(it)[0]));}
+// 摘要固定依需求、想看、看過取第一個有內容的欄位；不搬移內容或改變展開順序。
+function needSummaryInfo(it){
+  for (const sg of [1,2,3]){
+    const raw = String(needSeg(it || {}, sg));
+    if (!raw.replace(/[\u200B\s]/g, "")) continue;
+    const html = needPreviewHTML(raw), probe = document.createElement("div");
+    probe.innerHTML = html;
+    // 依實際顯示判斷空白：空標題、空刪線與零寬字不算內容；網址顯示的「連結」算。
+    if ((probe.textContent || "").replace(/[\u200B\s]/g, "")) return {sg,raw,html};
+  }
+  return {sg:1,raw:"",html:""};
+}
+function needSummaryText(it, summary=needSummaryInfo(it)){return needToPlain(summary.raw);}
 // 收合摘要與卡片預覽保留舊式 # 整行標題，與展開內容使用相同標題範圍。
 function needPreviewHTML(text){
   return needDisplayText(text).split("\n").map(line => {
@@ -4076,7 +4087,7 @@ function needPreviewHTML(text){
     return heading ? `<span class="need-h">${inner}</span>` : inner;
   }).join("\n");
 }
-function needSummaryHTML(it){const html=needPreviewHTML(needSeg(it,needOrder(it)[0]));return html||'<span class="tneed-ph">—</span>';}
+function needSummaryHTML(it, summary=needSummaryInfo(it)){return summary.html||'<span class="tneed-ph">—</span>';}
 function refreshNeedSummary(it, force){
   const tr=tableWrap.querySelector(`tr[data-id="${it.id}"]`),cell=tr&&tr.querySelector(".tneed");
   if (!cell) return;
@@ -4084,7 +4095,7 @@ function refreshNeedSummary(it, force){
   const expansion = active && active.closest(".needexp");
   // 內容照常即時儲存；焦點離開或收合時才重畫摘要，以保留一次復原。
   if (!force && expansion && expansion.dataset.for === it.id) return;
-  const html = needSummaryHTML(it), title = needSummaryText(it);
+  const summary = needSummaryInfo(it), html = needSummaryHTML(it, summary), title = needSummaryText(it, summary);
   if (cell.innerHTML !== html) cell.innerHTML = html;
   if (cell.title !== title) cell.title = title;
 }
@@ -4410,7 +4421,7 @@ function commitNeedSeg(id, sg, val, originEditor){
    return false;
   }
   onLocalChange("data");
-  if (sg===needOrder(it)[0]) refreshNeedSummary(it);
+  refreshNeedSummary(it);
   return true;
 }
 const needTitleBaselines = new WeakMap();
@@ -4535,7 +4546,7 @@ function openNeedExp(tr, doFocus){
         else toggleNeedStrike(exp);
       });
     });
-    if (doFocus){ const f = exp.querySelector('.nseg-ed[data-seg="1"]'); if (f) f.focus(); }
+    if (doFocus){ const f = exp.querySelector(`.nseg-ed[data-seg="${needSummaryInfo(it).sg}"]`); if (f) f.focus(); }
   }
   if (window.refreshLed) window.refreshLed();
 }
@@ -6668,10 +6679,24 @@ function openCatMenu(trigger){
   catmenu.classList.add("show");
   if (window.refreshLed) window.refreshLed();
   catMenuSyncIdx();
+  // Reset the prior opening's limit; phone layout retains the original 280px CSS cap.
+  catmenu.style.maxHeight = "";
   const w = catmenu.offsetWidth;
   let left = Math.min(r.left, window.innerWidth - w - 10); left = Math.max(10, left);
   let top = r.bottom + 5;
-  if (top + catmenu.offsetHeight > window.innerHeight - 8) top = Math.max(8, r.top - catmenu.offsetHeight - 5);
+  if (window.matchMedia("(min-width:820px)").matches){
+    // Match the area picker: use the side with enough space and scroll only when needed.
+    const gap = 6, mgn = 10;
+    const spaceBelow = window.innerHeight - r.bottom - gap - mgn;
+    const spaceAbove = r.top - gap - mgn;
+    const natural = catmenu.scrollHeight + catmenu.offsetHeight - catmenu.clientHeight;
+    const below = natural <= spaceBelow || spaceBelow >= spaceAbove;
+    const maxH = Math.max(1, below ? spaceBelow : spaceAbove);
+    catmenu.style.maxHeight = maxH + "px";
+    top = below ? r.bottom + gap : Math.max(mgn, r.top - gap - Math.min(natural, maxH));
+  } else if (top + catmenu.offsetHeight > window.innerHeight - 8){
+    top = Math.max(8, r.top - catmenu.offsetHeight - 5);
+  }
   catmenu.style.left = left + "px"; catmenu.style.top = top + "px";
   setTimeout(()=>document.addEventListener("click", catMenuOutside), 0);
 }
@@ -7648,7 +7673,7 @@ function loadColFilterState(){
 function loadFltOrder(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_fltorder_v1") || "null"); if (s && typeof s === "object") return s; } catch(e){} } return {}; }
 let filterOrder = loadFltOrder();
 function saveFltOrder(){ if (storageOK){ try { localStorage.setItem("customer_app_fltorder_v1", JSON.stringify(filterOrder)); } catch(e){} } }
-const COUNTED_FILTER_FIELDS = new Set(["area","rooms","pType","line","source","shared"]);
+const COUNTED_FILTER_FIELDS = new Set(["area","rooms","pType","line","source","shared","status","cat"]);
 function columnFilterValues(d,f){
   if (MULTI_OPT_FIELDS[f]) return fieldVals(d,f);
   const value = (f==="line" ? normalizeLineSymbols(d.line) : String(d[f]||"")).trim();
@@ -11661,7 +11686,9 @@ let syncConnected = false, syncEmail = null;
   const exp=target.closest('tr.needexp');
   if(exp){const seg=target.closest('[data-seg],[data-need-font-seg]');return {id:exp.dataset.for,field:'need',sg:Number(seg?.dataset.seg||seg?.dataset.needFontSeg||1),link:target.closest('.need-link')?.getAttribute('data-url')};}
   const tr=target.closest('tr[data-id]'),td=target.closest('td');if(!tr||!td)return null;
-  const field=visibleTableFields()[td.cellIndex];return field?{id:tr.dataset.id,field}:null;
+  const field=visibleTableFields()[td.cellIndex];
+  if(field==='need')return {id:tr.dataset.id,field,sg:needSummaryInfo(getItem(tr.dataset.id)).sg};
+  return field?{id:tr.dataset.id,field}:null;
  }
  function beginQuick(info,e){
   // A right click does not trigger the link panel's normal outside-click save.
