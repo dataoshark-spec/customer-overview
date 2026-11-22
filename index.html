@@ -515,6 +515,10 @@
   .sortsel .sort-desc{font-size:.75rem;line-height:1.5;font-weight:400;color:var(--ink-soft);white-space:normal;}
   .sortsel .cselect-opt.sel{background:color-mix(in srgb,var(--ink) 8%,var(--card));}
   .sortsel .cselect-opt.sel .nm{color:var(--ink);}
+  .sortsel .sort-default{font-size:.85rem;line-height:1.4;font-weight:600;color:var(--ink-soft);}
+  .sortsel .cselect-opt[data-key="default"]{min-height:40px;padding-block:9px;}
+  .sortsel .cselect-opt[data-key="default"] .nm{font-size:.95rem;font-weight:600;color:var(--ink-soft);}
+  .sortsel .cselect-opt[data-key="default"] .chk{color:var(--ink-soft);}
   @media(hover:hover){.sortsel .cselect-opt:not(.sel):hover{background:color-mix(in srgb,var(--ink) 4%,var(--card));}}
 
   .tabs-row{display:flex;align-items:center;gap:8px;padding:12px 18px 0;}
@@ -1726,7 +1730,7 @@
         <div class="cselect sortsel" id="sortSel">
           <button type="button" class="cselect-btn" id="sortBtn" aria-haspopup="listbox" aria-expanded="false">
             <span class="sort-ic">⇅</span>
-            <span class="cselect-txt" id="sortTxt">預設排序</span>
+            <span class="cselect-txt" id="sortTxt">－預設順序－</span>
             <span class="cselect-chev">▾</span>
           </button>
           <div class="cselect-menu" id="sortMenu" role="listbox"></div>
@@ -2773,7 +2777,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.22B";
+const APP_VERSION = "2026.11.22C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3152,7 +3156,7 @@ let currentCat = "";
 let selectMode = false;
 const selected = new Set();
 const SORTS = [
-  {key:"default",   label:"預設排序", desc:"依清單原本順序排列"},
+  {key:"default",   label:"－預設順序－"},
   {key:"priority",  label:"重要排序", desc:"依狀態篩選的上下順序排列"},
   {key:"date_desc", label:"建檔日 新→舊"},
   {key:"date_asc",  label:"建檔日 舊→新"},
@@ -8099,17 +8103,18 @@ function updateSortLabel(){
   const label = document.getElementById("sortTxt");
   if (!label) return;
   const option = SORTS.find(s => s.key === currentSort) || SORTS[0];
-  const parts = {default:["預設","排序"],priority:["重要","排序"],date_desc:["建檔日","新→舊"],date_asc:["建檔日","舊→新"]}[option.key];
+  const parts = {default:["－預設順序－",""],priority:["重要","排序"],date_desc:["建檔日","新→舊"],date_asc:["建檔日","舊→新"]}[option.key];
   label.replaceChildren();
-  const main = document.createElement("span"); main.className = "sort-main"; main.textContent = parts[0];
+  const main = document.createElement("span"); main.className = option.key === "default" ? "sort-default" : "sort-main"; main.textContent = parts[0];
   const suffix = document.createElement("span"); suffix.className = "sort-suffix"; suffix.textContent = parts[1];
-  label.append(main, suffix);
+  label.append(main);
+  if (parts[1]) label.append(suffix);
   document.getElementById("sortBtn").setAttribute("aria-label", "排序：" + option.label);
 }
 function renderSortOptions(){
   sortMenu.innerHTML = '<div class="sort-menu-caption" role="presentation">排列依據</div>' + SORTS.map(s => `
     <button type="button" class="cselect-opt" data-key="${s.key}" role="option">
-      <span class="sort-copy"><span class="nm">${s.key === "default" || s.key === "priority" ? `${s.key === "default" ? "預設" : "重要"}<span class="sort-option-suffix">排序</span>` : s.label}</span>${s.desc ? `<span class="sort-desc">${s.desc}</span>` : ""}</span>
+      <span class="sort-copy"><span class="nm">${s.key === "priority" ? `重要<span class="sort-option-suffix">排序</span>` : s.label}</span>${s.desc ? `<span class="sort-desc">${s.desc}</span>` : ""}</span>
       <span class="chk" aria-hidden="true">✓</span>
     </button>`).join("");
   updateSortSelection();
