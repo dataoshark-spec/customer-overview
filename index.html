@@ -2835,7 +2835,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.22F";
+const APP_VERSION = "2026.11.22G";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -7123,49 +7123,105 @@ toptmenu.addEventListener("keydown", e => { if (e.target.matches(".opt-add input
   toptmenu.addEventListener("touchend",end,{passive:true}); toptmenu.addEventListener("touchcancel",end,{passive:true});
 })();
 // topt 選單:選項拖曳排序(握把;pointer 事件,滑鼠/觸控皆可)
-(function(){
-  let drag = null;
-  toptmenu.addEventListener("pointerdown", e => {
-    const handle = e.target.closest(".opt-drag"); if (!handle) return;
-    const row = handle.closest(".opt-line"); if (!row) return;
-    e.preventDefault(); e.stopPropagation();
-    const rows = Array.from(toptmenu.querySelectorAll(".opt-line"));
-    const index = rows.indexOf(row);
-    const rowH = rows.length > 1 ? (rows[1].getBoundingClientRect().top - rows[0].getBoundingClientRect().top) : row.offsetHeight + 1;
-    drag = { row, index, target: index, startY: e.clientY, rowH, rows, key: toptKey };
-    row.classList.add("dragging"); document.body.style.userSelect = "none";
-  });
-  document.addEventListener("pointermove", e => {
-    if (!drag) return;
-    const dy = e.clientY - drag.startY;
-    drag.row.style.transform = `translateY(${dy}px)`;
-    let target = drag.index + Math.round(dy / drag.rowH);
-    target = Math.max(0, Math.min(drag.rows.length - 1, target));
-    if (target !== drag.target){
-      drag.target = target; const from = drag.index;
-      drag.rows.forEach((r, j) => { if (r === drag.row) return; let sh = 0;
-        if (from < target && j > from && j <= target) sh = -drag.rowH;
-        else if (from > target && j >= target && j < from) sh = drag.rowH;
-        r.style.transform = sh ? `translateY(${sh}px)` : ""; });
+function bindOptionReorder(menu, renderMenu, getKey){
+  menu.addEventListener("click", e => {
+    if (e.target.closest(".opt-drag")){ e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  menu.addEventListener("pointerdown", down => {
+    const handle = down.target.closest(".opt-drag");
+    if (!handle || !down.isPrimary || down.button !== 0) return;
+    const row = handle.closest(".opt-line");
+    const rows = Array.from(menu.querySelectorAll(".opt-line"));
+    const from = rows.indexOf(row);
+    if (from < 0 || rows.length < 2) return;
+    down.preventDefault();
+    down.stopPropagation();
+    const key = getKey();
+    const tops = rows.map(el => el.getBoundingClientRect().top);
+    const startScroll = menu.scrollTop;
+    const previousSelect = document.body.style.userSelect;
+    const footer = menu.querySelector(".opt-add");
+    let x = down.clientX, y = down.clientY, target = from, frame = 0, lastTime = 0;
+    handle.setPointerCapture(down.pointerId);
+    row.classList.add("dragging");
+    document.body.style.userSelect = "none";
+
+    function position(){
+      const offset = y - down.clientY + menu.scrollTop - startScroll;
+      const top = Math.max(tops[0], Math.min(tops[tops.length-1], tops[from] + offset));
+      row.style.transform = `translateY(${top - tops[from]}px)`;
+      let next = 0;
+      while (next + 1 < tops.length && top >= (tops[next]+tops[next+1])/2) next++;
+      if (next === target) return;
+      target = next;
+      rows.forEach((el, i) => {
+        if (i === from) return;
+        let shift = 0;
+        if (from < i && i <= target) shift = tops[i-1] - tops[i];
+        if (target <= i && i < from) shift = tops[i+1] - tops[i];
+        el.style.transform = shift ? `translateY(${shift}px)` : "";
+      });
     }
-  });
-  function end(){
-    if (!drag) return;
-    const from = drag.index, to = drag.target, rows = drag.rows, row = drag.row, key = drag.key;
-    rows.forEach(r => { r.style.transform = ""; r.classList.remove("dragging"); });
-    row.style.transform = ""; document.body.style.userSelect = "";
-    drag = null;
-    if (from !== to && key){
-      const order = rows.map(r => r.dataset.v);
-      const moved = order.splice(from, 1)[0]; order.splice(to, 0, moved);
-      optOrder[key] = order; saveOptOrder(); onLocalChange("settings");
-      toptmenu.__lp = true;            // 抑制拖曳後的點選(避免誤選)
-      renderToptMenu();
+    function active(){ return menu.contains(row) && menu.getClientRects().length && getKey() === key; }
+    function tick(now){
+      frame = 0;
+      if (!active()){ finish(false); return; }
+      const rect = menu.getBoundingClientRect();
+      const top = Math.max(0, rect.top);
+      const bottom = Math.min(innerHeight, rect.bottom, footer ? footer.getBoundingClientRect().top : rect.bottom);
+      const edge = Math.min(48, (bottom-top)/3);
+      let speed = 0;
+      if (edge > 0 && x >= rect.left && x <= rect.right){
+        if (y < top + edge) speed = -Math.min(1, (top+edge-y)/edge);
+        else if (y > bottom - edge) speed = Math.min(1, (y-bottom+edge)/edge);
+      }
+      const before = menu.scrollTop;
+      const elapsed = lastTime ? Math.min(40, now-lastTime) : 16;
+      lastTime = now;
+      if (speed) menu.scrollTop += Math.sign(speed)*Math.max(1, Math.abs(speed)*elapsed*.55);
+      position();
+      if (before !== menu.scrollTop) frame = requestAnimationFrame(tick);
+      else lastTime = 0;
     }
-  }
-  document.addEventListener("pointerup", end);
-  document.addEventListener("pointercancel", end);
-})();
+    function move(e){
+      if (e.pointerId !== down.pointerId) return;
+      x = e.clientX; y = e.clientY;
+      if (!frame) frame = requestAnimationFrame(tick);
+    }
+    function finish(commit){
+      cancelAnimationFrame(frame);
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", cancel);
+      document.removeEventListener("lostpointercapture", cancel);
+      window.removeEventListener("blur", cancel);
+      if (handle.hasPointerCapture(down.pointerId)) handle.releasePointerCapture(down.pointerId);
+      rows.forEach(el => { el.style.transform = ""; });
+      row.classList.remove("dragging");
+      document.body.style.userSelect = previousSelect;
+      if (!commit || target === from || !active()) return;
+      const order = rows.map(el => el.dataset.v);
+      order.splice(target, 0, order.splice(from, 1)[0]);
+      optOrder[key] = order;
+      saveOptOrder(); onLocalChange("settings");
+      menu.__lp = true;
+      renderMenu();
+    }
+    function up(e){
+      if (e.pointerId !== down.pointerId) return;
+      y = e.clientY;
+      position();
+      finish(true);
+    }
+    function cancel(e){ if (e.pointerId == null || e.pointerId === down.pointerId) finish(false); }
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+    document.addEventListener("pointercancel", cancel);
+    document.addEventListener("lostpointercapture", cancel);
+    window.addEventListener("blur", cancel);
+  });
+}
+bindOptionReorder(toptmenu, renderToptMenu, () => toptKey);
 function addTableRow(){
   if (!editMode){ editMode = true; saveEditMode(); }
   // 新增列一律留空白,跟表單新增的行為一致(openForm(null) 本來就是日期空、類型空)。
@@ -9036,48 +9092,7 @@ function makeOptSel(key, emptyLabel, multi){
   menu.addEventListener("touchmove", e => { if (_lpRow){ const tc = e.touches[0]; if (Math.abs(tc.clientX - _lpX) > 12 || Math.abs(tc.clientY - _lpY) > 12){ clearTimeout(_lpTimer); _lpRow = null; } } }, {passive:true});
   menu.addEventListener("touchend", endLp, {passive:true});
   menu.addEventListener("touchcancel", endLp, {passive:true});
-  (function(){
-    let drag = null;
-    menu.addEventListener("pointerdown", e => {
-      const h = e.target.closest(".opt-drag"); if (!h) return;
-      const row = h.closest(".opt-line"); if (!row) return;
-      e.preventDefault(); e.stopPropagation();
-      const rows = Array.from(menu.querySelectorAll(".opt-line"));
-      const index = rows.indexOf(row);
-      const rowH = rows.length > 1 ? (rows[1].getBoundingClientRect().top - rows[0].getBoundingClientRect().top) : row.offsetHeight + 1;
-      drag = { row, index, target: index, startY: e.clientY, rowH, rows };
-      row.classList.add("dragging"); document.body.style.userSelect = "none";
-    });
-    document.addEventListener("pointermove", e => {
-      if (!drag) return;
-      const dy = e.clientY - drag.startY;
-      drag.row.style.transform = `translateY(${dy}px)`;
-      let target = drag.index + Math.round(dy / drag.rowH);
-      target = Math.max(0, Math.min(drag.rows.length - 1, target));
-      if (target !== drag.target){
-        drag.target = target; const from = drag.index;
-        drag.rows.forEach((r, j) => { if (r === drag.row) return; let sh = 0;
-          if (from < target && j > from && j <= target) sh = -drag.rowH;
-          else if (from > target && j >= target && j < from) sh = drag.rowH;
-          r.style.transform = sh ? `translateY(${sh}px)` : ""; });
-      }
-    });
-    const dEnd = () => {
-      if (!drag) return;
-      const from = drag.index, to = drag.target, rows = drag.rows, row = drag.row;
-      rows.forEach(r => { r.style.transform = ""; r.classList.remove("dragging"); });
-      row.style.transform = ""; document.body.style.userSelect = "";
-      drag = null;
-      if (from !== to){
-        const order = rows.map(r => r.dataset.v);
-        const moved = order.splice(from, 1)[0]; order.splice(to, 0, moved);
-        optOrder[key] = order; saveOptOrder(); onLocalChange("settings");
-        menu.__lp = true; renderMenu();
-      }
-    };
-    document.addEventListener("pointerup", dEnd);
-    document.addEventListener("pointercancel", dEnd);
-  })();
+  bindOptionReorder(menu, renderMenu, () => key);
   set("");
   return { get, set };
 }
