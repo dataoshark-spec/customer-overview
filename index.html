@@ -1110,6 +1110,19 @@
   .table-mode .exp-focus-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink-soft);cursor:pointer;flex:none;transition:all .15s;}
   .exp-focus-btn svg{width:18px;height:18px;}
   .exp-focus-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .ptable .discreet-revealed{
+    --reveal-tint:rgba(255,217,122,.50);
+    --reveal-shadow:inset 2px 0 #c48b24,inset -2px 0 #c48b24,inset 0 0 0 100px var(--reveal-tint);
+    animation:discreet-reveal 1050ms ease-out;
+  }
+  .ptable th.discreet-revealed{--reveal-tint:rgba(255,210,106,.24);}
+  @keyframes discreet-reveal{
+    0%,26%{box-shadow:var(--reveal-shadow);}
+    100%{box-shadow:inset 2px 0 transparent,inset -2px 0 transparent,inset 0 0 0 100px transparent;}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .ptable .discreet-revealed{animation:none;box-shadow:var(--reveal-shadow);}
+  }
   #discreetBtn{-webkit-touch-callout:none;user-select:none;touch-action:manipulation;}
   #discreetDialog{position:fixed;inset:0;margin:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;width:min(380px,calc(100vw - 28px));max-height:85dvh;overflow:auto;padding:18px;box-shadow:0 16px 50px rgba(22,34,42,.24);}
   #discreetDialog::backdrop{background:rgba(12,20,18,.45);}
@@ -2822,7 +2835,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.22E";
+const APP_VERSION = "2026.11.22F";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -7562,6 +7575,28 @@ const discreetDialog = document.getElementById("discreetDialog");
     button.classList.toggle("on",discreet.on);
     button.setAttribute("aria-pressed",String(discreet.on));
   }
+  function highlightRestoredColumns(restored){
+    const head=tableWrap.querySelector(".thead-wrap"), body=tableWrap.querySelector(".tbody-wrap");
+    if(!head||!body||!restored.length)return;
+    const rows=body.querySelectorAll("tr[data-id]");
+    for(const field of restored){
+      const header=head.querySelector('th[data-field="'+field+'"]');
+      if(!header)continue;
+      if(field===restored[0]){
+        const box=body.getBoundingClientRect(), column=header.getBoundingClientRect();
+        if(column.right>box.right||column.left<box.left){
+          body.scrollLeft+=column.left-box.left-Math.max(0,(box.width-column.width)/2);
+          head.scrollLeft=body.scrollLeft;
+        }
+      }
+      header.classList.add("discreet-revealed");
+      const index=header.cellIndex;
+      for(const row of rows)row.cells[index]?.classList.add("discreet-revealed");
+    }
+    const highlighted=tableWrap.querySelectorAll(".discreet-revealed");
+    const duration=matchMedia("(prefers-reduced-motion:reduce)").matches?650:1050;
+    setTimeout(()=>highlighted.forEach(cell=>cell.classList.remove("discreet-revealed")),duration);
+  }
   function setDiscreet(on,fields){
     const redraw = on || discreet.on;
     if (redraw){
@@ -7572,10 +7607,14 @@ const discreetDialog = document.getElementById("discreetDialog");
       hideNeedHover(); hideMultiHover();
       if (on && fields.length === T_FIELDS.length && tselMode) exitTselMode();
     }
+    const restored=discreet.on?discreet.fields.filter(field=>!on||!fields.includes(field)):[];
     const toggled = discreet.on !== on;
     discreet = {on,fields};
     syncButton();
-    if (redraw) applyFilter();
+    if (redraw){
+      applyFilter();
+      if(restored.length)highlightRestoredColumns(restored);
+    }
     const message = toggled ? (on ? "低調模式：開" : "低調模式：關") : "";
     try { localStorage.setItem(DISCREET_KEY, JSON.stringify(discreet)); }
     catch(e){ toast((message ? message + "。" : "") + "設定只套用於這次使用"); return true; }
