@@ -1663,6 +1663,49 @@
 @media(prefers-reduced-motion:reduce){#tint-panel *,#tint-panel .tint-range::-webkit-slider-thumb{transition:none!important}}
 
 </style>
+<style>
+.history-tools{display:flex;align-items:center;margin:0 auto 0 0;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--card);flex-shrink:0}
+.history-tools button{font:600 13px/1.25 system-ui;color:var(--accent-deep);background:transparent;border:0;cursor:pointer}
+.history-tools button{width:77px;min-height:36px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
+#app:not(.table-mode) .history-tools button{width:36px;padding:0}
+#app:not(.table-mode) .history-tools button span{display:none}
+.history-tools button+button{border-left:1px solid var(--line)}
+.history-tools svg{width:17px;height:17px;flex:none}#tryRedo svg{transform:scaleX(-1)}
+.history-tools button:disabled{color:var(--ink-soft);background:var(--surface-2);cursor:default}
+.history-tools button:enabled:hover{background:#2b5da814}
+.history-tools button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.history-feedback{position:fixed;z-index:7000;bottom:18px;left:50%;transform:translateX(-50%);max-width:min(550px,92vw);width:max-content;border-radius:10px;padding:9px 16px;color:#fff;background:#20354d;box-shadow:0 3px 16px #122c2533;opacity:0;pointer-events:none;font:500 14px/1.5 system-ui}
+.history-feedback{display:block;overflow-wrap:anywhere;text-align:center;user-select:none;touch-action:none}
+.history-feedback.show{opacity:1;pointer-events:auto}
+.history-action{display:inline-block;vertical-align:middle;margin-inline-end:10px;font-size:12px;font-weight:700;border:1px solid #8fbfaf;border-radius:5px;padding:1px 6px;color:#e5f8f0}
+.history-object{vertical-align:middle;color:#d6e5df;font-size:13px}
+.history-result{margin-top:5px;border-top:1px solid #ffffff35;padding-top:5px}
+.history-result>div{display:flex;justify-content:center;align-items:baseline;gap:10px}
+.history-field{color:#ffda83;flex:none;font-weight:700}
+.history-value{font-weight:650;color:white}
+tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!important;background-color:#e3f3e9!important}
+.card.history-highlight{outline:2px solid #58a58c;outline-offset:-2px}
+.needexp .history-highlight{outline:2px solid #58a58c;outline-offset:-2px}
+@media(max-width:819px){
+  #app #list .controls{display:flex;flex-wrap:nowrap;gap:6px}
+  #list .controls .sortsel{min-width:0}
+  #sortBtn{max-width:100%}
+  #sortTxt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .history-tools{margin:0}
+  .history-tools button{width:36px;min-height:38px;padding:0}
+  .history-tools button span{display:none}
+  .controls>.ctrl-right{flex:none;margin-left:auto;gap:5px}
+  .history-feedback{bottom:8px}
+}
+@media(max-width:380px){
+  #app #list .controls{padding-inline:8px;gap:4px}
+  #sortBtn{gap:3px;padding-inline:6px}
+}
+
+[data-theme="dark"] tr.history-highlight>td{background-color:#264337!important}
+
+@media(max-width:359px){#app.table-mode #list .controls{flex-wrap:wrap;justify-content:flex-start}#app.table-mode #list .sortsel{flex-shrink:0}}
+</style>
 </head>
 <body>
 <div id="dataNotice" class="data-notice" role="status" hidden></div>
@@ -2601,7 +2644,7 @@
     return s;
   }
   const newId=()=>globalThis.crypto?.randomUUID?.() || ("id-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
-  return {newId,clone,stable,equal,needsSourceCheckpoint,preferenceEqual,needOrder,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,autoLatest,conflicts,resolve,restore,importMerge,validateState,epochCmp,optionAliasKey};
+  return {newId,clone,flat,stable,equal,needsSourceCheckpoint,preferenceEqual,needOrder,normalizeBackup,record,categories,settings,empty,fromView,fromLegacy,merge,project,capture,autoLatest,conflicts,resolve,restore,importMerge,validateState,epochCmp,optionAliasKey};
 });
 
 </script>
@@ -2777,7 +2820,9 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.22C";
+const historyKey="customer_local_history_v1";
+const historyLimit=20;
+const APP_VERSION = "2026.11.22E";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3034,7 +3079,7 @@ function loadItems(){
       window._bootState=CustomerDataCore.validateState(JSON.parse(stateRaw));
       const view=CustomerDataCore.project(window._bootState);
       setOptionAliases(view.settings.optionAliases);
-      return view.items;
+      return customerDisplayOrder(view.items,window._bootState);
     }
     catch(e){markCorruptStore("customer_app_state_v6",stateRaw,e);return [];}
   }
@@ -9338,7 +9383,7 @@ function commitCustomerDeletion(ids){
 function deleteItem(id){
   const d = items.find(x => x.id === id);
   if (!d) return;
-  askConfirm(`刪除「${d.cust || "這筆需求"}」？`, "刪除後將無法復原。", () => {
+  askConfirm(`刪除「${d.cust || "這筆需求"}」？`, "刪除後可按「還原」找回客戶。", () => {
     if(!commitCustomerDeletion([id])){toast("刪除尚未儲存，原客戶已保留，請稍後重試");return;}
     if (editingId === id) closeForm();
     applyFilter();
@@ -9753,7 +9798,7 @@ selCancel.addEventListener("click", exitSelectMode);
 selDelete.addEventListener("click", () => {
   if (!selected.size) return;
   const n = selected.size;
-  askConfirm(`刪除所選 ${n} 筆需求？`, "刪除後無法復原，建議先做雲端備份。", () => {
+  askConfirm(`刪除所選 ${n} 筆需求？`, "刪除後可按「還原」找回這批客戶。", () => {
     if(!commitCustomerDeletion(selected)){toast("刪除尚未儲存，原客戶與選取已保留，請稍後重試");return;}
     if (openNeedId && selected.has(openNeedId) && typeof closeNeedExp === "function") closeNeedExp();
     exitSelectMode();
@@ -10607,6 +10652,188 @@ function captureViewState(base=dataState,view=dataView(),previousView=savedDataV
   return DataCore.capture(basis,view,editActor,Date.now(),savedPreferenceView,previousView);
 }
 function captureLocalState(){return DataCore.merge(dataState,captureViewState());}
+// Customer history is local to this installation. Never put it in a backup or cloud envelope.
+let historyFocus=0;
+document.addEventListener("focusin",event=>{
+  if(event.target.matches("input,textarea,[contenteditable=true]"))historyFocus++;
+},true);
+function foldCustomerHistory(log,event){
+  if(Object.hasOwn(event,"order"))log.order=event.order;
+  if(event.move){
+    const from=log[event.move],head=from.at(-1);
+    if(head?.id!==event.id)return;
+    from.pop();
+    if(!event.skip){
+      const to=event.move==="undo"?log.redo:log.undo;
+      for(const change of head.changes)if(event.deletions?.[change.id])change.deletedAt=event.deletions[change.id];
+      to.push(head);
+    }
+  }else{
+    const prev=log.undo.at(-1),a=prev?.changes[0],b=event.changes[0];
+    if(event.group&&prev?.group===event.group&&prev.changes.length===1&&event.changes.length===1&&
+       a.id===b.id&&a.before&&a.after&&b.before&&b.after&&CustomerDataCore.equal(a.fields,b.fields)&&CustomerDataCore.equal(a.after,b.before)){
+      a.after=b.after;
+      if(CustomerDataCore.equal(a.before,a.after))log.undo.pop();
+    }else{log.undo.push(event);if(log.undo.length>historyLimit)log.undo.shift();}
+    log.redo=[];
+  }
+}
+function readCustomerHistory(state){
+  const raw=localStorage.getItem(historyKey),log=raw?JSON.parse(raw):null;
+  if(!log||!CustomerDataCore.equal(log.epoch,state.epoch))return {epoch:state.epoch,undo:[],redo:[]};
+  if(log.pending){
+    const {record,actor,n,event}=log.pending;
+    if((state.records[record]?.$alive?.clock[actor]||0)>=n)foldCustomerHistory(log,event);
+    delete log.pending;
+  }
+  return log;
+}
+function historyFields(row){
+  // Empty URLs and budget bounds may be null in the editor and absent in older records.
+  const fields=DataCore.flat(row);
+  for(const key of Object.keys(fields))if(fields[key]==null)delete fields[key];
+  return fields;
+}
+function customerDisplayOrder(rows,state){
+  let ids;
+  try{ids=readCustomerHistory(state).order;}catch{return rows;}
+  if(!Array.isArray(ids)||!ids.length)return rows;
+  const ranks=new Map(ids.map((id,index)=>[id,index]));
+  return rows.sort((a,b)=>(ranks.get(a.id)??Infinity)-(ranks.get(b.id)??Infinity));
+}
+function fieldsChanged(a,b){
+  return [...new Set([...Object.keys(a),...Object.keys(b)])].filter(k=>!DataCore.equal(a[k],b[k]));
+}
+function customerHistoryChange(previous,view,base,next){
+  const rows=list=>new Map(list.map(row=>[row.id,row]));
+  const before=rows(previous.items),after=rows(view.items);
+  let from,to,deleted;
+  const changes=[];
+  for(const id of new Set([...before.keys(),...after.keys()])){
+    if(next.records[id]?.$alive?.clock[editActor]===base.records[id]?.$alive?.clock[editActor])continue;
+    const a=before.get(id),b=after.get(id);
+    if(a&&b&&a.updatedAt===b.updatedAt&&DataCore.equal(a,b))continue;
+    const wanted=a&&b?fieldsChanged(historyFields(a),historyFields(b)):null;
+    if(wanted&&!wanted.length)continue;
+    if(!from){
+      from=rows(DataCore.project(base).items);
+      const target=DataCore.project(next);to=rows(target.items);deleted=target.deleted;
+    }
+    const old=from.get(id),now=to.get(id);
+    if(Boolean(a)!==Boolean(old)||Boolean(b)!==Boolean(now))continue;
+    const name=(now?.cust||old?.cust||"未命名客戶");
+    if(!a||!b){
+      const list=a?previous.items:view.items,index=list.findIndex(r=>r.id===id);
+      changes.push({id,name,before:old||null,after:now||null,fields:[],index,previous:list[index-1]?.id,following:list[index+1]?.id,deletedAt:deleted[id]||0});
+      continue;
+    }
+    const src=historyFields(old),dst=historyFields(now),intent=historyFields(b);
+    const fields=wanted.filter(k=>!DataCore.equal(src[k],dst[k])&&DataCore.equal(intent[k],dst[k]));
+    if(!fields.length)continue;
+    const pick=obj=>Object.fromEntries(fields.filter(k=>Object.hasOwn(obj,k)).map(k=>[k,obj[k]]));
+    changes.push({id,name,before:pick(src),after:pick(dst),fields});
+  }
+  if(!changes.length)return null;
+  const event={id:DataCore.newId(),changes,group:document.activeElement?.matches("[contenteditable=true]")?editActor+"-"+historyFocus:null};
+  if(changes.some(c=>!c.before||!c.after)){
+    const order=view.items.map(r=>r.id);
+    event.order=DataCore.equal(order,[...to.keys()])?[]:order;
+  }
+  return event;
+}
+// Stage the event before the authoritative write. Its existing record clock is the
+// commit marker, so interruption between the two writes does not advance the stack.
+function writeCustomerHistoryState(base,next,event,log){
+  if(!event){localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));return;}
+  const original=localStorage.getItem(historyKey);
+  log=log||readCustomerHistory(base);
+  const record=event.changes?.[0].id||log[event.move].at(-1).changes[0].id;
+  const n=next.records[record].$alive.clock[editActor];
+  if(!n||n<=(base.records[record]?.$alive?.clock[editActor]||0))throw new Error("這筆紀錄未能確認，請重新整理");
+  const encoded=JSON.stringify(next);
+  localStorage.setItem(historyKey,JSON.stringify({...log,pending:{record,actor:editActor,n,event}}));
+  try{localStorage.setItem(DATA_V6_KEY,encoded);}
+  catch(error){
+    if(original===null)localStorage.removeItem(historyKey);else localStorage.setItem(historyKey,original);
+    throw error;
+  }
+}
+function planCustomerTravel(state,step,back){
+  const view=DataCore.project(state), rows=new Map(view.items.map(row=>[row.id,row]));
+  const conflict=()=>{const error=new Error("這筆客戶資料已有其他修改。");error.historyConflict=true;throw error;};
+  for(const change of step.changes){
+    const {id,fields}=change,current=rows.get(id),cells=state.records[id];
+    const from=back?change.after:change.before,to=back?change.before:change.after;
+    if(Boolean(current)!==Boolean(from)||!cells||cells.$alive.choices.length!==1)conflict();
+    if(!current&&view.deleted[id]!==change.deletedAt)conflict();
+    if(fields.length){
+      const values=historyFields(current);
+      for(const key of fields){
+        if((cells[key]?.choices.length||0)>1||!DataCore.equal(values[key],from[key]))conflict();
+        if(key.startsWith("font:"))current.needFontSizes[key.slice(5)]=to[key]??100;
+        else if(Object.hasOwn(to,key))current[key]=DataCore.clone(to[key]);
+        else delete current[key];
+      }
+    }else{
+      if(Object.values(cells).some(cell=>cell.choices.length!==1))conflict();
+      if(current&&!DataCore.equal(historyFields(current),historyFields(from)))conflict();
+      if(!current&&to){
+        const alive={...cells.$alive,choices:cells.$alive.choices.map(c=>({...c,value:true}))};
+        const retained=DataCore.project({...state,prefs:{},records:{[id]:{...cells,$alive:alive}}}).items[0];
+        if(!DataCore.equal(historyFields(retained),historyFields(to)))conflict();
+      }
+      if(to)rows.set(id,DataCore.clone(to));else rows.delete(id);
+    }
+  }
+  const previous=DataCore.project(state);
+  const next=DataCore.capture(state,{...previous,items:[...rows.values()]},editActor,Date.now(),previous,previous);
+  DataCore.validateState(next);
+  return next;
+}
+function travelCustomerHistory(move,skipId){
+  if(!commitOpenNeedEditors()||window._saveError||window._storageCorrupt){toast("請先完成目前的儲存，再操作還原或重做");return;}
+  if(autoApplyBusy||needsDataPaint||window._pendingMerge){scheduleAutoLatest();toast("正在整理同步資料，請稍後再試");return;}
+  const expanded=openNeedId;
+  let step;
+  try{
+    const raw=localStorage.getItem(DATA_V6_KEY);
+    const base=raw===null?dataState:DataCore.merge(dataState,DataCore.validateState(JSON.parse(raw)));
+    if(!DataCore.equal(base,dataState)){queueMergedState(base);scheduleAutoLatest();toast("正在更新其他視窗的修改，請稍後再試");return;}
+    const log=readCustomerHistory(base);step=log[move].at(-1);
+    if(!step)return;
+    if(skipId){
+      if(step.id!==skipId)throw new Error("操作紀錄已更新");
+      foldCustomerHistory(log,{move,id:skipId,skip:true});
+      localStorage.setItem(historyKey,JSON.stringify(log));window.customerHistoryUI.refresh();toast("已略過這一步");return;
+    }
+    const next=planCustomerTravel(base,step,move==="undo");
+    const projected=DataCore.project(next),deletions=projected.deleted;
+    const tombs=Object.fromEntries(step.changes.filter(c=>deletions[c.id]).map(c=>[c.id,deletions[c.id]]));
+    const event={move,id:step.id,deletions:tombs};
+    if(step.changes.some(c=>!c.before||!c.after)){
+      const order=items.map(r=>r.id).filter(id=>!deletions[id]);
+      const restored=step.changes.filter(c=>!order.includes(c.id)&&!deletions[c.id]).sort((a,b)=>a.index-b.index);
+      for(const c of restored){
+        const left=order.indexOf(c.previous),right=order.indexOf(c.following);
+        order.splice(left>=0?left+1:right>=0?right:c.index,0,c.id);
+      }
+      event.order=DataCore.equal(order,projected.items.map(r=>r.id))?[]:order;
+    }
+    writeCustomerHistoryState(base,next,event,log);
+    // Detach the old, already committed editors before repaint. A stale blur must never write them back.
+    tableWrap.querySelector("tr.needexp")?.remove();
+    openNeedId=expanded;
+    paintDataState(next,true);
+    window.scheduleSync?.();
+    window.customerHistoryUI.signal(step,move==="undo");
+  }catch(error){
+    if(error.historyConflict){
+      askConfirm("保留目前資料，略過這一步？",error.message+" 略過後可繼續操作其他紀錄。",()=>travelCustomerHistory(move,step.id));
+      document.getElementById("confirmOk").textContent="略過這一步";
+    }else toast("未能"+(move==="undo"?"還原":"重做")+"："+error.message);
+  }
+}
+
 function storeCurrentState(observed, changedSettings, statusEdit){
   if(applyingDataState)return true;
   if(window._storageCorrupt)return false;
@@ -10659,7 +10886,9 @@ function storeCurrentState(observed, changedSettings, statusEdit){
     // A status transaction changes the visible row only after this write succeeds.
     // An idle storage event may retry the same rolled-back state against another tab's update.
     retryableStatusWrite = !!statusEdit || (onlyStatusWriteFailed && !!observed && DataCore.equal(view,savedDataView));
-    localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));
+    const event=changedSettings&&!statusEdit?null:customerHistoryChange(previousView,view,base,next);
+    writeCustomerHistoryState(base,next,event);
+    if(event)queueMicrotask(()=>window.customerHistoryUI?.refresh(dataState));
     retryableStatusWrite = false;
     onlyStatusWriteFailed = false;
     dataState=next;savedPreferenceView=nextPrefs;
@@ -10863,19 +11092,19 @@ function commitOptionRename(snapshot,key,oldName,newName,plan){
 }
 // Persist even an empty first-install envelope so fallback mirrors cannot become legacy edits on reload.
 if(!window._bootState&&!window._storageCorrupt)storeCurrentState();
-function paintDataState(next){
+function paintDataState(next,alreadyStored=false){
   DataCore.validateState(next);
-  localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));
+  if(!alreadyStored)localStorage.setItem(DATA_V6_KEY,JSON.stringify(next));
   applyingDataState=true;
   try{
     dataState=DataCore.clone(next);const v=DataCore.project(next);
-    items=v.items;cats=next.prefs.cats?v.cats:DataCore.clone(DEFAULT_CATS);deleted=v.deleted;
+    items=customerDisplayOrder(v.items,next);cats=next.prefs.cats?v.cats:DataCore.clone(DEFAULT_CATS);deleted=v.deleted;
     onlyStatusWriteFailed=false;window._storageCorrupt=false;window._saveError=false;
     saveItems();saveCats();saveDeleted();applySettings({...defaultPreferenceView().settings,...v.settings});
     savedPreferenceView=DataCore.clone({cats,settings:collectSettings()});
     savedDataView=DataCore.clone(dataView());savedViewState=DataCore.clone(next);needsDataPaint=false;
     renderCover();renderTabs();renderCatOptions();applyFilter();updateDataNotice();
-    pendingLocalBackup=null;
+    pendingLocalBackup=null;window.customerHistoryUI?.refresh(next);
   }finally{applyingDataState=false;}
 }
 // Apply one deterministic latest value per field, only after durable recovery copies.
@@ -11756,5 +11985,90 @@ let syncConnected = false, syncEmail = null;
 })();
 </script>
 <!-- desktop-quick-edit:end -->
+<script>
+(()=>{
+  const $=id=>document.getElementById(id);
+  const tools = document.createElement('div');
+  tools.className = 'history-tools';
+  tools.innerHTML=['tryUndo','tryRedo'].map(id=>'<button id="'+id+'" type="button">'+'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2 11 11 3v5c6.1.2 10.3 4 11 12-2.7-4.7-6-6.5-11-6.5V19z"/></svg>'+'<span>'+(id==='tryUndo'?'還原':'重做')+'</span></button>').join('');
+  document.querySelector('.controls .sortsel').after(tools);
+  const feedback = document.createElement('div');
+  feedback.setAttribute('role','status'); feedback.className='history-feedback';
+  document.body.append(feedback);
+  let timer;
+  const labels={cust:"客戶",date:"建檔日",area:"區域",cat:"類型",status:"狀態",budget:"預算",rooms:"房數",parking:"車位",pType:"車類",pNum:"車數",tel:"電話",line:"LINE",ask:"詢問",source:"來源",shared:"共有",bMin:"預算下限",bMax:"預算上限",t1:"需求標題",t2:"想看標題",t3:"看過標題",url591:"591 連結",urlLeju:"樂居連結",urlI:"永慶連結",needOrder:"段落順序"};
+  function resultRows(changes,back){
+    const d=changes[0],to=back?d.before:d.after,from=back?d.after:d.before;
+    if(!to||!from)return [["客戶",to?"已回到清單":"已移出清單"]];
+    const row=items.find(item=>item.id===d.id)||{};
+    return d.fields.map(k=>{
+      const match=/^(font:)?need([23]?)$/.exec(k);
+      const label=match?needTitle(row,Number(match[2]||1))+(match[1]?"字級":""):labels[k]||k;
+      let value=to[k];
+      if(k.startsWith("url"))value=!value?"已清空網址":back?"已還原網址":from[k]?"已換成新網址":"已填入網址";
+      else if(k.startsWith("font:"))value=(value??100)+"%";
+      else if(k==="needOrder")value=DataCore.needOrder(value).map(n=>needTitle(row,n)).join("、");
+      else if(match)value=needToPlain(value);
+      else if(["status","cat","rooms","pType","pNum"].includes(k)&&value)value=asFieldVals(value).map(v=>optionDisplayName(k.toLowerCase(),v)).join("／");
+      else if(Array.isArray(value))value=value.join("／");
+      const text=String(value??"").trim();
+      return [label,text.length>100?text.slice(0,100)+"…":text||"已清空"];
+    });
+  }
+  function controls(state=dataState){
+    let log;
+    try{log=readCustomerHistory(state);}catch{log={undo:[],redo:[]};}
+    for(const [id,stack,label] of [["tryUndo",log.undo,"還原"],["tryRedo",log.redo,"重做"]]){
+      const button=$(id),step=stack.at(-1);
+      button.disabled=!step;button.setAttribute("aria-label",label);
+      button.title=step?label+" "+(step.changes.length===1?step.changes[0].name:step.changes.length+" 位客戶")+" · "+resultRows(step.changes,id==="tryUndo").map(r=>r[0]).join("、"):"目前沒有可"+label+"的操作";
+    }
+  }
+
+  const heldPointers=new Set();
+  let deadline=0;
+  function dismissWhenReady(){
+    clearTimeout(timer);
+    if(heldPointers.size)return;
+    const left=deadline-performance.now();
+    if(left>0){timer=setTimeout(dismissWhenReady,Math.ceil(left));return;}
+    feedback.classList.remove('show');
+    document.querySelectorAll('.history-highlight').forEach(el=>el.classList.remove('history-highlight'));
+  }
+  feedback.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    feedback.setPointerCapture(e.pointerId);heldPointers.add(e.pointerId);
+    clearTimeout(timer);
+  });
+  for(const event of ['pointerup','pointercancel','lostpointercapture']){
+    feedback.addEventListener(event,e=>{if(heldPointers.delete(e.pointerId))dismissWhenReady();});
+  }
+  function signal(step, rev){
+    clearTimeout(timer);
+    document.getElementById('toast')?.classList.remove('show');
+    const d=step[0];
+    const part=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls;el.textContent=text;return el;};
+    const badge=part('span','history-action',rev?'已還原':'已重做');
+    const subject=part('span','history-object',step.length===1?((rev?d.before:d.after)?.cust||d.name):step.length+' 位客戶');
+    const details=document.createElement('div');
+    details.className='history-result';
+    for(const [name,value] of resultRows(step,rev)){
+      const line=document.createElement('div');
+      line.append(part('strong','history-field',name),part('span','history-value',value));
+      details.append(line);
+    }
+    feedback.replaceChildren(badge,subject,details);
+    feedback.classList.add('show');
+    document.querySelectorAll('.history-highlight').forEach(el=>el.classList.remove('history-highlight'));
+
+    deadline=performance.now()+2800;dismissWhenReady();
+  }
+  $('tryUndo').onclick=()=>travelCustomerHistory('undo');
+  $('tryRedo').onclick=()=>travelCustomerHistory('redo');
+  window.customerHistoryUI={refresh:controls,signal:(step,back)=>signal(step.changes,back)};
+  window.addEventListener('storage',e=>{if(e.key===historyKey)controls();});
+  controls();
+})();
+</script>
 </body>
 </html>
