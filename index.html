@@ -499,11 +499,20 @@
   .sortsel .cselect-btn{width:auto;gap:6px;padding:9px 12px;font-size:.85rem;font-weight:600;border-radius:11px;background:var(--card);}
   .sortsel .sort-ic{flex:none;font-size:.95rem;color:var(--accent);font-weight:700;line-height:1;}
   .sortsel .cselect-txt{flex:none;}
-  .sortsel .cselect-menu{left:0;right:auto;width:min(270px,calc(100vw - 48px));min-width:0;max-width:none;padding:7px;gap:4px;}
+  .sortsel .sort-main{font-size:1.125rem;line-height:1.2;font-weight:700;color:var(--ink);}
+  .sortsel .sort-suffix{margin-left:6px;font-size:.75rem;font-weight:400;color:var(--ink-soft);}
+  .sortsel .sort-menu-caption{padding:3px 11px 5px;font-size:.75rem;font-weight:400;color:var(--ink-soft);}
+  @media(max-width:360px){
+    .sortsel .cselect-btn{padding-inline:5px;gap:2px;}
+    .sortsel .sort-main{font-size:1rem;}
+    .sortsel .sort-suffix{margin-left:4px;font-size:.6875rem;}
+  }
+  .sortsel .cselect-menu{left:0;right:auto;box-sizing:border-box;width:min(264px,calc(100vw - 36px));min-width:0;max-width:none;padding:7px;gap:4px;}
   .sortsel .cselect-opt{min-height:46px;padding:10px 11px;gap:10px;}
   .sortsel .sort-copy{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;}
-  .sortsel .cselect-opt .nm{font-size:.95rem;font-weight:700;line-height:1.45;}
-  .sortsel .sort-desc{font-size:.78rem;line-height:1.55;font-weight:400;color:var(--ink-soft);white-space:normal;}
+  .sortsel .cselect-opt .nm{font-size:1.125rem;font-weight:700;line-height:1.4;color:var(--ink);}
+  .sortsel .cselect-opt .sort-option-suffix{margin-left:6px;font-size:.75rem;line-height:1.5;font-weight:400;color:var(--ink-soft);}
+  .sortsel .sort-desc{font-size:.75rem;line-height:1.5;font-weight:400;color:var(--ink-soft);white-space:normal;}
   .sortsel .cselect-opt.sel{background:color-mix(in srgb,var(--ink) 8%,var(--card));}
   .sortsel .cselect-opt.sel .nm{color:var(--ink);}
   @media(hover:hover){.sortsel .cselect-opt:not(.sel):hover{background:color-mix(in srgb,var(--ink) 4%,var(--card));}}
@@ -1717,7 +1726,7 @@
         <div class="cselect sortsel" id="sortSel">
           <button type="button" class="cselect-btn" id="sortBtn" aria-haspopup="listbox" aria-expanded="false">
             <span class="sort-ic">⇅</span>
-            <span class="cselect-txt" id="sortTxt">預設順序</span>
+            <span class="cselect-txt" id="sortTxt">預設排序</span>
             <span class="cselect-chev">▾</span>
           </button>
           <div class="cselect-menu" id="sortMenu" role="listbox"></div>
@@ -2764,7 +2773,7 @@ return {create};
 
 </script>
 <script>
-const APP_VERSION = "2026.11.21F";
+const APP_VERSION = "2026.11.22B";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3143,8 +3152,8 @@ let currentCat = "";
 let selectMode = false;
 const selected = new Set();
 const SORTS = [
-  {key:"default",   label:"預設順序", desc:"依清單原本順序排列"},
-  {key:"priority",  label:"重要性排序", desc:"依狀態篩選的上下順序排列"},
+  {key:"default",   label:"預設排序", desc:"依清單原本順序排列"},
+  {key:"priority",  label:"重要排序", desc:"依狀態篩選的上下順序排列"},
   {key:"date_desc", label:"建檔日 新→舊"},
   {key:"date_asc",  label:"建檔日 舊→新"},
 ];
@@ -8086,10 +8095,21 @@ const sortSel = document.getElementById("sortSel");
 const sortBtn = document.getElementById("sortBtn");
 const sortTxt = document.getElementById("sortTxt");
 const sortMenu = document.getElementById("sortMenu");
+function updateSortLabel(){
+  const label = document.getElementById("sortTxt");
+  if (!label) return;
+  const option = SORTS.find(s => s.key === currentSort) || SORTS[0];
+  const parts = {default:["預設","排序"],priority:["重要","排序"],date_desc:["建檔日","新→舊"],date_asc:["建檔日","舊→新"]}[option.key];
+  label.replaceChildren();
+  const main = document.createElement("span"); main.className = "sort-main"; main.textContent = parts[0];
+  const suffix = document.createElement("span"); suffix.className = "sort-suffix"; suffix.textContent = parts[1];
+  label.append(main, suffix);
+  document.getElementById("sortBtn").setAttribute("aria-label", "排序：" + option.label);
+}
 function renderSortOptions(){
-  sortMenu.innerHTML = SORTS.map(s => `
+  sortMenu.innerHTML = '<div class="sort-menu-caption" role="presentation">排列依據</div>' + SORTS.map(s => `
     <button type="button" class="cselect-opt" data-key="${s.key}" role="option">
-      <span class="sort-copy"><span class="nm">${s.label}</span>${s.desc ? `<span class="sort-desc">${s.desc}</span>` : ""}</span>
+      <span class="sort-copy"><span class="nm">${s.key === "default" || s.key === "priority" ? `${s.key === "default" ? "預設" : "重要"}<span class="sort-option-suffix">排序</span>` : s.label}</span>${s.desc ? `<span class="sort-desc">${s.desc}</span>` : ""}</span>
       <span class="chk" aria-hidden="true">✓</span>
     </button>`).join("");
   updateSortSelection();
@@ -8103,7 +8123,7 @@ function updateSortSelection(){
 }
 function setSort(key){
   currentSort = SORTS.some(s => s.key === key) ? key : "default";
-  sortTxt.textContent = (SORTS.find(s => s.key === currentSort) || SORTS[0]).label;
+  updateSortLabel();
   updateSortSelection();
   saveSort();
   applyFilter();
@@ -8115,7 +8135,7 @@ sortBtn.addEventListener("click", e => { e.stopPropagation(); sortSel.classList.
 sortMenu.addEventListener("click", e => { const o = e.target.closest(".cselect-opt"); if (o){ setSort(o.dataset.key); closeSortSel(); } });
 document.addEventListener("click", e => { if (!sortSel.contains(e.target)) closeSortSel(); });
 renderSortOptions();
-sortTxt.textContent = (SORTS.find(s => s.key === currentSort) || SORTS[0]).label;
+updateSortLabel();
 
 // ---- Toast + confirm dialog (native alert/confirm are blocked in the sandbox) ----
 const toastEl = document.getElementById("toast");
@@ -9820,7 +9840,7 @@ function applySettings(s){
   if (s.density === "compact" || s.density === "normal"){ setDensity(s.density); }
   if (typeof s.sort === "string" && SORTS.some(x => x.key === s.sort)){
     currentSort = s.sort; saveSort();
-    if (typeof sortTxt !== "undefined" && sortTxt) sortTxt.textContent = (SORTS.find(x => x.key === currentSort) || SORTS[0]).label;
+    if (document.getElementById("sortTxt")) updateSortLabel();
     updateSortSelection();
   }
   if (s.colw && typeof s.colw === "object"){ colW = {...DEFAULT_COLW, ...s.colw}; saveColW(); }
