@@ -2125,7 +2125,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
   function unsupported(detail){
     throw Object.assign(new Error("此版本無法讀取" + detail + "，請更新客戶總覽"), {code:"unsupported_format"});
   }
-  const settingNames = new Set(["density","sort","colw","theme","opts","statusColors","optionAliases","fltorder","expfocus","optorder","colFilter","fltB","_updatedAt"]);
+  const settingNames = new Set(["markAppearance","density","sort","colw","theme","opts","statusColors","optionAliases","fltorder","expfocus","optorder","colFilter","fltB","_updatedAt"]);
   const optionFields = new Set(["area","rooms","ptype","pnum","status","source","shared"]);
   const aliasFields = new Set(["status","cat","rooms","ptype","pnum"]);
   const aliasPrefix = "alias:";
@@ -2176,6 +2176,20 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
     return equal(normalize(a),normalize(b));
   }
   function hash(s) { let a=2166136261,b=5381; for(let i=0;i<s.length;i++){a=Math.imul(a^s.charCodeAt(i),16777619); b=Math.imul(b,33)^s.charCodeAt(i);} return (a>>>0).toString(36)+(b>>>0).toString(36); }
+  const markKeys=["star","heart","like","circle","cross","triangle","flag","bookmark","check","circleCheck","arrowRight","bell"];
+  const markShapeOK=v=>typeof v==="string"&&(v==="star"||v==="outlineStar"||markKeys.slice(1).some(k=>v===k||v===k+":solid"));
+  function checkMark(value){
+    if(value==="")return;
+    if(typeof value!=="string"||value.length>64)fail("重點標記格式不正確");
+    const parts=value.split("|");
+    if(parts.length!==3||parts[0]!=="1"||(parts[1]&&!markShapeOK(parts[1]))||(parts[2]&&!/^#[0-9a-f]{6}$/i.test(parts[2])))fail("重點標記格式不正確");
+  }
+  function checkMarkLook(v){
+    if(!object(v))fail("標記外觀格式不正確");
+    supportedKeys(v,["shape","color","display","order","fill"],"標記外觀");
+    if(!markShapeOK(v.shape)||typeof v.color!=="string"||!/^#[0-9a-f]{6}$/i.test(v.color)||!["star","rail","combo"].includes(v.display)||
+       !Array.isArray(v.order)||v.order.length!==markKeys.length||!markKeys.every(k=>v.order.includes(k))||![null,"solid","outline"].includes(v.fill))fail("標記外觀格式不正確");
+  }
   const textFields = new Set(["cust","date","budget","parking","tel","line","ask","need","need2","need3","t1","t2","t3","url591","urlLeju","urlI"]);
   const multiFields = new Set(["cat","area","status","rooms","pType","pNum","shared"]);
   function str(x,max=300000){ if(typeof x!=="string") fail("文字欄位格式不正確"); if(x.length>max)unsupported("超過長度上限的文字"); }
@@ -2187,7 +2201,8 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
     if(r.id == null && allowMissingId) {} else if(!idOK(r.id)) fail("客戶識別碼不正確");
     for(const k of Object.keys(r)){
       const v=r[k];
-      if(textFields.has(k)) str(v);
+      if(k==="priorityMark")checkMark(v);
+      else if(textFields.has(k)) str(v);
       else if(k==="source") str(v,2000);
       else if(multiFields.has(k)){ if(Array.isArray(v)) strings(v); else if(k==="pNum" && typeof v==="number" && Number.isFinite(v)) {} else str(v,2000); }
       else if(["updatedAt","createdAt","bMin","bMax"].includes(k)){ if(v!==null && (typeof v!=="number"||!Number.isFinite(v)||v<0)) fail("數值欄位不正確"); }
@@ -2219,6 +2234,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
     if(!object(s)) fail("設定格式不正確");
     for(const [k,v] of Object.entries(s)) {
       if(!settingNames.has(k))unsupported("設定「"+k+"」");
+      if(k==="markAppearance")checkMarkLook(v);
       if(k==="density"&&!["compact","normal"].includes(v)) fail("密度設定不正確");
       if(k==="theme"&&!["light","dark"].includes(v)) fail("主題設定不正確");
       if(k==="sort") str(v,100);
@@ -2686,7 +2702,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
     if(!object(s)||s.app!=="customer-state"||s.version!==6||!object(s.records)||!object(s.prefs)||!object(s.epoch)||!Number.isSafeInteger(s.epoch.generation)||s.epoch.generation<0||!idOK(s.epoch.id))fail("同步檔案格式不正確");
     if(Object.keys(s.records).length>50000)unsupported("超過上限的同步資料");
     for(const [id,fs] of Object.entries(s.records)){if(!idOK(id)||!object(fs)||!fs["$alive"])fail("同步客戶識別碼不正確");for(const [k,c] of Object.entries(fs)){
-      if(k!=="$alive"&&!textFields.has(k)&&!multiFields.has(k)&&!["source","createdAt","updatedAt","bMin","bMax","needFontSizes","needOrder","font:need","font:need2","font:need3"].includes(k))unsupported("同步欄位「"+k+"」");
+      if(k!=="$alive"&&!textFields.has(k)&&!multiFields.has(k)&&!["priorityMark","source","createdAt","updatedAt","bMin","bMax","needFontSizes","needOrder","font:need","font:need2","font:need3"].includes(k))unsupported("同步欄位「"+k+"」");
       validateCell(c);for(const v of c.choices){if(k==="$alive"){if(typeof v.value!=="boolean")fail();}else if(v.value!==null){const r={id};if(k.startsWith("font:"))r.needFontSizes={[k.slice(5)]:v.value};else r[k]=v.value;record(r);}}}}
     for(const [k,c] of Object.entries(s.prefs)){validateCell(c);for(const v of c.choices){if(k==="cats")categories(v.value);else if(k.startsWith(optionPrefix)){readOptionKey(k);if(![0,1,2,3].includes(v.value))fail("自訂選項狀態不正確");}else if(k.startsWith(aliasPrefix)){readAliasKey(k);if(v.value!==null)aliasLabel(v.value);}else if(k.startsWith("setting:")&&k!=="setting:optionAliases")settings({[k.slice(8)]:v.value});else fail("同步設定格式不正確");}}
     if(Object.keys(s.prefs).some(key=>key.startsWith(optionPrefix))){
@@ -2873,7 +2889,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.25H";
+const APP_VERSION = "2026.11.25I";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3088,6 +3104,7 @@ function withOptionAlias(aliases,field,raw,label){
 }
 function setOptionAliases(value){optionAliases=value||{};}
 // Snapshot legacy preference presence before UI initialization writes fallback mirrors.
+let customerMarkAppearance=null;
 const PREFERENCE_STORAGE_KEYS={cats:"customer_app_cats_v4",density:"customer_app_density_v1",sort:"customer_app_sort_v1",colw:"customer_app_colw_v1",theme:"customer_app_theme_v1",opts:"customer_app_opts_v1",statusColors:"customer_app_status_colors_v1",fltorder:"customer_app_fltorder_v1",expfocus:"customer_app_expfocus_v1",optorder:"customer_app_optorder_v1",colFilter:"customer_app_filters_v1",fltB:"customer_app_filters_v1"};
 const bootPreferenceStorage=(()=>{const raw={};for(const [k,key] of Object.entries({...PREFERENCE_STORAGE_KEYS,catsAt:"customer_app_cats_ts_v1",settingsAt:"customer_app_settings_ts_v1"})){try{raw[k]=localStorage.getItem(key);}catch(e){raw[k]=null;}}return raw;})();
 var statusColorsReady = false;
@@ -3969,7 +3986,7 @@ function isNeedExpEditing(){
 // 若把 detail 算 busy,瀏覽卡片時燈會一直橘黃閃(pending)、同步也被卡住。
 window.isTableBusy = function(){
   if(needOrderBusy)return true;
-  if(document.querySelector("dialog.data-dialog[open]"))return true;
+  if(document.querySelector("dialog.data-dialog[open],#mark-color-dialog[open]"))return true;
   if (modalBg.classList.contains("open")) return true;   // 編輯/新增表單才算忙碌
   if (tselMode) return true;             // 批次刪除選取中:暫停同步重繪,選取狀態不被洗掉
   const a = document.activeElement;
@@ -10015,7 +10032,7 @@ function tabModeToggleAllowed(){
 }
 document.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
-  if (e.target.closest?.("#columnTextDialog")) return;
+  if (e.target.closest?.("#columnTextDialog,#mark-color-dialog")) return;
   if(needOrderBusy&&e.target.closest(".need-order-menu"))return;
   if (!e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && tabModeToggleAllowed()){
     e.preventDefault();
@@ -10027,7 +10044,7 @@ document.addEventListener("keydown", e => {
   trapFocusKey(e, tabTrapTarget());       // Shift+TAB / 浮層內:維持原本的欄位切換
 }, true);
 document.addEventListener("keydown", e => {
-  if (discreetDialog.open || e.target.closest?.("#columnTextDialog")) return;
+  if (discreetDialog.open || e.target.closest?.("#columnTextDialog,#mark-color-dialog")) return;
   if (e.key === "Enter" && confirmBg.classList.contains("open")){ e.preventDefault(); document.getElementById("confirmOk").click(); return; }
   if (e.key === "Tab") return;   // Tab 已由 capture 階段 trapFocusKey 處理
   if (e.key !== "Escape") return;
@@ -10060,10 +10077,11 @@ document.addEventListener("keydown", e => {
 // 注意:applySettings 只做「純本機儲存+畫面套用」,不呼叫 onLocalChange——由呼叫端決定要不要觸發同步,避免回授迴圈。
 function collectSettings(){
   const fs = serializeColFilterState();
-  return { density: density, sort: currentSort, colw: colW, theme: theme, opts: customOpts, statusColors: statusColors, ...(Object.keys(optionAliases).length?{optionAliases}:{}), fltorder: filterOrder, expfocus: expFocus, optorder: optOrder, colFilter: fs.colFilter, fltB: fs.fltB };
+  return { ...(customerMarkAppearance?{markAppearance:customerMarkAppearance}:{}), density: density, sort: currentSort, colw: colW, theme: theme, opts: customOpts, statusColors: statusColors, ...(Object.keys(optionAliases).length?{optionAliases}:{}), fltorder: filterOrder, expfocus: expFocus, optorder: optOrder, colFilter: fs.colFilter, fltB: fs.fltB };
 }
 function applySettings(s){
   if (!s || typeof s !== "object") return;
+  if (Object.hasOwn(s,"markAppearance"))customerMarkAppearance=s.markAppearance;
   if (Object.prototype.hasOwnProperty.call(s,"optionAliases")) setOptionAliases(s.optionAliases);
   if (s.density === "compact" || s.density === "normal"){ setDensity(s.density); }
   if (typeof s.sort === "string" && SORTS.some(x => x.key === s.sort)){
@@ -10148,6 +10166,7 @@ async function applyBackup(parsed,mode="replace"){
   const fallback=collectSettings();
   // Backups preceding display names must restore the original names, even on a renamed device.
   delete fallback.optionAliases;
+  delete fallback.markAppearance;
   const v={...normalized,cats:normalized.cats??cats,settings:{...fallback,...normalized.settings}};
   let next;
   if(mode==="merge")next=DataCore.importMerge(dataState,v,DataCore.newId());
@@ -10811,10 +10830,10 @@ const DATA_V6_KEY = "customer_app_state_v6";
 const DataCore = CustomerDataCore;
 const editActor = deviceId + "-" + DataCore.newId();
 let applyingDataState = false;
-function defaultPreferenceView(){return {cats:DataCore.clone(DEFAULT_CATS),settings:{density:"normal",sort:"default",colw:{...DEFAULT_COLW},theme:"light",opts:normOpts(null),statusColors:{},optionAliases:{},fltorder:{},expfocus:false,optorder:{},colFilter:{area:null,cat:null,rooms:null,pType:null,pNum:null,status:null,source:null},fltB:{lo:null,hi:null}}};}
+function defaultPreferenceView(){return {cats:DataCore.clone(DEFAULT_CATS),settings:{markAppearance:null,density:"normal",sort:"default",colw:{...DEFAULT_COLW},theme:"light",opts:normOpts(null),statusColors:{},optionAliases:{},fltorder:{},expfocus:false,optorder:{},colFilter:{area:null,cat:null,rooms:null,pType:null,pNum:null,status:null,source:null},fltB:{lo:null,hi:null}}};}
 function legacyPreferenceView(){
   const all=collectSettings(),settings={};
-  for(const key of Object.keys(all))if(bootPreferenceStorage[key]!==null)settings[key]=all[key];
+  for(const key of Object.keys(all))if(bootPreferenceStorage[key]!=null)settings[key]=all[key];
   const timestamp=key=>{const n=Number(bootPreferenceStorage[key]);return Number.isFinite(n)&&n>=0?n:0;};
   return {items,deleted,cats:bootPreferenceStorage.cats!==null?cats:undefined,settings,catsAt:timestamp("catsAt"),settingsAt:timestamp("settingsAt")};
 }
@@ -11012,7 +11031,7 @@ function travelCustomerHistory(move,skipId){
   }
 }
 
-function storeCurrentState(observed, changedSettings, statusEdit){
+function storeCurrentState(observed, changedSettings, statusEdit, markGuard){
   if(applyingDataState)return true;
   if(window._storageCorrupt)return false;
   const unrelatedSaveError = window._saveError && !onlyStatusWriteFailed;
@@ -11034,6 +11053,16 @@ function storeCurrentState(observed, changedSettings, statusEdit){
       base=DataCore.merge(base,stored);
     }
     if(observed)base=DataCore.merge(base,observed);
+    if(markGuard){
+      if(window._pendingMerge)base=DataCore.merge(base,window._pendingMerge);
+      const rec=base.records[markGuard.id],cell=rec?.priorityMark,pref=base.prefs["setting:markAppearance"];
+      const same=(a,b)=>DataCore.equal(a??null,b??null);
+      if(!same(base.epoch,markGuard.epoch)||!rec||rec.$alive.choices.some(c=>c.value!==true)||
+         !same(cell?.clock,markGuard.clock)||(cell?.choices||[]).some(c=>(c.value||"")!==markGuard.value)||
+         (changedSettings.markAppearance&&(!same(pref?.clock,markGuard.prefClock)||(pref?.choices.length||0)>1))){
+        toast("標記或外觀已變更，請重新開啟");return false;
+      }
+    }
     let previousView = savedDataView;
     if (statusEdit && !statusEdit.verifyOnly){
       const {id,updatedAt} = statusEdit;
@@ -11051,7 +11080,7 @@ function storeCurrentState(observed, changedSettings, statusEdit){
           row.id === id ? {...row,status:latest.status,updatedAt:latest.updatedAt} : row)};
       }
       // Start with the saved view so a menu click never commits another editor's pending fields.
-      const field=statusEdit.field==="shared"?"shared":"status";
+      const field=markGuard?"priorityMark":statusEdit.field==="shared"?"shared":"status";
       view.items = view.items.map(row => row.id === id ? {...row,[field]:statusEdit.value,updatedAt:statusEdit.updatedAt} : row);
     }
     const local=captureViewState(base,view,previousView);
@@ -12174,7 +12203,7 @@ let syncConnected = false, syncEmail = null;
   feedback.setAttribute('role','status'); feedback.className='history-feedback';
   document.body.append(feedback);
   let timer;
-  const labels={cust:"客戶",date:"建檔日",area:"區域",cat:"類型",status:"狀態",budget:"預算",rooms:"房數",parking:"車位",pType:"車類",pNum:"車數",tel:"電話",line:"LINE",ask:"詢問",source:"來源",shared:"共有",bMin:"預算下限",bMax:"預算上限",t1:"需求標題",t2:"想看標題",t3:"看過標題",url591:"591 連結",urlLeju:"樂居連結",urlI:"永慶連結",needOrder:"段落順序"};
+  const labels={priorityMark:"重點標記",cust:"客戶",date:"建檔日",area:"區域",cat:"類型",status:"狀態",budget:"預算",rooms:"房數",parking:"車位",pType:"車類",pNum:"車數",tel:"電話",line:"LINE",ask:"詢問",source:"來源",shared:"共有",bMin:"預算下限",bMax:"預算上限",t1:"需求標題",t2:"想看標題",t3:"看過標題",url591:"591 連結",urlLeju:"樂居連結",urlI:"永慶連結",needOrder:"段落順序"};
   function resultRows(changes,back){
     const d=changes[0],to=back?d.before:d.after,from=back?d.after:d.before;
     if(!to||!from)return [["客戶",to?"已回到清單":"已移出清單"]];
@@ -12183,7 +12212,8 @@ let syncConnected = false, syncEmail = null;
       const match=/^(font:)?need([23]?)$/.exec(k);
       const label=match?needTitle(row,Number(match[2]||1))+(match[1]?"字級":""):labels[k]||k;
       let value=to[k];
-      if(k.startsWith("url"))value=!value?"已清空網址":back?"已還原網址":from[k]?"已換成新網址":"已填入網址";
+      if(k==="priorityMark")value=value?"已標記":"已取消標記";
+      else if(k.startsWith("url"))value=!value?"已清空網址":back?"已還原網址":from[k]?"已換成新網址":"已填入網址";
       else if(k.startsWith("font:"))value=(value??100)+"%";
       else if(k==="needOrder")value=DataCore.needOrder(value).map(n=>needTitle(row,n)).join("、");
       else if(match)value=needToPlain(value);
@@ -12313,8 +12343,7 @@ let syncConnected = false, syncEmail = null;
   <footer><button type="button" class="s-btn" data-reset>回復原始預設</button><button type="button" class="s-btn" data-dismiss>取消</button><button type="button" class="s-btn s-btn-primary" data-save>儲存</button></footer>
 </dialog>
 <script>
-(()=>{
-  const mountColumnPalette = (() => {
+const mountCustomerColorPalette = (() => {
   'use strict';
   const presets=[['霧銀灰','#AFBBC1'],['珊瑚','#E7A89C'],['藍綠','#78B2AA'],['柔藍','#A8BED7'],['淡紫','#CAB8D5'],['沙金','#E3CE98'],['草綠','#9AB792'],['深灰藍','#465A65'],['海藍','#368F99'],['暖橘','#D57A3A']];
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
@@ -12389,6 +12418,7 @@ let syncConnected = false, syncEmail = null;
   }
   return mount;
 })();
+(()=>{
   const fields = T_FIELDS;
   const desktop = matchMedia("(min-width:820px)");
   const keyPrefix = "customer_column_text_v1_";
@@ -12459,7 +12489,7 @@ let syncConnected = false, syncEmail = null;
       if(picker&&!picker.validate())return;
       const again=part===picking;closePicker();if(again)return;
       picking=part;color.setAttribute('aria-expanded','true');
-      picker=mountColumnPalette(dialog.querySelector('.ct-palette'),{textLabel:label+'字色',color:current.draft[part].color,onPreview(value){
+      picker=mountCustomerColorPalette(dialog.querySelector('.ct-palette'),{textLabel:label+'字色',color:current.draft[part].color,onPreview(value){
         if(value)current.draft[part].color=value.toLowerCase();
         else delete current.draft[part].color;
         showDraft();
@@ -12566,6 +12596,430 @@ let syncConnected = false, syncEmail = null;
     if(!th||!fields.includes(th.dataset.field)||!desktop.matches||viewMode!=='table'||tselMode||dialog.open||e.button!==2||(e.pointerType||pointerType)!=='mouse'||e.sourceCapabilities?.firesTouchEvents||e.target.closest('.col-resize'))return;
     e.preventDefault();open(th);
   });
+})();
+</script>
+<style id="customer-mark-style">
+.mark-action{position:absolute;z-index:3;inset:0 auto 0 0;width:20px;border:0;background:transparent;color:#76520c;padding:0;display:grid;place-items:center;cursor:pointer}
+.mark-action span{line-height:1;font-size:14px;pointer-events:none}
+.mark-action[aria-pressed=false]{opacity:0}
+.mark-action:focus-visible{opacity:1}
+.mark-action:focus-visible{outline:2px solid #39718d;outline-offset:-2px;border-radius:4px}
+html[data-mark-style=rail] .mark-action[aria-pressed=true] span{font-size:0;width:4px;height:66%;border-radius:4px;background:#ad640c}
+#tableWrap{margin-inline-start:max(28px,1.6vw)}
+#mark-outside{position:fixed;width:26px;overflow:hidden;z-index:2;pointer-events:none}
+#mark-outside .mark-action{width:100%;bottom:auto;pointer-events:auto;color:#815810;touch-action:none;}
+#mark-outside .mark-action:hover,#mark-outside .mark-action:focus-visible{opacity:1}
+html[data-mark-style=combo] #mark-outside .mark-action[aria-pressed=true]::after{content:'';position:absolute;right:1px;top:18%;bottom:18%;width:2px;background:#ad640c;border-radius:2px}
+#mark-outside .mark-track{position:absolute;inset:0;pointer-events:none}
+@media(hover:none){#mark-outside .mark-action[aria-pressed=false]:not(:focus-visible){opacity:0}}
+#mark-color-dialog{width:min(340px,calc(100vw - 24px));box-sizing:border-box;border:1px solid var(--line);border-radius:15px;padding:16px;background:var(--card);color:var(--ink);box-shadow:0 10px 35px #13283130}
+#mark-color-dialog::backdrop{background:#21323a33}
+#mark-color-dialog h3{margin:0 0 12px}
+#mark-color-dialog .mark-colormodes,#mark-color-dialog footer{display:flex;gap:6px}
+#mark-color-dialog .mark-colormodes button,#mark-color-dialog footer button{flex:1;border-radius:8px;padding:7px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+#mark-color-dialog button[aria-pressed=true],#mark-color-dialog [data-apply]{background:var(--accent-tint);font-weight:650}
+#mark-color-dialog footer{margin-top:14px}
+#mark-color-dialog .mark-palette:not(:empty){margin-top:12px}
+#mark-outside .mark-action[aria-pressed=true]{color:var(--marked-ink,#815810)}
+html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] span,html[data-mark-style=combo] #mark-outside .mark-action[aria-pressed=true]::after{background:var(--marked-ink,#815810)}
+#mark-color-dialog{position:fixed;inset:0;margin:auto;height:fit-content;max-height:calc(100dvh - 24px);overflow:auto}
+#mark-color-dialog .mark-palette p{font-size:13px;color:var(--ink-soft);margin:12px 0}
+#mark-color-dialog .mark-swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#mark-color-dialog .mark-swatches button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:36px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}
+#mark-color-dialog .mark-swatches button::before{content:'';width:14px;height:14px;border-radius:50%;background:var(--swatch)}
+#mark-color-dialog .mark-swatches button[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--swatch)}
+#mark-color-dialog .mark-reset{border:0;background:transparent;color:var(--ink-soft);text-decoration:underline;text-underline-offset:3px;margin-top:12px;padding:4px;cursor:pointer}
+#mark-color-dialog .mark-shapes{margin:4px 0 10px;padding:0;border:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#mark-color-dialog legend{font-size:13px;font-weight:600;margin-bottom:6px}
+#mark-color-dialog .mark-shapes button{display:grid;justify-items:center;align-content:center;gap:4px;padding:6px 1px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink-soft);font-size:12px;cursor:pointer}
+#mark-color-dialog .mark-shapes button[aria-pressed=true]{box-shadow:inset 0 0 0 1.5px var(--ink-soft);background:var(--surface-2);color:var(--ink)}
+.mark-shapes svg{height:18px;width:18px}
+.mark-action svg{display:block;width:15px;height:15px}
+html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] svg{display:none}
+#mark-color-dialog .mark-reset{display:block}
+#mark-outside .mark-action[aria-pressed=false] span[data-shape="outlineStar"]{color:var(--ink-soft,#647781);opacity:.55}
+#mark-outside .mark-action .mark-star-glyph{display:block;font:inherit;line-height:1;font-weight:400}
+.mark-shapes .mark-star-glyph{display:grid;place-items:center;height:18px;font-size:18px;line-height:1;font-weight:400}
+html[data-mark-style=rail] #mark-outside .mark-action[aria-pressed=true] .mark-star-glyph{display:none}
+#mark-color-dialog .mark-shapes legend{width:100%}
+#mark-color-dialog .mark-shapes .mark-follow{float:right;display:inline-block;padding:2px 7px;font-size:12px;font-weight:400}
+#mark-color-dialog .mark-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+#mark-color-dialog .mark-dialog-head h3{margin:0}
+#mark-color-dialog .mark-dialog-head .fo-close{width:44px;height:44px;display:grid;place-items:center;font:500 22px/1 system-ui;background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line);border-radius:10px;cursor:pointer}
+#mark-color-dialog .mark-shape-head{display:flex;justify-content:space-between;align-items:center;margin:2px 0 3px}
+#mark-color-dialog .mark-fill-toggle{display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:var(--surface-2)}
+#mark-color-dialog .mark-fill-toggle button{padding:4px 10px;border:0;background:transparent;box-shadow:none;border-radius:6px}
+#mark-color-dialog .mark-fill-toggle button[aria-pressed=true]{background:var(--card);box-shadow:0 1px 3px #24373e35}
+#mark-color-dialog .mark-shapes .mark-follow{grid-column:1/-1;justify-self:end;float:none}
+#mark-color-dialog .mark-swatches{margin-bottom:10px}
+#mark-color-dialog .mark-palette .clcp-inline{padding:0}
+#mark-color-dialog .mark-palette .mark-follow{min-height:24px}
+#mark-color-dialog .mark-shapes>button[data-shape]{touch-action:none;user-select:none;-webkit-touch-callout:none;cursor:grab}
+#mark-color-dialog .mark-follow{order:20}
+#mark-color-dialog .drag-source{opacity:.32}
+#mark-color-dialog .mark-drag-ghost{position:fixed;pointer-events:none;z-index:10;display:grid;place-content:center;justify-items:center;gap:4px;border:1px solid var(--ink-soft);border-radius:8px;background:var(--card);color:var(--ink);box-shadow:0 4px 14px #20344030;font:inherit;font-size:12px}
+#mark-color-dialog .mark-drag-ghost svg{width:18px;height:18px}
+.mark-display-pref{display:flex;align-items:center;gap:6px;margin:8px 0;font-size:13px;color:var(--ink-soft)}
+.mark-display-pref select{margin-left:auto;border:1px solid var(--line);border-radius:6px;padding:3px 8px;background:var(--card);color:inherit}
+</style>
+<script id="customer-focus-marks">
+(()=>{
+const markIcons={
+ star:['實心星','★'],
+ outlineStar:['空心星','☆'],
+ like:['讚','<path d="M3.3 10.8h3.1v9H3.3z M9 19.8V10l4.1-6c.8-1.2 2.8-.8 2.5 1.1l-.8 4.4h4.7a1.6 1.6 0 0 1 1.6 2l-1.6 6.7a2 2 0 0 1-2 1.6z"/>'],
+ circle:['圈圈','<circle cx="12" cy="12" r="8.2"/>'],
+ cross:['叉號','<path d="m5.7 5.7 12.6 12.6m0-12.6L5.7 18.3"/>'],
+ triangle:['三角形','<path d="m12 3.9 8.8 15.6H3.2z"/>'],
+ flag:['旗幟','<path d="M5.5 20.8V4.2q3.3-1.7 6.6.1t6.9-.1v8.9q-3.5 1.8-6.9.1t-6.6-.1"/>'],
+ bookmark:['書籤','<path d="M6.3 4.2h11.4v15.9l-5.7-3.5-5.7 3.5z"/>'],
+ check:['打勾','<path d="m3.8 12.5 5.2 5.2L20.2 6.5"/>'],
+ circleCheck:['圈勾','<circle cx="12" cy="12" r="8.8"/><path d="m7.7 12 3.1 3.1 5.6-6.1"/>'],
+ arrowRight:['右箭頭','<path d="M3.8 12h16.4m-6.4-6.4 6.4 6.4-6.4 6.4"/>'],
+ heart:['愛心','<path d="M12 20.5 4.3 13C-1.2 7.1 6 1.1 10.2 5.5L12 7.3l1.8-1.8C18 1.1 25.2 7.1 19.7 13z"/>'],
+ bell:['鈴鐺','<path d="M4.7 17.2c1.8-2.2 2.1-4.3 2.1-7.1a5.2 5.2 0 0 1 10.4 0c0 2.8.3 4.9 2.1 7.1z M10 20a2.4 2.4 0 0 0 4 0"/>']
+};
+
+
+const solidMarks={
+ like:'<path d="M3.3 10.8h3.1v9H3.3z M9 19.8V10l4.1-6c.8-1.2 2.8-.8 2.5 1.1l-.8 4.4h4.7a1.6 1.6 0 0 1 1.6 2l-1.6 6.7a2 2 0 0 1-2 1.6z"/>',
+ circle:'<circle cx="12" cy="12" r="8.2"/>',
+ cross:'<path d="m5 7 2-2 5 5 5-5 2 2-5 5 5 5-2 2-5-5-5 5-2-2 5-5z"/>',
+ triangle:'<path d="m12 3.9 8.8 15.6H3.2z"/>',
+ flag:'<path d="M5 3.5h1.5v.7q3.2-1.5 6.1.1t6.9-.1v9q-3.4 1.8-6.9.1t-6.1-.1v7.7H5z"/>',
+ bookmark:'<path d="M6.3 4.2h11.4v15.9l-5.7-3.5-5.7 3.5z"/>',
+ check:'<path d="m2.8 12.6 2.3-2.1 4.1 4.2 9.7-9.5 2.3 2.2-12 12z"/>',
+ circleCheck:'<path fill-rule="evenodd" d="M12 2.8a9.2 9.2 0 1 1 0 18.4 9.2 9.2 0 0 1 0-18.4zm-5.6 9.5 4 4.1 7.4-7.3-1.3-1.3-6.1 6-2.7-2.8z"/>',
+ arrowRight:'<path d="M3.5 10.4h10V5l7.2 7-7.2 7v-5.4h-10z"/>',
+ bell:'<path d="M4.7 17.2c1.8-2.2 2.1-4.3 2.1-7.1a5.2 5.2 0 0 1 10.4 0c0 2.8.3 4.9 2.1 7.1z M9.6 19.1h4.8a2.4 2.4 0 0 1-4.8 0z"/>',
+ heart:'<path d="M12 20.5 4.3 13C-1.2 7.1 6 1.1 10.2 5.5L12 7.3l1.8-1.8C18 1.1 25.2 7.1 19.7 13z"/>'
+};
+function shapeParts(id){
+ if(id==='star'||id==='outlineStar')return {key:'star',style:id==='star'?'solid':'outline'};
+ const [key,style]=id.split(':');return {key,style:style==='solid'?'solid':'outline'};
+}
+function shapeID(key,style){return key==='star'?(style==='solid'?'star':'outlineStar'):(style==='solid'?key+':solid':key)}
+
+const markDrawings=new Map();
+function markIconHTML(key){
+  if(markDrawings.has(key))return markDrawings.get(key);
+  const variant=shapeParts(key);const filled=variant.style==='solid'&&variant.key!=='star';
+  let shape=filled?'<g fill="currentColor" stroke="none">'+solidMarks[variant.key]+'</g>':markIcons[key][1],left,top,width,height;
+  if(key==='star'||key==='outlineStar'){
+    const ctx=document.createElement('canvas').getContext('2d');
+    ctx.font='96px "Segoe UI Symbol", sans-serif';
+    const m=ctx.measureText(shape);
+    left=-m.actualBoundingBoxLeft;top=-m.actualBoundingBoxAscent;
+    width=m.actualBoundingBoxRight-left;height=m.actualBoundingBoxDescent-top;
+    shape='<text style="font:96px &quot;Segoe UI Symbol&quot;,sans-serif" fill="currentColor" stroke="none">'+shape+'</text>';
+  }else{
+    const sample=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    sample.style.cssText='position:fixed;visibility:hidden;pointer-events:none';
+    sample.innerHTML=shape;document.body.append(sample);
+    const r=sample.getBBox(),stroke=filled?0:1.65;
+    left=r.x-stroke/2;top=r.y-stroke/2;width=r.width+stroke;height=r.height+stroke;
+    sample.remove();
+  }
+  const side=Math.max(width,height)*1.25;
+  const box=[left+(width-side)/2,top+(height-side)/2,side,side].join(' ');
+  const markup='<svg aria-hidden="true" viewBox="'+box+'" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">'+shape+'</svg>';
+  markDrawings.set(key,markup);
+  return markup;
+}
+function paint(b,on,shape){if(b.getAttribute('aria-pressed')!==String(on)){b.setAttribute('aria-pressed',on);b.setAttribute('aria-label',b.title=on?'取消重點標記':'標記為重點客戶')}if(b.firstElementChild.dataset.shape!==shape){b.firstElementChild.dataset.shape=shape;b.firstElementChild.innerHTML=markIconHTML(shape)}}
+
+const table=document.getElementById("tableWrap");
+const gutter=document.createElement('div');
+gutter.id='mark-outside';
+gutter.setAttribute('role','group');
+gutter.setAttribute('aria-label','客戶重點標記');
+document.body.append(gutter);
+const controls=new Map();
+
+
+const factoryInk='#815810';
+const colors=[['金棕',factoryInk],['藍色','#2563EB'],['青綠','#0E8078'],['綠色','#368244'],['紅色','#BE4242'],['紫色','#8551B4']];
+let defaultInk=factoryInk,defaultShape='star',draftShape='star',baseMark='',openGuard=null,displayMode='star',draftDisplay='star';
+function validShape(id){if(typeof id!=='string'||!id)return false;const p=shapeParts(id);return Object.hasOwn(markIcons,p.key)&&shapeID(p.key,p.style)===id}
+function markParts(value){
+ const [,shape,color]=String(value||'').split('|');
+ return {shape:validShape(shape)?shape:'',color:/^#[0-9a-f]{6}$/i.test(color||'')?color:''};
+}
+function markGuard(item){
+ return {id:item.id,value:item.priorityMark||'',epoch:savedViewState.epoch,clock:savedViewState.records[item.id]?.priorityMark?.clock,prefClock:savedViewState.prefs['setting:markAppearance']?.clock};
+}
+function setMark(guard,value,look){
+ const item=items.find(i=>i.id===guard.id);
+ if(!item||(item.priorityMark||'')!==guard.value){toast('客戶標記已更新，請重新開啟');return false;}
+ const edit=value!==guard.value?{id:item.id,value,updatedAt:Date.now()}:null;
+ const changed=look&&!DataCore.equal(look,storedLook());
+ if(!edit&&!changed)return true;
+ if(!storeCurrentState(null,changed?{markAppearance:look}:{},edit,guard)){
+   if(window._saveError)toast('標記尚未儲存，請稍後重試');
+   return false;
+ }
+ if(edit){item.priorityMark=value;item.updatedAt=edit.updatedAt;}
+ if(changed)customerMarkAppearance=look;
+ window.scheduleSync?.();schedule();return true;
+}
+let editingId='',picker=null,custom=false,draft='',inherit=false;
+const colorDialog=document.createElement('dialog');
+colorDialog.id='mark-color-dialog';
+colorDialog.setAttribute('aria-labelledby','mark-color-title');
+colorDialog.innerHTML='<form method="dialog"><header class="mark-dialog-head"><h3 id="mark-color-title">標記外觀</h3><button class="fo-close" type="submit" value="cancel" aria-label="關閉標記外觀" title="關閉">×</button></header><div class="mark-colormodes"><button type="button" data-mode="default">日常預設</button><button type="button" data-mode="custom">獨立自訂</button></div><div class="mark-palette"></div><footer><button value="cancel">取消</button><button type="button" data-apply></button></footer></form>';
+document.body.append(colorDialog);
+const modesUI=[...colorDialog.querySelectorAll('[data-mode]')], host=colorDialog.querySelector('.mark-palette'),apply=colorDialog.querySelector('[data-apply]');
+
+const shapeKeys=Object.keys(markIcons).filter(k=>k!=='heart').map(k=>k==='outlineStar'?'heart':k);
+let iconOrder=[...shapeKeys],lastFill=null;
+function remember(key,value){try{localStorage.setItem('customer-table-mark-'+key,value)}catch{}}
+function loadBrowsePrefs(){
+ try{
+  const order=JSON.parse(localStorage.getItem('customer-table-mark-icon-order'));
+  if(Array.isArray(order)&&order.length===shapeKeys.length&&shapeKeys.every(k=>order.includes(k)))iconOrder=order;
+  const fill=localStorage.getItem('customer-table-mark-last-fill');
+  if(fill==='solid'||fill==='outline')lastFill=fill;
+ }catch{}
+}
+function storedLook(){return customerMarkAppearance||{shape:'star',color:factoryInk,display:'star',order:shapeKeys,fill:null};}
+let loadedLook;
+function loadLook(force=false){
+ if(!force&&loadedLook===customerMarkAppearance)return;loadedLook=customerMarkAppearance;
+ const look=storedLook();defaultInk=look.color;defaultShape=look.shape;displayMode=look.display;
+ iconOrder=[...look.order];lastFill=look.fill;loadBrowsePrefs();document.documentElement.dataset.markStyle=displayMode;
+}
+loadLook();
+let stopIconDrag=()=>{};
+function enableIconDrag(section,tail){
+ let gesture=null,suppressClick=false;
+ function display(order){order.forEach((key,i)=>section.querySelector('[data-shape="'+key+'"]').style.order=i)}
+ function end(commit){
+   const g=gesture;if(!g)return;
+   gesture=null;clearTimeout(g.timer);
+   if(section.hasPointerCapture(g.id))section.releasePointerCapture(g.id);
+   if(!g.ghost)return;
+   g.ghost.remove();g.tile.classList.remove('drag-source');suppressClick=true;
+   if(commit){iconOrder=g.order;remember('icon-order',JSON.stringify(iconOrder))}
+   display(iconOrder);
+   for(const key of iconOrder)section.insertBefore(section.querySelector('[data-shape="'+key+'"]'),tail);
+ }
+ section.addEventListener('click',e=>{if(suppressClick&&e.detail){e.stopImmediatePropagation();e.preventDefault();suppressClick=false}},true);
+ section.addEventListener('contextmenu',e=>{if(e.target.closest('[data-shape]'))e.preventDefault()});
+ section.addEventListener('pointerdown',e=>{
+   suppressClick=false;const tile=e.target.closest('button[data-shape]');if(!tile||!e.isPrimary||e.button!==0)return;
+   end(false);suppressClick=false;
+   const g=gesture={id:e.pointerId,tile,x:e.clientX,y:e.clientY,scroll:colorDialog.scrollTop,order:[...iconOrder]};
+   g.timer=setTimeout(()=>{
+     if(gesture!==g)return;
+     const rect=tile.getBoundingClientRect();g.ghost=tile.cloneNode(true);g.ghost.removeAttribute('data-shape');
+     g.ghost.setAttribute('aria-hidden','true');g.ghost.tabIndex=-1;g.ghost.className='mark-drag-ghost';
+     Object.assign(g.ghost.style,{left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:rect.height+'px'});
+     colorDialog.append(g.ghost);tile.classList.add('drag-source');section.setPointerCapture(g.id);
+   },500);
+ });
+ section.addEventListener('pointermove',e=>{
+   const g=gesture;if(!g||e.pointerId!==g.id)return;
+   const dx=e.clientX-g.x,dy=e.clientY-g.y;
+   if(!g.ghost){
+     if(Math.hypot(dx,dy)>7){clearTimeout(g.timer);g.pan=true;suppressClick=true}
+     if(g.pan&&e.pointerType==='touch')colorDialog.scrollTop=g.scroll-dy;
+     return;
+   }
+   g.ghost.style.transform='translate('+dx+'px,'+dy+'px)';
+   const over=document.elementFromPoint(e.clientX,e.clientY)?.closest('button[data-shape]');
+   if(!over||!section.contains(over)||over===g.tile)return;
+   const from=g.order.indexOf(g.tile.dataset.shape),to=g.order.indexOf(over.dataset.shape);
+   g.order.splice(to,0,g.order.splice(from,1)[0]);display(g.order);
+ });
+ section.addEventListener('pointerup',e=>{if(e.pointerId===gesture?.id)end(true)});
+ section.addEventListener('pointercancel',()=>end(false));
+ section.addEventListener('lostpointercapture',e=>{if(e.target===section)end(false)});
+ section.addEventListener('pointerleave',()=>{if(gesture&&!gesture.ghost)end(false)});
+ return ()=>end(false);
+}
+
+const modeDrafts=new Map();
+function setMode(next){
+ const keepScroll=colorDialog.scrollTop;
+ if(picker&&colorDialog.open){if(!picker.validate())return;modeDrafts.set(custom,{draft,draftShape,inherit})}
+ stopIconDrag();custom=next;picker?.destroy();picker=null;host.replaceChildren();draftShape=custom?markParts(baseMark).shape:defaultShape;
+ for(const b of modesUI)b.setAttribute('aria-pressed',(b.dataset.mode==='custom')===custom);
+ apply.textContent=custom?'套用至此客戶':'儲存預設';
+ draft=custom?(markParts(baseMark).color||defaultInk):defaultInk;inherit=custom&&!markParts(baseMark).color;
+ if(modeDrafts.has(custom))({draft,draftShape,inherit}=modeDrafts.get(custom));
+
+ const palette=document.createElement('div');palette.className='mark-swatches';palette.setAttribute('role','group');palette.setAttribute('aria-label','基本顏色');
+ const panel=document.createElement('div');host.append(palette,panel);
+ const syncSwatches=()=>{for(const b of palette.children)b.setAttribute('aria-pressed',b.dataset.ink===draft)};
+ for(const [name,hex] of colors){
+   const b=document.createElement('button');b.type='button';b.dataset.ink=hex;b.style.setProperty('--swatch',hex);b.textContent=name;
+   b.onclick=()=>picker.setColor(hex);palette.append(b);
+ }
+ picker=mountCustomerColorPalette(panel,{textLabel:'標記顏色',color:draft,onPreview(c){
+   inherit=custom&&!c;draft=c||(custom?defaultInk:factoryInk);syncSwatches();
+ }});
+ const colorReset=panel.querySelector('[data-clcp-reset]');
+ colorReset.textContent=custom?'跟隨預設色':'還原預設色';
+ colorReset.onclick=event=>{event.stopPropagation();picker.setColor(custom?defaultInk:factoryInk);inherit=custom;};
+ syncSwatches();
+ const section=document.createElement('fieldset');section.className='mark-shapes';
+ const legend=document.createElement('legend');section.append(legend);
+ const header=document.createElement('div');header.className='mark-shape-head';legend.append(header);
+ const label=document.createElement('span');label.textContent='標記圖示';header.append(label);
+ const toggle=document.createElement('div');toggle.className='mark-fill-toggle';toggle.setAttribute('role','group');toggle.setAttribute('aria-label','圖示類型');header.append(toggle);
+ let browseFill=lastFill||shapeParts(draftShape||defaultShape).style;
+ const styleButtons=[];
+ for(const [style,caption] of [['solid','實心'],['outline','空心']]){
+   const b=document.createElement('button');b.type='button';b.dataset.fill=style;b.textContent=caption;styleButtons.push(b);toggle.append(b);
+   b.onclick=()=>{const current=shapeParts(draftShape||defaultShape);browseFill=lastFill=style;remember('last-fill',style);if(style!==current.style)draftShape=shapeID(current.key,style);showShape()};
+ }
+ let follow=null;
+ {
+   follow=document.createElement('button');follow.type='button';follow.className='mark-follow';follow.textContent=custom?'跟隨預設圖示':'還原軟體預設';
+   follow.onclick=()=>{draftShape=custom?'':'star';if(!custom)picker.setColor(factoryInk);browseFill=lastFill=shapeParts(draftShape||defaultShape).style;remember('last-fill',browseFill);showShape()};section.append(follow);
+ }
+ const tiles=new Map();
+ for(const key of iconOrder){
+   const button=document.createElement('button');button.type='button';button.dataset.shape=key;
+   const caption=key==='star'?'星星':markIcons[key][0];button.setAttribute('aria-label',caption);
+   button.onclick=()=>{draftShape=shapeID(key,browseFill);showShape()};
+   tiles.set(key,[button,caption]);section.insertBefore(button,follow);
+ }
+ function showShape(){
+   const current=shapeParts(draftShape||defaultShape);
+   for(const b of styleButtons)b.setAttribute('aria-pressed',b.dataset.fill===browseFill);
+   follow?.setAttribute('aria-pressed',!draftShape);
+   for(const [key,[b,caption]] of tiles){
+     b.setAttribute('aria-pressed',key===current.key&&browseFill===current.style);
+     b.innerHTML=markIconHTML(shapeID(key,browseFill))+'<span>'+caption+'</span>';
+   }
+ }
+ const view=document.createElement('label');view.className='mark-display-pref';view.textContent='表格標記樣式';
+ const select=document.createElement('select');for(const [key,name] of [['star','圖示'],['rail','側線'],['combo','圖示＋側線']])select.add(new Option(name,key));select.value=draftDisplay;select.onchange=()=>{draftDisplay=select.value};view.append(select);host.prepend(section,view);showShape();stopIconDrag=enableIconDrag(section,follow);colorDialog.scrollTop=keepScroll;
+
+}
+for(const b of modesUI)b.onclick=()=>setMode(b.dataset.mode==='custom');
+function openMark(b){
+ if(colorDialog.open||isBlocked())return;
+ const item=items.find(i=>i.id===b.dataset.markId);if(!item)return;
+ loadLook(true);editingId=item.id;baseMark=item.priorityMark||'';openGuard=markGuard(item);draftDisplay=displayMode;
+ modeDrafts.clear();const mark=markParts(baseMark);setMode(!!(mark.shape||mark.color));colorDialog.showModal();
+}
+gutter.addEventListener('contextmenu',e=>{const b=e.target.closest('[data-mark-id]');if(b){e.preventDefault();openMark(b)}});
+let hold=null,swallowTap=false;
+function cancelHold(){if(hold)clearTimeout(hold.timer);hold=null;}
+gutter.addEventListener('pointerdown',event=>{
+ cancelHold();swallowTap=false;if(event.pointerType!=='touch'||!event.isPrimary)return;
+ const button=event.target.closest('[data-mark-id]'),scroll=table.querySelector('.tbody-wrap');if(!button||!scroll)return;
+ const g=hold={markId:button.dataset.markId,id:event.pointerId,x:event.clientX,y:event.clientY,top:scroll.scrollTop,left:scroll.scrollLeft,scroll};
+ gutter.setPointerCapture(event.pointerId);
+ g.timer=setTimeout(()=>{swallowTap=true;openMark(button)},550);
+});
+gutter.addEventListener('pointermove',event=>{
+ const g=hold;if(!g||event.pointerId!==g.id||colorDialog.open)return;
+ const dx=event.clientX-g.x,dy=event.clientY-g.y;
+ if(Math.hypot(dx,dy)>7){swallowTap=true;clearTimeout(g.timer);}
+ if(swallowTap){g.scroll.scrollTop=g.top-dy;g.scroll.scrollLeft=g.left-dx;}
+});
+gutter.addEventListener('pointerup',event=>{
+ if(!hold||hold.id!==event.pointerId)return;
+ const b=document.elementFromPoint(event.clientX,event.clientY)?.closest('#mark-outside [data-mark-id]');
+ const targetId=hold.markId;cancelHold();
+ if(!swallowTap&&b&&b.dataset.markId===targetId&&!isBlocked()&&!colorDialog.open){
+   const item=items.find(row=>row.id===b.dataset.markId);if(item)setMark(markGuard(item),item.priorityMark?'':'1||');
+ }
+ swallowTap=true;
+});
+gutter.addEventListener('pointercancel',()=>{swallowTap=true;cancelHold()});
+gutter.addEventListener('lostpointercapture',cancelHold);
+apply.onclick=()=>{
+ if(picker&&!picker.validate())return;
+ const look={...storedLook(),shape:custom?defaultShape:draftShape,color:custom?defaultInk:draft,display:draftDisplay};
+ const value=custom?['1',draftShape,inherit?'':draft].join('|'):baseMark;
+ if(!setMark(openGuard,value,look))return;
+ colorDialog.close();
+};
+// In the per-property editor Enter applies the draft through the same validation as the button.
+colorDialog.addEventListener('keydown',event=>{
+ if(!custom||event.key!=='Enter'||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
+ if(event.isComposing||event.keyCode===229)return;
+ if(event.target.closest('button[value="cancel"],select,textarea,[aria-expanded="true"]'))return;
+ event.preventDefault();event.stopPropagation();
+ if(!event.repeat)apply.click();
+},true);
+colorDialog.addEventListener('close',()=>{stopIconDrag();picker?.destroy();picker=null;loadLook(true);schedule()});
+let frame=0;
+const schedule=()=>{if(!frame)frame=requestAnimationFrame(layout)};
+const track=document.createElement('div');
+track.className='mark-track';gutter.append(track);
+const touchView=matchMedia('(hover:none)');
+let recordList=null,recordState=null,records=new Map(),rowBody=null,rows=[];
+let measuredScroller=null,measuredTop=null;
+function isBlocked(){return viewMode!=='table'||!listView.classList.contains('active')||tselMode||document.body.classList.contains('dragsel')||document.body.classList.contains('col-resizing')}
+function styleIfChanged(el,key,value){if(el.style[key]!==value)el.style[key]=value}
+function layout(){
+ frame=0;
+ if(!colorDialog.open)loadLook();
+ const scroll=table.querySelector('.tbody-wrap'),body=scroll?.querySelector('tbody');
+ if(!body||isBlocked()||!scroll.clientHeight){gutter.hidden=true;return}
+ if(rowBody!==body){if(rowBody)resize.unobserve(rowBody);resize.observe(body);rowBody=body;rows=Array.from(body.querySelectorAll('tr[data-id]'))}
+ if(recordList!==items||recordState!==dataState){recordList=items;recordState=dataState;records=new Map(items.map(row=>[row.id,row]))}
+ const rect=scroll.getBoundingClientRect(),top=Math.max(rect.top,0),bottom=Math.min(innerHeight,rect.top+scroll.clientHeight);
+ if(bottom<=top){gutter.hidden=true;return}
+ measuredScroller=scroll;measuredTop=scroll.scrollTop;
+ const left=table.getBoundingClientRect().left-26,offset=rect.top-top-measuredTop;
+
+ const visible=new Map();
+ let lo=0,hi=rows.length;
+ while(lo<hi){const mid=(lo+hi)>>>1;if(rows[mid].getBoundingClientRect().bottom<=top)lo=mid+1;else hi=mid}
+ // Finish reading row positions before changing any controls in the fixed gutter.
+ for(let i=lo;i<rows.length;i++){
+  const row=rows[i],box=row.getBoundingClientRect();
+  if(box.top>=bottom)break;
+  const mid=box.top+box.height/2;
+  if(mid<top||mid>=bottom)continue;
+
+  if(!touchView.matches&&document.elementFromPoint(rect.left+Math.min(8,rect.width/2),mid)?.closest('tr')!==row)continue;
+  visible.set(row.dataset.id,{y:box.top-top-offset,height:box.height});
+ }
+ if(gutter.hidden)gutter.hidden=false;
+ styleIfChanged(gutter,'top',top+'px');styleIfChanged(gutter,'height',(bottom-top)+'px');styleIfChanged(gutter,'left',left+'px');
+ styleIfChanged(track,'transform','translateY('+offset+'px)');
+ for(const [id,box] of visible){
+  let b=controls.get(id);
+  if(!b){b=document.createElement('button');b.type='button';b.className='mark-action';b.dataset.markId=id;b.append(document.createElement('span'));controls.set(id,b);track.append(b)}
+  styleIfChanged(b,'top',box.y+'px');styleIfChanged(b,'height',box.height+'px');
+  const value=records.get(id)?.priorityMark||'',mark=markParts(value),color=mark.color||defaultInk;
+  if(b.style.getPropertyValue('--marked-ink')!==color)b.style.setProperty('--marked-ink',color);
+  paint(b,!!value,mark.shape||defaultShape);
+ }
+ for(const [id,b] of controls)if(!visible.has(id)){b.remove();controls.delete(id)}
+}
+const observe=new MutationObserver(changes=>{
+ if(changes.some(m=>m.type==='childList'&&(m.target===rowBody||!rowBody?.isConnected))){if(rowBody)resize.unobserve(rowBody);rowBody=null;}
+ schedule();
+});
+observe.observe(table,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+touchView.addEventListener('change',schedule);
+const resize=new ResizeObserver(schedule);resize.observe(table);
+new MutationObserver(schedule).observe(document.body,{attributes:true,attributeFilter:['class']});
+document.addEventListener('scroll',event=>{
+ if(touchView.matches){
+  if(event.target===measuredScroller&&measuredScroller.scrollTop===measuredTop)return;
+  if(event.target?.classList?.contains('thead-wrap'))return;
+ }
+ schedule();
+},{capture:true,passive:true});
+window.addEventListener('resize',schedule);
+document.addEventListener('focusin',schedule);
+schedule();
+
+window.addEventListener('pageshow',schedule);
+gutter.addEventListener('click',e=>{
+ const b=e.target.closest('[data-mark-id]');if((swallowTap&&e.detail)||!b||isBlocked()||colorDialog.open)return;
+ e.preventDefault();const item=items.find(row=>row.id===b.dataset.markId);if(!item)return;
+ const value=item.priorityMark||'';setMark(markGuard(item),value?'':'1||');
+});
 })();
 </script>
 </body>
