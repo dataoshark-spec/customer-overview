@@ -410,41 +410,64 @@
     transition:background .15s ease;flex:none;
   }
   .back:hover{background:var(--surface-2);}
-  /* list-header-count:start */
-  .topbar .ttl{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.18rem;flex:0 1 auto;min-width:36px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .header-count{margin-left:auto;display:flex;align-items:stretch;flex:0 0 auto;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-variant-numeric:tabular-nums;touch-action:pan-y;}
-  .topbar .ct{appearance:none;display:block;min-width:0;flex:1 1 auto;border:0;background:none;border-radius:0;padding:0;font:inherit;font-size:.8rem;line-height:1.5;color:var(--ink-soft);white-space:nowrap;cursor:pointer;}
-  .list-count-values{display:flex;align-items:center;justify-content:center;gap:0;min-width:0;width:100%;height:32px;overflow:hidden;}
-  .count-item{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;min-width:0;max-width:100%;height:32px;padding:0 8px;}
-  .count-item+.count-item::before{content:"";position:absolute;left:0;top:6px;bottom:6px;border-left:1px solid var(--line);pointer-events:none;}
-  .count-name{min-width:0;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .count-amount{display:inline-flex;align-items:baseline;gap:3px;white-space:nowrap;flex:none;}
-  .count-amount b{font-weight:700;color:#0B7D65;}
-  [data-theme="dark"] .count-amount b{color:#72D1AF;}
-  .header-count:not(.is-detail) .list-count-values{padding:0 10px;}
-  .header-count .ct:focus-visible,.header-count .count-arrow:focus-visible{box-shadow:var(--focus-ring-inset);}
-  .topbar .ct:disabled{cursor:default;}
-  .count-arrow{appearance:none;display:grid;place-items:center;flex:0 0 24px;width:24px;min-height:32px;padding:0;border:0;background:none;color:var(--ink-soft);cursor:pointer;}
-  .count-arrow[hidden]{display:none;}
-  .count-arrow:disabled{opacity:.3;cursor:default;}
-  .count-arrow svg{width:13px;height:13px;}
-  .count-arrow:not(:disabled):hover,.topbar .ct:not(:disabled):hover{background:var(--surface-2);}
-  .list-count-probe{position:absolute!important;left:auto;right:100%;top:0;visibility:hidden;pointer-events:none;display:flex;align-items:center;gap:0;width:max-content!important;max-width:none!important;flex:none!important;font-size:.8rem;line-height:1.5;}
+  .topbar .ttl{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.18rem;}
+  .topbar .ct{margin-left:auto;font-size:.8rem;color:var(--ink-soft);
+    background:var(--card);border:1px solid var(--line);padding:5px 11px;border-radius:999px;
+    font-variant-numeric:tabular-nums;}
+
+  /* list-count:start — fixed header position; only the count contents slide */
+  #list .topbar .ttl{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .list-count-space{display:flex;align-items:center;justify-content:flex-end;flex:1 0 0;min-width:min(136px,45%);}
+  #list .topbar .ct{position:relative;display:flex;align-items:stretch;width:max-content;height:34px;flex:0 1 auto;max-width:100%;padding:0;}
+  .list-count-toggle{appearance:none;position:relative;min-width:0;flex:1;padding:0;border:0;border-radius:999px;background:transparent;color:inherit;font:inherit;cursor:pointer;touch-action:pan-y;user-select:none;-webkit-user-select:none;}
+  .list-count-toggle::after{content:"";position:absolute;inset:-5px 0;}
+  .list-count-window{display:block;overflow:hidden;}
+  #listCountTotal{display:flex;align-items:baseline;justify-content:center;gap:4px;padding:0 12px;white-space:nowrap;}
+  #listCountTotal b{font-size:.82rem;font-weight:700;color:var(--count-ink);}
+  #listCountTotal small{font-size:.7rem;}
+  .list-count-measure{position:absolute;inset:0;display:flex;align-items:flex-start;visibility:hidden;overflow:hidden;pointer-events:none;}
+  .list-count-track{display:flex;transition:transform .16s ease;}
+  .list-count-page{display:flex;align-items:center;justify-content:center;flex:0 0 100%;min-width:0;overflow:hidden;}
+  .list-count-toggle.dragging .list-count-track{transition:none;}
+  .list-count-part{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;flex:none;min-width:0;height:32px;padding:0 9px;}
+  .list-count-page .list-count-part:only-child{max-width:100%;}
+  .list-count-name{min-width:0;max-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .list-count-value{display:inline-flex;align-items:baseline;gap:3px;flex:none;font-variant-numeric:tabular-nums;}
+  .list-count-value b{font-size:.82rem;font-weight:700;color:var(--count-ink);}
+  .list-count-value small{font-size:.7rem;}
+  .list-count-prev,.list-count-next{appearance:none;position:relative;display:grid;place-items:center;width:24px;flex:0 0 24px;padding:0;border:0;background:transparent;color:var(--ink-soft);cursor:pointer;}
+  .list-count-prev{border-radius:999px 0 0 999px;}
+  .list-count-next{border-radius:0 999px 999px 0;}
+  .list-count-prev::after,.list-count-next::after{content:"";position:absolute;inset:-5px 0;}
+  .list-count-prev svg,.list-count-next svg{width:12px;height:12px;}
+  .list-count-prev:disabled,.list-count-next:disabled{opacity:.3;cursor:default;}
+  #list .topbar .ct.count-expanded{border-radius:12px;}
+  .count-expanded .list-count-toggle{border-radius:12px;}
+  .count-expanded .list-count-window{border-radius:12px;}
+  .count-expanded .list-count-part+.list-count-part::before{content:"";position:absolute;left:0;top:7px;bottom:7px;border-left:1px solid var(--line);}
+  #listCount [hidden]{display:none!important;}
+  #listCount:focus-within{border-color:var(--accent);}
+  .list-count-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
+  @media(max-width:819px){
+    #list .topbar .ttl{min-width:4em;flex-shrink:3;}
+    .list-count-space{min-width:0;flex:1 1 150px;}
+  }
+  @media(max-width:440px){#list .topbar{gap:7px;padding-left:12px;padding-right:12px;}}
+  @media(max-width:360px){#list .topbar{gap:5px;padding-left:9px;padding-right:9px;}}
+  @media(max-width:360px){
+    #list .topbar{padding-inline:6px;}
+    .list-count-part{padding-inline:2px;gap:2px;}
+    .list-count-prev,.list-count-next{width:20px;flex-basis:20px;}
+  }
+  @media(prefers-reduced-motion:reduce){.list-count-track{transition:none;}}
+  /* list-count:end */
+  #listCount{--count-ink:#0B7D65;}
+  [data-theme="dark"] #listCount{--count-ink:#72D1AF;}
+  #list .topbar .ttl{max-width:200px;}
+  #listCount button:focus-visible{box-shadow:var(--focus-ring-inset);}
   .list-gear{appearance:none;display:grid;place-items:center;flex:none;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--card);color:var(--ink-soft);cursor:pointer;}
   .list-gear svg{width:19px;height:19px;}
   .list-gear:hover{background:var(--surface-2);border-color:var(--border-2);color:var(--ink);}
-  @media(max-width:819px){.topbar .ttl{min-width:4em;}}
-  @media(max-width:480px){.topbar{gap:7px;padding-left:12px;padding-right:12px;}}
-  @media(max-width:360px){
-    .topbar{gap:4px;padding-left:8px;padding-right:8px;}
-    .count-arrow{width:20px;flex-basis:20px;}
-    .header-count .count-item,.list-count-probe .count-item{padding-left:3px;padding-right:3px;gap:3px;}
-  }
-  @media(max-width:340px){
-    .topbar{gap:3px;padding-left:4px;padding-right:4px;}
-    .header-count .count-item,.list-count-probe .count-item{padding-left:1px;padding-right:1px;gap:2px;}
-  }
-  /* list-header-count:end */
 
   .search{display:flex;align-items:center;gap:10px;padding:12px 18px 0;}
   .search input{
@@ -1768,7 +1791,13 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
       <header class="topbar">
         <button class="back" id="backBtn" aria-label="返回">←</button>
         <span class="ttl" id="listTitle">全部需求</span>
-        <div class="header-count" id="listCountWrap"><button class="count-arrow count-prev" id="listCountPrev" type="button" aria-label="上一頁客戶類型" title="上一頁類型・可左右滑動" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 3-5 5 5 5"/></svg></button><button class="ct" id="listCount" type="button" aria-label="顯示類型筆數" aria-pressed="false"><span class="list-count-values" id="listCountValues" aria-live="polite" aria-atomic="true"></span></button><button class="count-arrow count-next" id="listCountNext" type="button" aria-label="下一頁客戶類型" title="下一頁類型・可左右滑動" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg></button></div>
+        <span class="list-count-space" id="listCountSpace"><span class="ct" id="listCount">
+          <button type="button" class="list-count-prev" id="listCountPrev" aria-label="查看上一個客戶類型筆數" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+          <button type="button" class="list-count-toggle" id="listCountToggle" aria-label="切換筆數顯示" aria-pressed="false"><span id="listCountTotal"><b>0</b> <small>筆</small></span><span class="list-count-window" id="listCountWindow" hidden><span class="list-count-track" id="listCountTrack" aria-hidden="true"></span></span></button>
+          <span class="list-count-measure" id="listCountSizer" aria-hidden="true"></span>
+          <button type="button" class="list-count-next" id="listCountNext" aria-label="查看下一個客戶類型筆數" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+          <span class="list-count-status" id="listCountStatus" role="status" aria-live="polite"></span>
+        </span></span>
         <button class="list-gear" id="listGear" type="button" aria-label="設定" title="設定"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg></button>
         <button class="sync-led" id="listLed" type="button" aria-label="同步" title="點一下立即同步・長按進入設定"><span class="led"></span></button>
       </header>
@@ -2844,7 +2873,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.25E";
+const APP_VERSION = "2026.11.25F";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3296,131 +3325,154 @@ const countEl  = document.getElementById("listCount");
 const titleEl  = document.getElementById("listTitle");
 const searchEl = document.getElementById("search");
 
-/* list-header-count:start */
-// Only the display mode is local; counts use the exact list already filtered by applyFilter.
-const HEADER_COUNT_KEY="customer_app_header_count_v1";
-let headerCountMode=(()=>{try{return storageOK&&localStorage.getItem(HEADER_COUNT_KEY)==="types"?"types":"total";}catch(_){return "total";}})();
-let headerCountIndex=0,headerCountRows=[],headerCountEntries=[],headerCountPages=[],headerCountPage=0;
-let headerCountDataKey="",headerCountWidths=[],headerCountMarkup="",headerCountFrame=0;
-const headerCountWrap=document.getElementById("listCountWrap"),headerCountValues=document.getElementById("listCountValues"),headerCountPrev=document.getElementById("listCountPrev"),headerCountNext=document.getElementById("listCountNext");
-const headerCountProbe=document.createElement("span");headerCountProbe.className="list-count-probe";headerCountProbe.setAttribute("aria-hidden","true");headerCountProbe.inert=true;
-countEl.closest(".topbar").appendChild(headerCountProbe);
-function scheduleHeaderCountLayout(){
-  if(headerCountFrame)return;
-  headerCountFrame=requestAnimationFrame(()=>{headerCountFrame=0;layoutHeaderCounts();});
-}
-function headerCountPartHTML(entry){
-  return '<span class="count-item"><span class="count-name">'+esc(entry.key)+'</span><span class="count-amount"><b>'+entry.count+'</b>筆</span></span>';
-}
-function makeHeaderCountPages(widths,budget){
-  const pages=[];let start=0,used=0;
-  for(let i=0;i<widths.length;i++){
-    if(i>start&&used+widths[i]>budget){pages.push({start,end:i,width:used});start=i;used=0;}
-    used+=widths[i];
+// list-count:start — local view preference; display preference only; customer counts follow the filtered list.
+let headerCountRows=[];
+const listCounter=(()=>{
+  const KEY="customer_app_header_count_v1";
+  const button=document.getElementById("listCountToggle"),total=document.getElementById("listCountTotal");
+  const space=document.getElementById("listCountSpace"),measure=document.getElementById("listCountSizer");
+  const viewport=document.getElementById("listCountWindow"),track=document.getElementById("listCountTrack");
+  const prev=document.getElementById("listCountPrev"),next=document.getElementById("listCountNext"),status=document.getElementById("listCountStatus");
+  let mode="total",recordCount=0,entries=[],widths=[],pages=[],page=0;
+  let dataKey="",measureKey="",renderKey="",gesture=null,ignoreClick=false,wheelAt=0;
+  const sizeObserver=window.ResizeObserver?new ResizeObserver(changes=>{
+    // 字級、字型或欄距變化也可能只改變筆數文字的寬度。
+    if(changes.some(change=>change.target!==space))widths=[];
+    layout();
+  }):null;
+  try{if(storageOK&&localStorage.getItem(KEY)==="types")mode="types";}catch(e){}
+  function partHTML(entry){
+    return '<span class="list-count-part"><span class="list-count-name">'+esc(entry.name)+'</span><span class="list-count-value"><b>'+entry.count+'</b><small>筆</small></span></span>';
   }
-  if(widths.length)pages.push({start,end:widths.length,width:used});
-  return pages;
-}
-function paintHeaderCount(html,label){
-  if(html!==headerCountMarkup){headerCountMarkup=html;headerCountValues.innerHTML=html;}
-  if(countEl.title!==label)countEl.title=label;
-  if(countEl.getAttribute("aria-label")!==label)countEl.setAttribute("aria-label",label);
-}
-function layoutHeaderCounts(){
-  const bar=countEl.closest(".topbar");
-  if(!bar||!bar.getClientRects().length)return;
-  const style=getComputedStyle(bar),gap=parseFloat(style.columnGap)||0;
-  const width=bar.clientWidth-(parseFloat(style.paddingLeft)||0)-(parseFloat(style.paddingRight)||0);
-  const peers=[document.getElementById("backBtn"),document.getElementById("listGear"),document.getElementById("listLed")];
-  const fixed=peers.reduce((sum,el)=>sum+(el?el.getBoundingClientRect().width:0),0)+gap*4;
-  const singleType=window.matchMedia("(max-width:819px)").matches;
-  const titleReserve=parseFloat(getComputedStyle(titleEl).minWidth);
-  const available=Math.max(0,Math.floor(width-fixed-titleReserve)),border=2;
-  const detail=headerCountMode==="types"&&headerCountEntries.length>0;
-  if(headerCountWrap.classList.contains("is-detail")!==detail)headerCountWrap.classList.toggle("is-detail",detail);
-  countEl.disabled=!headerCountEntries.length;
-  if(countEl.getAttribute("aria-pressed")!==String(detail))countEl.setAttribute("aria-pressed",String(detail));
-  let desired=0;
-  if(detail){
-    if(headerCountWidths.length!==headerCountEntries.length)headerCountWidths=Array.from(headerCountProbe.children,el=>el.getBoundingClientRect().width);
-    const full=headerCountWidths.reduce((sum,value)=>sum+value,0);
-    const paged=headerCountEntries.length>1&&(singleType||Math.ceil(full)+border>available);
-    headerCountPrev.hidden=headerCountNext.hidden=!paged;
-    const arrows=paged?headerCountPrev.getBoundingClientRect().width+headerCountNext.getBoundingClientRect().width:0;
-    headerCountPages=singleType
-      ?headerCountWidths.map((width,start)=>({start,end:start+1,width}))
-      :makeHeaderCountPages(headerCountWidths,Math.max(0,available-border-arrows));
-    headerCountPage=headerCountPages.findIndex(group=>group.end>headerCountIndex);
-    if(headerCountPage<0)headerCountPage=Math.max(0,headerCountPages.length-1);
-    const group=headerCountPages[headerCountPage];headerCountIndex=group.start;
-    headerCountPrev.disabled=headerCountPage===0;headerCountNext.disabled=headerCountPage===headerCountPages.length-1;
-    const selectedEntries=headerCountEntries.slice(group.start,group.end);
-    const description=selectedEntries.map(entry=>entry.key+" "+entry.count+" 筆").join("；");
-    const pageHint=headerCountPages.length>1?"・第 "+(headerCountPage+1)+" 頁，共 "+headerCountPages.length+" 頁":"";
-    paintHeaderCount(selectedEntries.map(headerCountPartHTML).join(""),description+pageHint+"・點一下顯示總筆數");
-    // Keep the arrows in place as the user pages through labels of different lengths.
-    const pageWidth=singleType?headerCountWidths.reduce((largest,value)=>Math.max(largest,value),0):group.width;
-    desired=pageWidth+arrows+border;
-  }else{
-    headerCountPages=[];headerCountPage=0;headerCountIndex=0;
-    headerCountPrev.hidden=headerCountNext.hidden=true;
-    paintHeaderCount('<span class="count-amount"><b>'+headerCountRows.length+'</b>筆</span>',headerCountRows.length+" 筆・點一下顯示類型筆數");
-    desired=headerCountValues.firstElementChild.getBoundingClientRect().width+20+border;
+  function position(offset=0){
+    track.style.transform="translateX(calc("+(-page*100)+"% + "+offset+"px))";
   }
-  const all=detail&&headerCountPages.length===1;
-  if(headerCountWrap.classList.contains("is-all")!==all)headerCountWrap.classList.toggle("is-all",all);
-  const targetWidth=Math.min(available,Math.ceil(desired))+"px";
-  if(headerCountWrap.style.width!==targetWidth)headerCountWrap.style.width=targetWidth;
-  if(headerCountWrap.style.maxWidth!==available+"px")headerCountWrap.style.maxWidth=available+"px";
-  if(titleEl.title!==titleEl.textContent)titleEl.title=titleEl.textContent;
-}
-function updateListCounts(list){
-  if(Array.isArray(list))headerCountRows=list;
-  const counts=new Map(cats.map(c=>[c.key,0]));
-  for(const item of headerCountRows)for(const key of fieldVals(item,"cat"))if(counts.has(key))counts.set(key,counts.get(key)+1);
-  headerCountEntries=cats.map(c=>({key:optionDisplayName("cat",c.key),count:counts.get(c.key)||0}));
-  headerCountIndex=headerCountEntries.length?Math.min(headerCountIndex,headerCountEntries.length-1):0;
-  const key=JSON.stringify(headerCountEntries);
-  if(key!==headerCountDataKey){headerCountDataKey=key;headerCountWidths=[];headerCountProbe.innerHTML=headerCountEntries.map(headerCountPartHTML).join("");}
-  layoutHeaderCounts();scheduleHeaderCountLayout();
-}
-function advanceHeaderCount(direction){
-  if(headerCountMode!=="types"||headerCountPages.length<2)return;
-  headerCountPage=Math.max(0,Math.min(headerCountPages.length-1,headerCountPage+direction));
-  headerCountIndex=headerCountPages[headerCountPage].start;layoutHeaderCounts();
-}
-countEl.addEventListener("click",()=>{
-  headerCountMode=headerCountMode==="types"?"total":"types";headerCountIndex=0;headerCountPage=0;
-  try{if(storageOK)localStorage.setItem(HEADER_COUNT_KEY,headerCountMode);}catch(_){}
-  updateListCounts();
-});
-headerCountPrev.addEventListener("click",()=>advanceHeaderCount(-1));
-headerCountNext.addEventListener("click",()=>advanceHeaderCount(1));
-headerCountWrap.addEventListener("keydown",e=>{
-  if(headerCountMode!=="types"||!['ArrowLeft','ArrowRight'].includes(e.key))return;
-  e.preventDefault();e.stopPropagation();advanceHeaderCount(e.key==='ArrowLeft'?-1:1);
-});
-let headerCountTouch=null;
-headerCountWrap.addEventListener("touchstart",e=>{if(e.touches.length===1)headerCountTouch={x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
-headerCountWrap.addEventListener("touchend",e=>{
-  if(!headerCountTouch)return;
-  const start=headerCountTouch;headerCountTouch=null;
-  const touch=e.changedTouches[0];if(!touch)return;
-  const dx=touch.clientX-start.x,dy=touch.clientY-start.y;
-  if(headerCountMode==="types"&&headerCountPages.length>1&&Math.abs(dx)>25&&Math.abs(dx)>Math.abs(dy)){
-    e.preventDefault();advanceHeaderCount(dx<0?1:-1);
+  function paintPage(){
+    const group=pages[page];
+    const text=entries.slice(group.start,group.end).map(e=>e.name+" "+e.count+" 筆").join("，");
+    countEl.style.width=group.width+"px";
+    prev.disabled=page===0;next.disabled=page===pages.length-1;
+    const hint=pages.length>1?"，第 "+(page+1)+" 頁，共 "+pages.length+" 頁，可左右切換":"";
+    button.setAttribute("aria-label",text+hint+"。點一下切換客戶總筆數");
+    button.title=text+hint+"。點一下切換客戶總筆數";
+    if(status.textContent!==text)status.textContent=text;
+    position();
   }
-},{passive:false});
-headerCountWrap.addEventListener("touchcancel",()=>{headerCountTouch=null;},{passive:true});
-function refreshHeaderCountMetrics(){headerCountWidths=[];scheduleHeaderCountLayout();}
-if(window.ResizeObserver){
-  const headerCountObserver=new ResizeObserver(refreshHeaderCountMetrics);
-  headerCountObserver.observe(countEl.closest(".topbar"));
-  headerCountObserver.observe(headerCountProbe);
-}
-else window.addEventListener("resize",refreshHeaderCountMetrics);
-if(document.fonts){document.fonts.ready.then(refreshHeaderCountMetrics);document.fonts.addEventListener("loadingdone",refreshHeaderCountMetrics);}
-/* list-header-count:end */
+  function layout(){
+    const detailed=mode==="types"&&entries.length>0;
+    button.setAttribute("aria-pressed",String(detailed));button.disabled=!entries.length;
+    total.hidden=detailed;viewport.hidden=!detailed;
+    if(!detailed){
+      pages=[];page=0;countEl.style.removeProperty("width");countEl.classList.remove("count-expanded");
+      prev.hidden=next.hidden=true;
+      const label=recordCount+" 筆";
+      button.title=label+(entries.length?"。點一下切換類型筆數":"");button.setAttribute("aria-label",button.title);
+      if(status.textContent!==label)status.textContent=label;
+      return;
+    }
+    const available=space.getBoundingClientRect().width;
+    if(available<=0)return; // Opening the list triggers the space observer after it becomes visible.
+    if(!widths.length){
+      if(measureKey!==dataKey){
+        for(const part of measure.children)sizeObserver?.unobserve(part);
+        measure.innerHTML=entries.map(partHTML).join("");
+        for(const part of measure.children)sizeObserver?.observe(part,{box:"border-box"});
+        measureKey=dataKey;
+      }
+      widths=Array.from(measure.children,el=>el.getBoundingClientRect().width);
+    }
+    const edges=getComputedStyle(countEl);
+    const border=parseFloat(edges.borderLeftWidth)+parseFloat(edges.borderRightWidth);
+    const contentWidth=available-border,sum=widths.reduce((a,b)=>a+b,0);
+    const singleEntry=window.matchMedia("(max-width:819px)").matches;
+    const paged=entries.length>1&&(singleEntry||sum>contentWidth);
+    prev.hidden=next.hidden=!paged;
+    const arrows=paged?prev.getBoundingClientRect().width+next.getBoundingClientRect().width:0;
+    const budget=Math.max(0,contentWidth-arrows),startIndex=pages[page]?.start||0;
+    pages=[];
+    let start=0,used=0;
+    for(let i=0;i<widths.length;i++){
+      if(i>start&&(singleEntry||used+widths[i]>budget)){
+        pages.push({start,end:i,width:Math.min(available,Math.ceil(used+arrows+border))});
+        start=i;used=0;
+      }
+      used+=widths[i];
+    }
+    pages.push({start,end:widths.length,width:Math.min(available,Math.ceil(used+arrows+border))});
+    // Keep mobile paging arrows still when platform names have different lengths.
+    if(singleEntry){
+      const pageWidth=Math.min(available,Math.ceil(Math.max(...widths)+arrows+border));
+      for(const group of pages)group.width=pageWidth;
+    }
+    page=pages.findIndex(group=>group.end>startIndex);if(page<0)page=pages.length-1;
+    const key=dataKey+":"+pages.map(g=>g.end).join(",");
+    if(key!==renderKey){
+      track.innerHTML=pages.map(g=>'<span class="list-count-page">'+entries.slice(g.start,g.end).map(partHTML).join("")+'</span>').join("");
+      renderKey=key;
+    }
+    countEl.classList.toggle("count-expanded",pages.some(g=>g.end-g.start>1));
+    paintPage();
+  }
+  function refresh(list){
+    if(Array.isArray(list))headerCountRows=list;
+    const counts=new Map(cats.map(c=>[c.key,0]));
+    for(const item of headerCountRows)for(const key of fieldVals(item,"cat"))if(counts.has(key))counts.set(key,counts.get(key)+1);
+    entries=cats.map(c=>({name:optionDisplayName("cat",c.key),count:counts.get(c.key)||0}));
+    const key=JSON.stringify(entries);
+    if(key!==dataKey){widths=[];dataKey=key;}
+    recordCount=headerCountRows.length;
+    total.innerHTML="<b>"+recordCount+"</b> <small>筆</small>";
+    layout();
+  }
+  function move(delta){
+    if(!pages.length)return;
+    page=Math.max(0,Math.min(pages.length-1,page+delta));paintPage();
+  }
+  button.addEventListener("click",e=>{
+    if(ignoreClick&&e.detail!==0){ignoreClick=false;return;}
+    ignoreClick=false;mode=mode==="types"?"total":"types";pages=[];page=0;
+    try{if(storageOK)localStorage.setItem(KEY,mode);}catch(err){}
+    layout();
+  });
+  button.addEventListener("pointerdown",e=>{
+    ignoreClick=false;
+    if(e.button!==0||!e.isPrimary||pages.length<=1)return;
+    gesture={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0,width:button.clientWidth};
+    button.setPointerCapture(e.pointerId);
+  });
+  button.addEventListener("pointermove",e=>{
+    if(!gesture||gesture.id!==e.pointerId)return;
+    gesture.dx=e.clientX-gesture.x;gesture.dy=e.clientY-gesture.y;
+    if(Math.abs(gesture.dx)>8&&Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.2){
+      button.classList.add("dragging");
+      const edge=(page===0&&gesture.dx>0)||(page===pages.length-1&&gesture.dx<0),limit=gesture.width*.8;
+      position(Math.max(-limit,Math.min(limit,gesture.dx))*(edge?.18:1));
+    }
+  });
+  function endGesture(e,cancel){
+    if(!gesture||gesture.id!==e.pointerId)return;
+    const g=gesture;gesture=null;button.classList.remove("dragging");
+    ignoreClick=cancel||Math.abs(g.dx)>8||Math.abs(g.dy)>8;
+    move(!cancel&&Math.abs(g.dx)>=24&&Math.abs(g.dx)>Math.abs(g.dy)*1.2?(g.dx<0?1:-1):0);
+  }
+  button.addEventListener("pointerup",e=>endGesture(e,false));
+  button.addEventListener("pointercancel",e=>endGesture(e,true));
+  button.addEventListener("lostpointercapture",e=>endGesture(e,true));
+  countEl.addEventListener("keydown",e=>{if(pages.length>1&&["ArrowLeft","ArrowRight"].includes(e.key)){e.preventDefault();e.stopPropagation();move(e.key==="ArrowRight"?1:-1);}});
+  button.addEventListener("wheel",e=>{
+    if(pages.length<=1||Math.abs(e.deltaX)<=Math.abs(e.deltaY))return;
+    e.preventDefault();const now=Date.now();if(now-wheelAt<250)return;wheelAt=now;move(e.deltaX>0?1:-1);
+  },{passive:false});
+  prev.addEventListener("click",()=>move(-1));next.addEventListener("click",()=>move(1));
+  if(sizeObserver)sizeObserver.observe(space);
+  window.addEventListener("resize",layout);
+  if(document.fonts){
+    const refreshMetrics=()=>{widths=[];layout();};
+    document.fonts.ready.then(refreshMetrics);document.fonts.addEventListener("loadingdone",refreshMetrics);
+  }
+  return {refresh,firstPage(){page=0;}};
+})();
+// list-count:end
 
 // ---- 記住上次畫面(封面或列表+分類) ----
 // PWA 切到背景太久、或切去 Chrome 開連結時,系統可能把 App 回收;回來時整頁重新載入,預設會落在封面。
@@ -3983,7 +4035,7 @@ function tCommitCell(cell){                       // 回傳 true=值有變更(�
       const remaining=headerCountRows.filter(d=>d.id!==it.id);
       if(!remaining.length){applyFilter();return;}
       row.remove();
-      updateListCounts(remaining);
+      listCounter.refresh(remaining);
     });
   }
   return changed;
@@ -6723,7 +6775,7 @@ function applyCatChoice(key, opts){
       it.cat = next; it.updatedAt = Date.now(); saveItems(); onLocalChange("data");
     }
     paintCatTrigger(catTrigger, it);
-    updateListCounts();
+    listCounter.refresh();
     renderCatMenu();
     return;
   }
@@ -8113,9 +8165,9 @@ function applyFilter(){
   tableWrap.classList.toggle("search-hint", !!searchEl.value || document.activeElement === searchEl);
   let list = applyColFilters(customersMatchingSearch());
   list = sortList(list);
-  updateListCounts(list);
+  listCounter.refresh(list);
   titleEl.textContent = currentCat ? optionDisplayName("cat",currentCat) + "需求" : "全部需求";
-  scheduleHeaderCountLayout();
+  titleEl.title=titleEl.textContent;
   document.querySelectorAll(".tab").forEach(t =>
     t.classList.toggle("active", t.dataset.cat === currentCat));
   if (viewMode === "table"){
@@ -8142,7 +8194,7 @@ window.addEventListener("resize", function(){ requestAnimationFrame(function(){ 
 function openList(cat){
   if(!commitOpenNeedEditors())return false;
   closeSearchHelp();
-  headerCountIndex=0;headerCountPage=0; // A fresh list navigation starts at the first count page.
+  listCounter.firstPage(); // A fresh list navigation starts at the first count page.
   exitSelectMode();
   editMode = false; saveEditMode();     // 進入列表一律預設「正常」模式;要編輯需先選檢視再點編輯
   currentCat = cat || "";
@@ -10706,7 +10758,7 @@ document.addEventListener("pointercancel", endCatDrag);
     detailWasOpen = detailBg.classList.contains("open");
     const el = e.target;
     // 起點若在橫向捲動列 / 輸入框 / 下拉選單 / 表格 / 連結視窗上，則不攔截(讓它們正常運作)
-    skip = !!(el.closest && el.closest("#tabs, #listCountWrap, input, textarea, .cselect, .table-wrap, #linkpop, #catmenu, select, #searchHelpBtn, #searchHelpPop"));
+    skip = !!(el.closest && el.closest("#tabs, #listCount, input, textarea, .cselect, .table-wrap, #linkpop, #catmenu, select, #searchHelpBtn, #searchHelpPop"));
     if (modalBg.classList.contains("open")) skip = false;  // 編輯表單開啟時,允許滑動關閉
     if (detailWasOpen) skip = false;  // 詳情頁開啟時,允許滑動關閉(只回列表,不跳封面)
     const _cb = document.getElementById("calBg");
