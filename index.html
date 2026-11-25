@@ -2835,7 +2835,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.22G";
+const APP_VERSION = "2026.11.25A";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3782,6 +3782,9 @@ function renderTable(list){
     `<div class="tbody-wrap"><table class="ptable ${cls}" style="min-width:${mw}px"><colgroup>${cols}</colgroup><tbody>${rows}</tbody></table></div>`;
   const headWrap = tableWrap.querySelector(".thead-wrap");
   const bodyWrap = tableWrap.querySelector(".tbody-wrap");
+  if (editMode) bodyWrap.querySelectorAll('button[data-act="del"]').forEach(button => {
+    button.addEventListener("touchmove", preventHeldDeleteScroll, {passive:false});
+  });
   if (tableLayoutObserver && bodyWrap){
     tableLayoutObserver.observe(tableWrap);
     tableLayoutObserver.observe(bodyWrap);
@@ -3824,11 +3827,20 @@ const tableLayoutObserver = window.ResizeObserver ? new ResizeObserver(() => {
 }) : null;
 function bindTableScrollSync(headWrap, bodyWrap){
   if (tableWrap._scrollUnbind){ tableWrap._scrollUnbind(); tableWrap._scrollUnbind = null; }
-  let syncing = false;
-  const onBody = () => { if (syncing) return; syncing = true; headWrap.scrollLeft = bodyWrap.scrollLeft; syncing = false; };
-  const onHead = () => { if (syncing) return; syncing = true; bodyWrap.scrollLeft = headWrap.scrollLeft; syncing = false; };
-  bodyWrap.addEventListener("scroll", onBody);
-  headWrap.addEventListener("scroll", onHead);
+  // Scroll events arrive after the assignment. Remember the offset actually accepted
+  // by each pane so vertical movement and mirrored events do not write back.
+  const lastLeft = new Map([[headWrap,headWrap.scrollLeft],[bodyWrap,bodyWrap.scrollLeft]]);
+  function mirror(source, target){
+    const left = source.scrollLeft;
+    if (left === lastLeft.get(source)) return;
+    lastLeft.set(source,left);
+    if (target.scrollLeft !== left) target.scrollLeft = left;
+    lastLeft.set(target,target.scrollLeft);
+  }
+  const onBody = () => mirror(bodyWrap,headWrap);
+  const onHead = () => mirror(headWrap,bodyWrap);
+  bodyWrap.addEventListener("scroll", onBody, {passive:true});
+  headWrap.addEventListener("scroll", onHead, {passive:true});
   tableWrap._scrollUnbind = () => { bodyWrap.removeEventListener("scroll", onBody); headWrap.removeEventListener("scroll", onHead); };
 }
 // 需求欄拖曳選字:關掉表頭/表身水平 overflow(勿用 scrollLeft 對拉,會震盪→標題狂晃)
@@ -9753,9 +9765,9 @@ document.addEventListener("pointermove", _tselDragMove);
 document.addEventListener("pointerup", _tselDragEnd);
 document.addEventListener("pointercancel", _tselDragEnd);
 // 長按垃圾桶進入批選後，保留拖曳選列；一般觸控仍交由瀏覽器捲動。
-tableWrap.addEventListener("touchmove", e => {
+function preventHeldDeleteScroll(e){
   if (tableActionTouch?.held && tselDrag && e.cancelable) e.preventDefault();
-}, {passive:false});
+}
 // ---- 表格批次刪除主體結束 ----
 
 // ---- 客戶需求:拖曳選字、放開自動複製(正常模式) ----
