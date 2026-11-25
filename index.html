@@ -72,7 +72,7 @@
 <meta name="apple-mobile-web-app-title" content="客戶總覽">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
 <style>
@@ -2873,7 +2873,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.25F";
+const APP_VERSION = "2026.11.25G";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -12281,19 +12281,23 @@ let syncConnected = false, syncEmail = null;
 .clcp-inline :where(button,input,[tabindex="0"]):focus-visible{outline:2px solid var(--accent-deep,#556b77);outline-offset:3px;}
 .clcp-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 @media(pointer:coarse){.clcp-range{height:34px;}.clcp-presets button{height:34px;}.clcp-reset{min-height:36px;}.clcp-hex{font-size:16px;}}
-#columnTextDialog{position:fixed;inset:0;margin:auto;box-sizing:border-box;width:min(460px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;padding:18px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);box-shadow:0 12px 40px #0003}
+#columnTextDialog{position:fixed;inset:0;margin:auto;box-sizing:border-box;width:min(520px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);box-shadow:0 12px 40px #0003}
 #columnTextDialog::backdrop{background:#142b405c}
 #columnTextDialog header,#columnTextDialog footer,#columnTextDialog .ct-line{display:flex;align-items:center;justify-content:space-between;gap:8px}
 #columnTextDialog header [data-dismiss]{display:grid;place-items:center;width:44px;height:44px;min-height:0;padding:0;border-radius:10px;background:var(--surface-2);color:var(--ink-soft);font-size:24px;line-height:1;font-weight:500}
 #columnTextDialog h2{margin:0;font-size:17px;line-height:1.45}
-#columnTextDialog .ct-preview{margin:14px 0;border:1px solid var(--line);border-radius:10px;overflow:hidden;pointer-events:none}
+#columnTextDialog .ct-preview-label{margin:12px 0 5px;font-size:12px;color:var(--ink-soft)}
+#columnTextDialog .ct-preview{margin:0 0 16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;pointer-events:none}
 #columnTextDialog .ct-preview.search-hint th:not([data-field="date"]) .th-label{color:#ffe08a}
 #columnTextDialog .ct-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-#columnTextDialog fieldset{min-width:0;margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+#columnTextDialog fieldset{min-width:0;margin:0;padding:10px 14px 14px;background:var(--surface-1);border:1px solid var(--line);border-radius:12px}
 #columnTextDialog legend{padding:0 4px;font-weight:700}
 #columnTextDialog .ct-line{margin:4px 0;gap:6px;font-size:13px;white-space:nowrap;color:var(--ink-soft)}
 #columnTextDialog .ct-line :is(select,button){box-sizing:border-box;display:inline-flex;align-items:center;gap:5px;min-width:80px;min-height:32px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit}
-#columnTextDialog .ct-swatch{width:15px;height:15px;flex:none;border:1px solid var(--line);border-radius:4px}
+#columnTextDialog .ct-weights{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+#columnTextDialog .ct-weights button{min-width:32px;min-height:28px;padding:2px;border:0;border-radius:6px;justify-content:center;background:transparent}
+#columnTextDialog .ct-weights button[aria-pressed="true"]{color:var(--card);background:var(--ink)}
+#columnTextDialog .ct-swatch{width:14px;height:14px;flex:none;border:1px solid var(--line);border-radius:50%}
 #columnTextDialog .ct-palette:not(:empty){margin-top:10px}
 #columnTextDialog footer{margin-top:16px}
 #columnTextDialog footer button{flex:1;min-width:0;min-height:40px;padding:8px 12px;border-radius:9px;text-align:center}
@@ -12302,7 +12306,7 @@ let syncConnected = false, syncEmail = null;
 </style>
 <dialog id="columnTextDialog" aria-labelledby="columnTextTitle">
   <header><h2 id="columnTextTitle"></h2><button type="button" class="s-btn" data-dismiss aria-label="關閉">×</button></header>
-  <div class="ct-preview" inert><table class="ptable"><thead><tr></tr></thead><tbody></tbody></table></div>
+  <div class="ct-preview-label"></div><div class="ct-preview" inert><table class="ptable"><thead><tr></tr></thead><tbody></tbody></table></div>
   <div class="ct-controls"></div><div class="ct-palette" id="columnTextPalette"></div><p class="ct-error" role="alert"></p>
   <footer><button type="button" class="s-btn" data-reset>回復原始預設</button><button type="button" class="s-btn" data-dismiss>取消</button><button type="button" class="s-btn s-btn-primary" data-save>儲存</button></footer>
 </dialog>
@@ -12387,6 +12391,8 @@ let syncConnected = false, syncEmail = null;
   const desktop = matchMedia("(min-width:820px)");
   const keyPrefix = "customer_column_text_v1_";
   const parts = ["head","body"], sizes = Array.from({length:15},(_,i)=>10+i);
+  const weights=[[300,'細'],[500,'中'],[900,'粗']];
+  const examples={date:'1151125',status:'A',area:'北屯',cat:'大樓',budget:'2,000 萬',rooms:'3房',pType:'平面車位',pNum:'1',cust:'林小姐',tel:'0912-000-000',line:'已＋',source:'轉介紹',ask:'近公園',shared:'同事',need:'希望三房，近公園'};
   const dialog = document.getElementById("columnTextDialog");
   const preview = dialog.querySelector(".ct-preview");
   const rules = document.createElement("style"), draftRules = document.createElement("style");
@@ -12405,6 +12411,7 @@ let syncConnected = false, syncEmail = null;
     const result = {head:{},body:{}};
     for (const part of parts){
       const value = raw?.[part];
+      if (weights.some(([n])=>n===value?.weight)) result[part].weight=value.weight;
       if (sizes.includes(value?.size)) result[part].size = value.size;
       if (/^#[0-9a-f]{6}$/i.test(value?.color||"")) result[part].color = value.color.toLowerCase();
     }
@@ -12425,7 +12432,7 @@ let syncConnected = false, syncEmail = null;
     const bounds=settings.head.size?th+' .th-flt{max-width:calc(100% + 16px)}'+head+'{display:inline-block;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;line-height:1.05}':'';
     return bounds+parts.map(part=>{
       const look=settings[part];
-      const css=(look.size?'font-size:'+look.size+'px!important;':'')+(look.color?'color:'+look.color+'!important;':'');
+      const css=(look.size?'font-size:'+look.size+'px!important;':'')+(look.color?'color:'+look.color+'!important;':'')+(look.weight?'font-weight:'+look.weight+'!important;':'');
       return css?targets[part]+'{'+css+'}':'';
     }).join('\n');
   }
@@ -12436,6 +12443,13 @@ let syncConnected = false, syncEmail = null;
   for(const part of parts){
     const group=document.createElement('fieldset'),label=part==='head'?'表頭':'內容';
     group.innerHTML='<legend>'+label+'</legend><label class="ct-line">字級<select aria-label="'+label+'字級"></select></label><div class="ct-line">字色<button type="button" aria-label="'+label+'字色" aria-expanded="false" aria-controls="columnTextPalette"><span class="ct-swatch"></span><span class="ct-color-label"></span></button></div>';
+    const buttons=weights.map(([n,text])=>'<button type="button" data-weight="'+n+'" style="font-weight:'+n+'" aria-pressed="false">'+text+'</button>').join('');
+    group.insertAdjacentHTML('beforeend','<div class="ct-line">粗細<div class="ct-weights" role="group" aria-label="'+label+'字體粗細">'+buttons+'</div></div>');
+    const weightButtons=group.querySelectorAll('[data-weight]');
+    weightButtons.forEach(button=>button.onclick=()=>{
+      current.draft[part].weight=Number(button.dataset.weight);
+      showDraft();
+    });
     dialog.querySelector('.ct-controls').append(group);
     const size=group.querySelector('select'),color=group.querySelector('button');
     size.onchange=()=>{if(size.value)current.draft[part].size=Number(size.value);else delete current.draft[part].size;showDraft();};
@@ -12449,11 +12463,14 @@ let syncConnected = false, syncEmail = null;
         showDraft();
       }});
     };
-    controls[part]={size,color};
+    controls[part]={size,color,weightButtons};
   }
   function showDraft(){
     for(const part of parts){
       const base=current.base[part],look=current.draft[part],{size,color}=controls[part];
+      const weight=look.weight??base.weight;
+      const selected=weight>=650?900:weight>=400?500:300;
+      controls[part].weightButtons.forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.weight)===selected)));
       const px=parseFloat(base.fontSize);
       if(size.dataset.base!==String(px)){
         size.replaceChildren(...[...new Set([...sizes,px])].sort((a,b)=>a-b).map(n=>new Option(n+' px',n===px?'':String(n))));
@@ -12474,7 +12491,14 @@ let syncConnected = false, syncEmail = null;
   }
   function open(th){
     const field=th.dataset.field,title=th.querySelector('.th-label').textContent;
-    const source=tableWrap.querySelector('.tbody-wrap tr[data-id]');
+    const cells=tableWrap.querySelectorAll('.tbody-wrap tr[data-id] '+bodyTarget(field));
+    let sampleCell=null;
+    for(const cell of cells){
+      const text=cell.textContent.trim();
+      if(text && text!=='—' && !cell.querySelector('.tneed-ph')){sampleCell=cell;break;}
+    }
+    const source=sampleCell?.closest('tr');
+    dialog.querySelector('.ct-preview-label').textContent=source?'即時預覽':'格式示例 · 目前清單此欄皆空白';
     const table=preview.querySelector('table');
     preview.classList.toggle('search-hint',tableWrap.classList.contains('search-hint'));
     table.className=th.closest('table').className;
@@ -12482,10 +12506,10 @@ let syncConnected = false, syncEmail = null;
     sampleHead.querySelectorAll('.col-resize,.gen-caret').forEach(el=>el.remove());
     table.tHead.rows[0].replaceChildren(sampleHead);
     const row=source?.cloneNode(false)||document.createElement('tr');row.dataset.id='';
-    if(source)row.append(source.cells[th.cellIndex].cloneNode(true));
+    if(source)row.append(sampleCell.closest('td').cloneNode(true));
     else{
       const template=document.createElement('table');
-      template.innerHTML='<tbody>'+trowHTML({id:''},[field])+'</tbody>';
+      template.innerHTML='<tbody>'+trowHTML({id:'',[field]:examples[field]},[field])+'</tbody>';
       row.append(template.rows[0].cells[0]);
     }
     row.querySelectorAll('.gen-edge,.gen-btn').forEach(el=>el.remove());
@@ -12500,7 +12524,7 @@ let syncConnected = false, syncEmail = null;
     const canvas=document.createElement('canvas').getContext('2d');
     function baseStyle(node,pseudo){
       const css=getComputedStyle(node,pseudo);canvas.fillStyle=css.color;
-      return {fontSize:css.fontSize,color:canvas.fillStyle};
+      return {fontSize:css.fontSize,color:canvas.fillStyle,weight:Number(css.fontWeight)};
     }
     let original;
     try {original=read(field);} catch {original={head:{},body:{}};}
@@ -12516,7 +12540,7 @@ let syncConnected = false, syncEmail = null;
     const {field,original,draft}=current,error=dialog.querySelector('.ct-error');
     try{
       const next=read(field);
-      for(const part of parts)for(const prop of ['size','color']){
+      for(const part of parts)for(const prop of ['size','color','weight']){
         const before=original[part][prop],after=draft[part][prop];
         if(before===after)continue;
         if(next[part][prop]!==before && next[part][prop]!==after){error.textContent='設定已在其他視窗變更，請重新開啟。';return;}
