@@ -2873,7 +2873,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.25G";
+const APP_VERSION = "2026.11.25H";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -12283,21 +12283,23 @@ let syncConnected = false, syncEmail = null;
 @media(pointer:coarse){.clcp-range{height:34px;}.clcp-presets button{height:34px;}.clcp-reset{min-height:36px;}.clcp-hex{font-size:16px;}}
 #columnTextDialog{position:fixed;inset:0;margin:auto;box-sizing:border-box;width:min(520px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);box-shadow:0 12px 40px #0003}
 #columnTextDialog::backdrop{background:#142b405c}
-#columnTextDialog header,#columnTextDialog footer,#columnTextDialog .ct-line{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#columnTextDialog header,#columnTextDialog footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
 #columnTextDialog header [data-dismiss]{display:grid;place-items:center;width:44px;height:44px;min-height:0;padding:0;border-radius:10px;background:var(--surface-2);color:var(--ink-soft);font-size:24px;line-height:1;font-weight:500}
 #columnTextDialog h2{margin:0;font-size:17px;line-height:1.45}
 #columnTextDialog .ct-preview-label{margin:12px 0 5px;font-size:12px;color:var(--ink-soft)}
 #columnTextDialog .ct-preview{margin:0 0 16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;pointer-events:none}
 #columnTextDialog .ct-preview.search-hint th:not([data-field="date"]) .th-label{color:#ffe08a}
-#columnTextDialog .ct-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-#columnTextDialog fieldset{min-width:0;margin:0;padding:10px 14px 14px;background:var(--surface-1);border:1px solid var(--line);border-radius:12px}
-#columnTextDialog legend{padding:0 4px;font-weight:700}
-#columnTextDialog .ct-line{margin:4px 0;gap:6px;font-size:13px;white-space:nowrap;color:var(--ink-soft)}
-#columnTextDialog .ct-line :is(select,button){box-sizing:border-box;display:inline-flex;align-items:center;gap:5px;min-width:80px;min-height:32px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit}
-#columnTextDialog .ct-weights{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
-#columnTextDialog .ct-weights button{min-width:32px;min-height:28px;padding:2px;border:0;border-radius:6px;justify-content:center;background:transparent}
-#columnTextDialog .ct-weights button[aria-pressed="true"]{color:var(--card);background:var(--ink)}
-#columnTextDialog .ct-swatch{width:14px;height:14px;flex:none;border:1px solid var(--line);border-radius:50%}
+#columnTextDialog .ct-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+#columnTextDialog fieldset{min-width:0;margin:0;padding:10px 14px 14px;background:var(--surface-1);border:1px solid var(--line);border-radius:12px;}
+#columnTextDialog legend{padding:0 5px;font-size:14px;font-weight:700;color:var(--ink);}
+#columnTextDialog .ct-line{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:12px;margin:6px 0;color:var(--ink-soft);font-size:13px;}
+#columnTextDialog .ct-line:last-child{margin-bottom:0;}
+#columnTextDialog .ct-line :is(select,button){box-sizing:border-box;display:inline-flex;align-items:center;gap:7px;min-width:0;min-height:34px;padding:4px 8px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;}
+#columnTextDialog .ct-weights{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px;border:1px solid var(--line);border-radius:9px;background:var(--card);}
+#columnTextDialog .ct-weights button{justify-content:center;padding:2px;min-height:28px;border:0;border-radius:6px;background:transparent;}
+#columnTextDialog .ct-weights button[aria-pressed="true"]{color:var(--card);background:var(--ink);}
+#columnTextDialog .ct-weights button:focus-visible{outline-offset:1px;}
+#columnTextDialog .ct-swatch{width:14px;height:14px;border-radius:50%;border:1px solid var(--line);flex:none;}
 #columnTextDialog .ct-palette:not(:empty){margin-top:10px}
 #columnTextDialog footer{margin-top:16px}
 #columnTextDialog footer button{flex:1;min-width:0;min-height:40px;padding:8px 12px;border-radius:9px;text-align:center}
