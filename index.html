@@ -631,7 +631,7 @@
   .ov-need{margin-top:10px;background:var(--surface-1);border-radius:10px;padding:10px 12px;border-left:3px solid var(--line);}
   .ov-need-in{font-size:.86rem;line-height:1.6;color:var(--ink);word-break:break-word;
     display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
-  .cards.cmode-view:not(.selecting) .ov-need-in{user-select:text;-webkit-user-select:text;cursor:text;-webkit-touch-callout:default;touch-action:none;}
+  .cards.cmode-view:not(.selecting) .ov-need-in{user-select:text;-webkit-user-select:text;cursor:text;-webkit-touch-callout:default;touch-action:pan-y pinch-zoom;}
   .cards.cmode-view:not(.selecting) .ov-need-in::selection{background:var(--accent);color:#fff;}
   .compact-card .ov-need{display:none;}
   .ov-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px;padding-top:9px;border-top:1px solid var(--line-soft);}
@@ -2835,7 +2835,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.25A";
+const APP_VERSION = "2026.11.25C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3855,7 +3855,7 @@ function bindTableScrollSync(headWrap, bodyWrap){
   }
   document.addEventListener("pointerdown", e => {
     if (e.button !== 0) return;
-    const ed = e.target && e.target.closest && e.target.closest(".nseg-ed, .needexp-ed, .fneed-ed, .ov-need-in");
+    const ed = e.target && e.target.closest && e.target.closest(".nseg-ed, .needexp-ed, .fneed-ed");
     if (!ed) return;
     bw = tableWrap.querySelector(".tbody-wrap");
     hw = tableWrap.querySelector(".thead-wrap");
@@ -6645,7 +6645,9 @@ function setEditMode(on){
   editMode = !!on; saveEditMode();
   if (!editMode) exitSelectMode();       // 離開編輯模式時取消卡片多選
   closeCatMenu(); closeLinkPop(); tableWrap.classList.remove("gen-open");        // 收合表格的類別/連結浮層
-  applyFilter();                          // 重繪當前檢視並更新切換鈕狀態
+  // 卡片共用同一份內容與點擊處理；表格切換模式時才需重建欄位。
+  if (viewMode === "card") syncToggleUI();
+  else applyFilter();
 }
 
 // ---- 類別下拉選單 ----
@@ -9772,7 +9774,7 @@ function preventHeldDeleteScroll(e){
 
 // ---- 客戶需求:拖曳選字、放開自動複製(正常模式) ----
 (function(){
-  let dsOn = false, dsAnchor = null, dsEl = null;
+  let dragPointer = null, dsAnchor = null, dsEl = null, copiedNote = null;
   function caretAt(x,y){
     if (document.caretRangeFromPoint) return document.caretRangeFromPoint(x,y);
     if (document.caretPositionFromPoint){ const p=document.caretPositionFromPoint(x,y); if(p){ const r=document.createRange(); r.setStart(p.offsetNode,p.offset); r.collapse(true); return r; } }
@@ -9780,17 +9782,18 @@ function preventHeldDeleteScroll(e){
   }
   function dsCopy(t){ if(!t) return; if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).catch(()=>legacyCopy(t)); else legacyCopy(t); }
   cardsEl.addEventListener("pointerdown", e => {
-    if (editMode || selectMode) return;
+    copiedNote = null;
+    if (editMode || selectMode || e.pointerType === "touch" || !e.isPrimary || e.button !== 0) return;
     if (e.target.closest(".need-link")) return;   // 連結點擊直接開網址,不啟動拖曳選字
     const nd = e.target.closest(".ov-need-in"); if (!nd) return;
     const r = caretAt(e.clientX, e.clientY); if (!r) return;
     e.stopPropagation(); e.preventDefault();
-    dsOn = true; dsAnchor = r; dsEl = nd;
+    dragPointer = e.pointerId; dsAnchor = r; dsEl = nd;
     try { window.getSelection().removeAllRanges(); } catch(_){}
     try { nd.setPointerCapture(e.pointerId); } catch(_){}
   }, true);
   cardsEl.addEventListener("pointermove", e => {
-    if (!dsOn) return;
+    if (e.pointerId !== dragPointer) return;
     e.preventDefault(); e.stopPropagation();
     const r = caretAt(e.clientX, e.clientY); if (!r) return;
     if (dsEl && !dsEl.contains(r.startContainer)) return;
@@ -9802,14 +9805,35 @@ function preventHeldDeleteScroll(e){
       ssel.addRange(rng);
     } catch(_){}
   }, true);
-  function dsEnd(){
-    if (!dsOn) return; dsOn = false;
-    const t = window.getSelection().toString().replace(/\s+/g," ").trim();
-    if (t){ dsCopy(t); toast("已複製：" + t); }
-    setTimeout(() => { try { window.getSelection().removeAllRanges(); } catch(_){} }, 500);
+  function dsEnd(e){
+    if (e.pointerId !== dragPointer) return;
+    const selection = window.getSelection();
+    const range = selection.rangeCount ? selection.getRangeAt(0) : null;
+    if (e.type === "pointerup" && range && dsEl.contains(range.commonAncestorContainer)){
+      const text = selection.toString().replace(/\s+/g," ").trim();
+      if (text){
+        copiedNote = dsEl;
+        dsCopy(text);
+        toast("已複製：" + text);
+        setTimeout(() => {
+          if (selection.rangeCount && selection.getRangeAt(0) === range) selection.removeAllRanges();
+        }, 500);
+      }
+    }
+    dragPointer = dsAnchor = dsEl = null;
   }
   cardsEl.addEventListener("pointerup", dsEnd, true);
   cardsEl.addEventListener("pointercancel", dsEnd, true);
+  cardsEl.addEventListener("lostpointercapture", dsEnd, true);
+  // A drag can produce a click after the selection has already been copied.
+  cardsEl.addEventListener("click", e => {
+    const note = copiedNote;
+    copiedNote = null;
+    if (e.detail && note?.contains(e.target)){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  }, true);
 })();
 cardsEl.addEventListener("click", e => {
   if (suppressClick){ suppressClick = false; return; }
@@ -9904,6 +9928,7 @@ function tabModeToggleAllowed(){
 }
 document.addEventListener("keydown", e => {
   if (e.key !== "Tab") return;
+  if (e.target.closest?.("#columnTextDialog")) return;
   if(needOrderBusy&&e.target.closest(".need-order-menu"))return;
   if (!e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && tabModeToggleAllowed()){
     e.preventDefault();
@@ -9915,7 +9940,7 @@ document.addEventListener("keydown", e => {
   trapFocusKey(e, tabTrapTarget());       // Shift+TAB / 浮層內:維持原本的欄位切換
 }, true);
 document.addEventListener("keydown", e => {
-  if (discreetDialog.open) return; // Native dialog handles Escape and checkbox input.
+  if (discreetDialog.open || e.target.closest?.("#columnTextDialog")) return;
   if (e.key === "Enter" && confirmBg.classList.contains("open")){ e.preventDefault(); document.getElementById("confirmOk").click(); return; }
   if (e.key === "Tab") return;   // Tab 已由 capture 階段 trapFocusKey 處理
   if (e.key !== "Escape") return;
@@ -12134,6 +12159,169 @@ let syncConnected = false, syncEmail = null;
   window.customerHistoryUI={refresh:controls,signal:(step,back)=>signal(step.changes,back)};
   window.addEventListener('storage',e=>{if(e.key===historyKey)controls();});
   controls();
+})();
+</script>
+<style>
+#columnTextDialog{position:fixed;inset:0;margin:auto;width:min(420px,calc(100vw - 32px));max-height:85dvh;overflow:auto;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);box-shadow:0 14px 46px #142b4033}
+#columnTextDialog::backdrop{background:#142b405c}
+#columnTextDialog header,#columnTextDialog footer,#columnTextDialog label{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#columnTextDialog h2{margin:0;font-size:1.1rem}
+#columnTextDialog .ct-preview{margin:14px 0;border:1px solid var(--line);border-radius:10px;overflow:hidden;pointer-events:none}
+#columnTextDialog .ct-preview.search-hint th:not([data-field="date"]) .th-label{color:#ffe08a}
+#columnTextDialog .ct-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#columnTextDialog fieldset{min-width:0;margin:0;padding:8px 12px;border:1px solid var(--line);border-radius:10px}
+#columnTextDialog legend{padding:0 4px;font-weight:700}
+#columnTextDialog label{margin:5px 0;font-size:.84rem;color:var(--ink-soft)}
+#columnTextDialog select,#columnTextDialog input{height:32px;min-width:68px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font:inherit}
+#columnTextDialog footer{margin-top:16px;justify-content:flex-end}
+#columnTextDialog footer button:first-child{margin-right:auto}
+#columnTextDialog [role=alert]{margin:8px 0 0;color:var(--ink)}
+#columnTextDialog [role=alert]:empty{display:none}
+</style>
+<dialog id="columnTextDialog" aria-labelledby="columnTextTitle">
+  <header><h2 id="columnTextTitle"></h2><button type="button" class="s-btn" data-dismiss aria-label="關閉">×</button></header>
+  <div class="ct-preview" inert><table class="ptable"><thead><tr></tr></thead><tbody></tbody></table></div>
+  <div class="ct-controls"></div><p role="alert"></p>
+  <footer><button type="button" class="s-btn" data-reset>回復原始預設</button><button type="button" class="s-btn" data-dismiss>取消</button><button type="button" class="s-btn s-btn-primary" data-save>儲存</button></footer>
+</dialog>
+<script>
+(()=>{
+  const fields = T_FIELDS;
+  const desktop = matchMedia("(min-width:820px)");
+  const keyPrefix = "customer_column_text_v1_";
+  const parts = ["head","body"], sizes = Array.from({length:15},(_,i)=>10+i);
+  const dialog = document.getElementById("columnTextDialog");
+  const preview = dialog.querySelector(".ct-preview");
+  const rules = document.createElement("style"), draftRules = document.createElement("style");
+  document.head.append(rules,draftRules);
+  const controls = {}, saved = new Map();
+  let current = null;
+  function read(field){
+    const raw = JSON.parse(localStorage.getItem(keyPrefix+field)||"{}");
+    const result = {head:{},body:{}};
+    for (const part of parts){
+      const value = raw?.[part];
+      if (sizes.includes(value?.size)) result[part].size = value.size;
+      if (/^#[0-9a-f]{6}$/i.test(value?.color||"")) result[part].color = value.color.toLowerCase();
+    }
+    return result;
+  }
+  function reload(field){
+    try {saved.set(field,read(field));} catch {saved.delete(field);}
+  }
+  function bodyTarget(field){
+    if(field==='cat')return ':is(.tcat-badge,.tcat-trigger)';
+    if(field==='need')return '.tcell.tneed';
+    return ':is(.tcell,.topt-trigger)[data-field="'+field+'"]';
+  }
+  function styleRules(scope,field,settings){
+    const th = scope+' th[data-field="'+field+'"]', head = th+' .th-label';
+    const body = scope+' tbody tr[data-id] '+bodyTarget(field);
+    const targets = {head,body:[body,body+' :is(span:not(.multi-dot),a,b,strong,em,s)',body+':empty::before',body+' :is(.topt-label,.tcat-label):empty::before'].join(',')};
+    const bounds=settings.head.size?th+' .th-flt{max-width:calc(100% + 16px)}'+head+'{display:inline-block;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;line-height:1.05}':'';
+    return bounds+parts.map(part=>{
+      const look=settings[part];
+      const css=(look.size?'font-size:'+look.size+'px!important;':'')+(look.color?'color:'+look.color+'!important;':'');
+      return css?targets[part]+'{'+css+'}':'';
+    }).join('\n');
+  }
+  function paint(){
+    rules.textContent='@media (min-width:820px){'+Array.from(saved,([f,s])=>styleRules('#tableWrap',f,s)).join('\n')+'}';
+  }
+  fields.forEach(reload);paint();
+  for(const part of parts){
+    const group=document.createElement('fieldset'),label=part==='head'?'表頭':'內容';
+    group.innerHTML='<legend>'+label+'</legend><label>字級<select aria-label="'+label+'字級"></select></label><label>字色<input type="color" aria-label="'+label+'字色"></label>';
+    dialog.querySelector('.ct-controls').append(group);
+    const size=group.querySelector('select'),color=group.querySelector('input');
+    size.add(new Option('',''));for(const n of sizes)size.add(new Option(n+' px',String(n)));
+    size.onchange=()=>{if(size.value)current.draft[part].size=Number(size.value);else delete current.draft[part].size;showDraft();};
+    color.onchange=color.oninput=()=>{current.draft[part].color=color.value;showDraft();};
+    controls[part]={size,color};
+  }
+  function showDraft(){
+    for(const part of parts){
+      const base=current.base[part],look=current.draft[part],{size,color}=controls[part];
+      size.options[0].textContent=parseFloat(base.fontSize)+' px（預設）';
+      size.value=look.size??'';
+      color.value=look.color||base.color;
+    }
+    draftRules.textContent=styleRules('#columnTextDialog',current.field,current.draft);
+    if(current.field==='date' && current.dateWidth){
+      const sample=preview.querySelector('[data-full-date]'),probe=sample?.querySelector('.date-probe');
+      if(probe){
+        const css=getComputedStyle(sample),available=current.dateWidth-parseFloat(css.paddingLeft)-parseFloat(css.paddingRight);
+        sample.querySelector('.date-shown').textContent=probe.getBoundingClientRect().width>available+.5?sample.dataset.fullDate.slice(-4):sample.dataset.fullDate;
+      }
+    }
+  }
+  function open(th){
+    const field=th.dataset.field,title=th.querySelector('.th-label').textContent;
+    const source=tableWrap.querySelector('.tbody-wrap tr[data-id]');
+    const table=preview.querySelector('table');
+    preview.classList.toggle('search-hint',tableWrap.classList.contains('search-hint'));
+    table.className=th.closest('table').className;
+    const sampleHead=th.cloneNode(true);
+    sampleHead.querySelectorAll('.col-resize,.gen-caret').forEach(el=>el.remove());
+    table.tHead.rows[0].replaceChildren(sampleHead);
+    const row=source?.cloneNode(false)||document.createElement('tr');row.dataset.id='';
+    if(source)row.append(source.cells[th.cellIndex].cloneNode(true));
+    else{
+      const template=document.createElement('table');
+      template.innerHTML='<tbody>'+trowHTML({id:''},[field])+'</tbody>';
+      row.append(template.rows[0].cells[0]);
+    }
+    row.querySelectorAll('.gen-edge,.gen-btn').forEach(el=>el.remove());
+    table.tBodies[0].replaceChildren(row);
+    dialog.querySelector('h2').textContent=title+'・欄位文字';
+    dialog.querySelector('[role=alert]').textContent='';
+    draftRules.textContent='';
+    dialog.showModal();
+    const body=row.querySelector(bodyTarget(field));
+    const textNode=document.createTreeWalker(body,NodeFilter.SHOW_TEXT).nextNode();
+    const placeholder=body.querySelector('.topt-label:empty,.tcat-label:empty')||body;
+    const canvas=document.createElement('canvas').getContext('2d');
+    function baseStyle(node,pseudo){
+      const css=getComputedStyle(node,pseudo);canvas.fillStyle=css.color;
+      return {fontSize:css.fontSize,color:canvas.fillStyle};
+    }
+    let original;
+    try {original=read(field);} catch {original={head:{},body:{}};}
+    const bodyStyle=textNode?baseStyle(textNode.parentElement):baseStyle(placeholder,'::before');
+    current={field,original,draft:structuredClone(original),dateWidth:field==='date'?source?.querySelector('[data-full-date]')?.clientWidth:0,base:{head:baseStyle(sampleHead.querySelector('.th-label')),body:bodyStyle}};
+    showDraft();
+  }
+  dialog.addEventListener('click',e=>{
+    if(e.target.closest('[data-dismiss]')){dialog.close();return;}
+    if(e.target.closest('[data-reset]')){current.draft={head:{},body:{}};showDraft();return;}
+    if(!e.target.closest('[data-save]'))return;
+    const {field,original,draft}=current,error=dialog.querySelector('[role=alert]');
+    try{
+      const next=read(field);
+      for(const part of parts)for(const prop of ['size','color']){
+        const before=original[part][prop],after=draft[part][prop];
+        if(before===after)continue;
+        if(next[part][prop]!==before && next[part][prop]!==after){error.textContent='設定已在其他視窗變更，請重新開啟。';return;}
+        if(after===undefined)delete next[part][prop];else next[part][prop]=after;
+      }
+      if(parts.some(part=>Object.keys(next[part]).length))localStorage.setItem(keyPrefix+field,JSON.stringify(next));
+      else localStorage.removeItem(keyPrefix+field);
+      saved.set(field,next);paint();dialog.close();toast('已儲存欄位文字設定');
+    }catch{error.textContent='未能儲存欄位設定，請再試一次。';}
+  });
+  dialog.addEventListener('close',()=>{if(!dialog.open){current=null;preview.querySelector('tbody').replaceChildren();draftRules.textContent='';}});
+  window.addEventListener('storage',e=>{
+    if(e.key===null){fields.forEach(reload);paint();return;}
+    if(e.key.startsWith(keyPrefix)&&fields.includes(e.key.slice(keyPrefix.length))){reload(e.key.slice(keyPrefix.length));paint();}
+  });
+  desktop.addEventListener('change',()=>{if(!desktop.matches&&dialog.open)dialog.close();});
+  let pointerType='';
+  tableWrap.addEventListener('pointerdown',e=>{pointerType=e.pointerType;},{capture:true,passive:true});
+  tableWrap.addEventListener('contextmenu',e=>{
+    const th=e.target.closest('.thead-wrap th[data-field]');
+    if(!th||!fields.includes(th.dataset.field)||!desktop.matches||viewMode!=='table'||tselMode||dialog.open||e.button!==2||(e.pointerType||pointerType)!=='mouse'||e.sourceCapabilities?.firesTouchEvents||e.target.closest('.col-resize'))return;
+    e.preventDefault();open(th);
+  });
 })();
 </script>
 </body>
