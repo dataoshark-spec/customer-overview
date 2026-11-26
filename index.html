@@ -1052,6 +1052,18 @@
   @media (min-width:820px) and (prefers-reduced-motion:no-preference){
     body:has(#app.table-mode.opened-from-cover){animation:coverTableReveal .28s ease;}
   }
+  /* Keep destination geometry fixed. Only the visible sheet changes width. */
+  @media (min-width:820px){
+    body:is(.list-widen,.list-narrow) #app{transition:none;}
+  }
+  @media (min-width:820px) and (prefers-reduced-motion:no-preference){
+    body.list-widen:has(#app.table-mode){animation:coverTableReveal .28s ease;}
+    body.list-narrow #app>:is(#list,#settings){width:480px;max-width:100%;margin-inline:auto;}
+    body.list-narrow #app{
+      animation:listSheetClose .28s ease both;}
+    @keyframes listSheetClose{from{max-width:96vw;}to{max-width:480px;}}
+  }
+  @media (prefers-reduced-motion:reduce){#app{transition:none;}}
   /* 手機版表格更舒服:連結按鈕縮小、欄距收緊、總寬略降(只在 <820px 生效,桌機不受影響) */
   @media (max-width:819px){
     .ptable{min-width:1240px;}
@@ -2914,7 +2926,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.26C";
+const APP_VERSION = "2026.11.26D";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3455,12 +3467,14 @@ const listCounter=(()=>{
     countEl.classList.toggle("count-expanded",pages.some(g=>g.end-g.start>1));
     paintPage();
   }
-  function refresh(list){
+  function refresh(list,reuseView=false){
     if(Array.isArray(list))headerCountRows=list;
     const counts=new Map(cats.map(c=>[c.key,0]));
     for(const item of headerCountRows)for(const key of fieldVals(item,"cat"))if(counts.has(key))counts.set(key,counts.get(key)+1);
     entries=cats.map(c=>({name:optionDisplayName("cat",c.key),count:counts.get(c.key)||0}));
     const key=JSON.stringify(entries);
+    // The existing ResizeObserver handles the new viewport when only the view changes.
+    if(reuseView && sizeObserver && key===dataKey && recordCount===headerCountRows.length)return;
     if(key!==dataKey){widths=[];dataKey=key;}
     recordCount=headerCountRows.length;
     total.innerHTML="<b>"+recordCount+"</b> <small>筆</small>";
@@ -3582,14 +3596,21 @@ function syncTableMode(){
   app.classList.toggle("table-mode", active);
   if(!active)app.classList.remove("opened-from-cover","instant-from-cover");
 }
+function prepareListTransition(direction){
+  document.body.classList.remove("list-widen","list-narrow");
+  if(matchMedia("(min-width:820px) and (prefers-reduced-motion:no-preference)").matches)document.body.classList.add(direction);
+}
 function setViewMode(vm){
   if(!commitOpenNeedEditors())return false;
+  const switching = listView.classList.contains("active") && vm !== viewMode;
+  if(switching)prepareListTransition(vm==="table"?"list-widen":"list-narrow");
   viewMode = (vm==="table") ? "table" : "card"; saveViewMode();
   if (viewMode !== "table"){                                     // 離開表格:收合展開,避免殘留的隱藏展開之後把舊內容寫回
     if (typeof closeNeedExp === "function") closeNeedExp();
     if (typeof hideNeedHover === "function") hideNeedHover();
   }
-  applyFilter();
+  syncTableMode();
+  applyFilter({reuseView:switching});
 }
 
 // ---- table rendering ----
@@ -3876,15 +3897,35 @@ function trowHTML(d, fields = visibleTableFields()){
   }).join("");
   return `<tr data-id="${esc(d.id)}"${statusColorRowAttrs(d)}${_trCls.trim() ? ` class="${_trCls.trim()}"` : ""}>${rowCells}${delCell}</tr>`;
 }
-function renderTable(list){
+// Compare the complete intended markup. If an editor or another feature touched
+// the rendered contents, rebuild normally even when the saved values match.
+function viewMarkupCache(host){
+  let previous=null;
+  const invalidate=changes=>{
+    if(changes.some(m=>!(m.target===host && m.type==="attributes") &&
+      !(m.type==="childList" && m.target.matches?.(".date-shown")))){
+      previous=null;
+      observer.disconnect();
+    }
+  };
+  const observer=new MutationObserver(invalidate);
+  return {
+    matches(markup){invalidate(observer.takeRecords());return previous===markup;},
+    remember(markup){
+      observer.disconnect();previous=markup;
+      if(markup!==null)observer.observe(host,{subtree:true,childList:true,characterData:true,attributes:true});
+    }
+  };
+}
+const tableMarkupCache=viewMarkupCache(tableWrap), cardMarkupCache=viewMarkupCache(cardsEl);
+function renderTable(list,reuseView=false){
   if(!commitOpenNeedEditors())return false;
-  tableLayoutObserver?.disconnect();
   closeNeedOrderUI();
-  const oldScroll = tableWrap.querySelector(".tbody-wrap");
-  const sTop = oldScroll ? oldScroll.scrollTop : 0, sLeft = oldScroll ? oldScroll.scrollLeft : 0;
   const fields = visibleTableFields();
   if (!fields.includes("need")) openNeedId = null;
   if (!fields.length){
+    tableMarkupCache.remember(null);
+    tableLayoutObserver?.disconnect();
     tableDateObserver?.disconnect();
     if (tableWrap._scrollUnbind){ tableWrap._scrollUnbind(); tableWrap._scrollUnbind = null; }
     tableWrap.innerHTML = '<p class="discreet-empty">表格欄位已全部隱藏</p>';
@@ -3906,12 +3947,22 @@ function renderTable(list){
   ).join("") + (editMode ? `<col data-field="_del" style="width:${DEL_W}px">` : "");
   const rows = list.length ? list.map(d => trowHTML(d,fields)).join("")
     : `<tr><td colspan="${fields.length+(editMode ? 1 : 0)}" class="tempty">${items.length ? "找不到符合的需求" : "還沒有需求，點右上「＋ 新增客戶」開始建立。"}</td></tr>`;
+  const contentKey=cols+head+rows;
+  if(reuseView && !editMode && !openNeedId && tableMarkupCache.matches(contentKey)){
+    requestAnimationFrame(syncTableChrome);
+    return;
+  }
+  const oldScroll = tableWrap.querySelector(".tbody-wrap");
+  const sTop = oldScroll ? oldScroll.scrollTop : 0, sLeft = oldScroll ? oldScroll.scrollLeft : 0;
   const mw = colSumMinWidth(fields);
   const cls = editMode ? "" : "ro";
   // 兩層:表頭層固定填滿到圓角、捲軸只長在表身層;兩表共用同一份 colgroup 與 min-width 才對齊
-  tableWrap.innerHTML =
+  const markup =
     `<div class="thead-wrap"><table class="ptable ${cls}" style="min-width:${mw}px"><colgroup>${cols}</colgroup><thead><tr>${head}</tr></thead></table></div>`+
     `<div class="tbody-wrap"><table class="ptable ${cls}" style="min-width:${mw}px"><colgroup>${cols}</colgroup><tbody>${rows}</tbody></table></div>`;
+  tableMarkupCache.remember(null);
+  tableLayoutObserver?.disconnect();
+  tableWrap.innerHTML = markup;
   const headWrap = tableWrap.querySelector(".thead-wrap");
   const bodyWrap = tableWrap.querySelector(".tbody-wrap");
   if (editMode) bodyWrap.querySelectorAll('button[data-act="del"]').forEach(button => {
@@ -3934,6 +3985,7 @@ function renderTable(list){
   sizeNeedExp();
   if (bodyWrap){ bodyWrap.scrollTop = sTop; bodyWrap.scrollLeft = sLeft; }
   if (headWrap) headWrap.scrollLeft = sLeft;
+  tableMarkupCache.remember(editMode || openNeedId ? null : contentKey);
   requestAnimationFrame(syncTableChrome);
 }
 function syncTableChrome(){
@@ -8265,25 +8317,29 @@ function customersMatchingSearch(){
   if (terms.length) list = list.filter(d => { const hay = searchHay(d); return terms.every(t => hay.includes(t) || lineSearchMatches(d.line, t)); });
   return list;
 }
-function applyFilter(){
+function applyFilter(options){
+  const reuseView = options?.reuseView === true;
   syncToggleUI();
   { const sc = document.getElementById("searchClear"); if (sc) sc.classList.toggle("show", !!searchEl.value); }
   tableWrap.classList.toggle("search-hint", !!searchEl.value || document.activeElement === searchEl);
   let list = applyColFilters(customersMatchingSearch());
   list = sortList(list);
-  listCounter.refresh(list);
+  listCounter.refresh(list,reuseView);
   titleEl.textContent = currentCat ? optionDisplayName("cat",currentCat) + "需求" : "全部需求";
   titleEl.title=titleEl.textContent;
   document.querySelectorAll(".tab").forEach(t =>
     t.classList.toggle("active", t.dataset.cat === currentCat));
   if (viewMode === "table"){
     cardsEl.style.display = "none"; tableWrap.style.display = "";
-    renderTable(list);
+    renderTable(list,reuseView);
   } else {
     tableWrap.style.display = "none"; cardsEl.style.display = "";
-    cardsEl.innerHTML = list.length
+    const markup = list.length
       ? list.map(cardHTML).join("")
       : `<p class="empty">${items.length ? "找不到符合的需求" : "尚無需求，點右下角「＋ 新增客戶」開始建立。"}</p>`;
+    if(!reuseView || !cardMarkupCache.matches(markup)){
+      cardsEl.innerHTML=markup;cardMarkupCache.remember(markup);
+    }
   }
   syncTableMode();
 }
@@ -8294,12 +8350,16 @@ const cover = document.getElementById("cover");
 const listView = document.getElementById("list");
 function updateLH(){
   const h = document.querySelector(".list-header");
-  if (h && listView.classList.contains("active")) document.documentElement.style.setProperty("--lh", h.offsetHeight + "px");
+  if (h && listView.classList.contains("active")){
+    const root=document.documentElement.style,height=h.offsetHeight+"px";
+    if(root.getPropertyValue("--lh")!==height)root.setProperty("--lh",height);
+  }
 }
 window.addEventListener("resize", function(){ requestAnimationFrame(function(){ updateLH(); if (typeof syncTableChrome==="function") syncTableChrome(); if (typeof sizeNeedExp==="function") sizeNeedExp(); }); });
 function openList(cat, fromCoverTable=false){
   if(!commitOpenNeedEditors())return false;
   closeSearchHelp();
+  document.body.classList.remove("list-widen","list-narrow");
   listCounter.firstPage(); // A fresh list navigation starts at the first count page.
   exitSelectMode();
   editMode = false; saveEditMode();     // 進入列表一律預設「正常」模式;要編輯需先選檢視再點編輯
@@ -8319,6 +8379,7 @@ function openList(cat, fromCoverTable=false){
 function showCover(){
   if(!commitOpenNeedEditors())return false;
   closeSearchHelp();
+  document.body.classList.remove("list-widen","list-narrow");
   saveNav("cover");
   exitSelectMode();
   if (typeof closeColFlt === "function") closeColFlt();
@@ -10474,6 +10535,7 @@ function openSettings(){
   if (settingsView.classList.contains("active")) return;
   cancelSettingsReturnFrame();
   settingsReturnView = captureSettingsReturnView();
+  if(settingsReturnView.screen==="list" && viewMode==="table")prepareListTransition("list-narrow");
   exitSelectMode();
   if (typeof closeOtherOverlays === "function") closeOtherOverlays("");
   else {
@@ -10495,6 +10557,7 @@ function closeSettings(){
   const saved = settingsReturnView;
   settingsReturnView = null;
   if (typeof cpick !== "undefined" && cpick.classList.contains("show") && typeof cpClose === "function") cpClose(true);
+  if(saved?.screen==="list" && viewMode==="table")prepareListTransition("list-widen");
   settingsView.classList.remove("active");
   if (saved && saved.screen === "list"){
     cover.style.display = "none";
@@ -10516,7 +10579,7 @@ function closeSettings(){
       const currentScroll = captureSettingsReturnView();
       if (["windowX", "windowY", "bodyX", "bodyY", "headX", "tabsX"].some(key => Math.abs(currentScroll[key] - returnedScroll[key]) >= 1)) return;
       updateLH();
-      if (typeof syncTableChrome === "function") syncTableChrome();
+      if (viewMode==="table") syncTableChrome();
       restoreSettingsReturnScroll(saved);
     });
   } else {
@@ -13071,6 +13134,7 @@ function layout(){
  measuredScroller=scroll;measuredTop=scroll.scrollTop;
  const left=table.getBoundingClientRect().left-26,offset=rect.top-top-measuredTop;
 
+ const hitX=document.body.classList.contains("list-widen") ? rect.left+rect.width/2 : rect.left+Math.min(8,rect.width/2);
  const visible=new Map();
  let lo=0,hi=rows.length;
  while(lo<hi){const mid=(lo+hi)>>>1;if(rows[mid].getBoundingClientRect().bottom<=top)lo=mid+1;else hi=mid}
@@ -13081,7 +13145,7 @@ function layout(){
   const mid=box.top+box.height/2;
   if(mid<top||mid>=bottom)continue;
 
-  if(!touchView.matches&&document.elementFromPoint(rect.left+Math.min(8,rect.width/2),mid)?.closest('tr')!==row)continue;
+  if(!touchView.matches&&document.elementFromPoint(hitX,mid)?.closest('tr')!==row)continue;
   visible.set(row.dataset.id,{y:box.top-top-offset,height:box.height});
  }
  if(gutter.hidden)gutter.hidden=false;
@@ -13104,8 +13168,13 @@ const observe=new MutationObserver(changes=>{
 observe.observe(table,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
 // Clipping during the reveal temporarily hides the left edge used for row hit testing.
 function onCoverRevealEnd(event){
- if(event.target!==document.body||event.animationName!=='coverTableReveal')return;
+ if(event.target.id==='app' && event.animationName==='listSheetClose'){
+  if(!event.target.getAnimations().some(a=>a.animationName==='listSheetClose' && a.playState==='running'))document.body.classList.remove('list-narrow');
+  return;
+ }
+ if(event.target!==document.body || event.animationName!=='coverTableReveal')return;
  if(!document.body.getAnimations().some(a=>a.animationName==='coverTableReveal')){
+  document.body.classList.remove('list-widen');
   document.getElementById('app').classList.remove('opened-from-cover');
  }
  schedule();
