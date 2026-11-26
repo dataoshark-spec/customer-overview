@@ -2910,7 +2910,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.26E";
+const APP_VERSION = "2026.11.26F";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3510,7 +3510,7 @@ const listCounter=(()=>{
     const refreshMetrics=()=>{widths=[];layout();};
     document.fonts.ready.then(refreshMetrics);document.fonts.addEventListener("loadingdone",refreshMetrics);
   }
-  return {refresh,firstPage(){page=0;}};
+  return {refresh,firstPage(){if(page>0){page=0;paintPage();}}};
 })();
 // list-count:end
 
@@ -8365,6 +8365,7 @@ function updateLH(){
   }
 }
 window.addEventListener("resize", function(){ requestAnimationFrame(function(){ updateLH(); if (typeof syncTableChrome==="function") syncTableChrome(); if (typeof sizeNeedExp==="function") sizeNeedExp(); }); });
+let homeTableAtOrigin=false;
 function openList(cat){
   if(!commitOpenNeedEditors())return false;
   closeSearchHelp();
@@ -8374,16 +8375,25 @@ function openList(cat){
   currentCat = cat || "";
   saveNav("list", currentCat);
   searchEl.value = "";
-  applyFilter();
+  const previousBody=viewMode==="table" && !homeTableAtOrigin ? tableWrap.querySelector(".tbody-wrap") : null;
+  homeTableAtOrigin=false;
+  applyFilter({reuseView:true});
   cover.style.display = "none";
   listView.classList.add("active");
   syncTableMode();
+  // Home opens a fresh list. A reused scroller retains its offsets while hidden.
+  if(previousBody?.isConnected){
+    previousBody.scrollTo(0,0);
+    tableWrap.querySelector(".thead-wrap")?.scrollTo(0,0);
+  }
   window.scrollTo(0,0);
   requestAnimationFrame(updateLH);
 }
 function showCover(){
   if(!commitOpenNeedEditors())return false;
   closeSearchHelp();
+  const body=viewMode==="table" && listView.classList.contains("active") && tableWrap.querySelector(".tbody-wrap");
+  homeTableAtOrigin=!!body && !body.scrollTop && !body.scrollLeft && !tableWrap.querySelector(".thead-wrap").scrollLeft;
   saveNav("cover");
   exitSelectMode();
   if (typeof closeColFlt === "function") closeColFlt();
