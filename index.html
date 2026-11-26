@@ -1040,9 +1040,17 @@
   .view-btn:active{transform:scale(.94);}
 
   /* ===== editable table ===== */
+  @keyframes coverTableReveal{
+    from{clip-path:inset(0 calc(50% - 240px));}
+    to{clip-path:inset(0 0);}
+  }
   @media (min-width:820px){
+    #app.table-mode:is(.opened-from-cover,.instant-from-cover){transition:none;}
     #app.table-mode{max-width:96vw;}   /* 純視窗比例(不設固定 px 上限):縮小/放大時內容與左右白邊同比例縮放,白邊固定 2vw、不會越縮越多;寬螢幕也能看到更多欄位 */
     #app.table-mode .search-box{max-width:460px;}   /* 上限放在包裝層:input 縮短時外層一起縮,清除鈕才不會飄到框外 */
+  }
+  @media (min-width:820px) and (prefers-reduced-motion:no-preference){
+    body:has(#app.table-mode.opened-from-cover){animation:coverTableReveal .28s ease;}
   }
   /* 手機版表格更舒服:連結按鈕縮小、欄距收緊、總寬略降(只在 <820px 生效,桌機不受影響) */
   @media (max-width:819px){
@@ -2906,7 +2914,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.26B";
+const APP_VERSION = "2026.11.26C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3569,7 +3577,10 @@ function syncToggleUI(){
   if (tableWrap) tableWrap.classList.toggle("edit-mode", editMode);   // 表格展開區底色:編輯=灰、正常=淺藍
 }
 function syncTableMode(){
-  document.getElementById("app").classList.toggle("table-mode", viewMode==="table" && listView.classList.contains("active"));
+  const app=document.getElementById("app");
+  const active=viewMode==="table" && listView.classList.contains("active");
+  app.classList.toggle("table-mode", active);
+  if(!active)app.classList.remove("opened-from-cover","instant-from-cover");
 }
 function setViewMode(vm){
   if(!commitOpenNeedEditors())return false;
@@ -7783,7 +7794,7 @@ document.addEventListener("cut",  e => needClipboardHandler(e, true),  true);
 document.getElementById("coverVT").addEventListener("click", e=>{
   const b = e.target.closest("button"); if (!b) return;
   viewMode = (b.dataset.vm === "table") ? "table" : "card"; saveViewMode();
-  openList("");                       // 進入「全部」;openList 內會一律恢復正常模式
+  openList("", viewMode==="table");
 });
 document.getElementById("viewBtn").addEventListener("click", () => {
   if(!commitOpenNeedEditors())return;
@@ -8286,7 +8297,7 @@ function updateLH(){
   if (h && listView.classList.contains("active")) document.documentElement.style.setProperty("--lh", h.offsetHeight + "px");
 }
 window.addEventListener("resize", function(){ requestAnimationFrame(function(){ updateLH(); if (typeof syncTableChrome==="function") syncTableChrome(); if (typeof sizeNeedExp==="function") sizeNeedExp(); }); });
-function openList(cat){
+function openList(cat, fromCoverTable=false){
   if(!commitOpenNeedEditors())return false;
   closeSearchHelp();
   listCounter.firstPage(); // A fresh list navigation starts at the first count page.
@@ -8298,6 +8309,9 @@ function openList(cat){
   applyFilter();
   cover.style.display = "none";
   listView.classList.add("active");
+  if(fromCoverTable && matchMedia("(min-width:820px)").matches){
+    document.getElementById("app").classList.add(matchMedia("(prefers-reduced-motion:reduce)").matches?"instant-from-cover":"opened-from-cover");
+  }
   syncTableMode();
   window.scrollTo(0,0);
   requestAnimationFrame(updateLH);
@@ -10468,7 +10482,7 @@ function openSettings(){
   }
   if (typeof closeSortSel === "function") closeSortSel();
   if (typeof flushEditing === "function") flushEditing();
-  document.getElementById("app").classList.remove("table-mode");
+  document.getElementById("app").classList.remove("table-mode","opened-from-cover","instant-from-cover");
   settingsView.classList.add("active");
   cover.style.display = "none";
   listView.classList.remove("active");
@@ -13088,6 +13102,16 @@ const observe=new MutationObserver(changes=>{
  schedule();
 });
 observe.observe(table,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+// Clipping during the reveal temporarily hides the left edge used for row hit testing.
+function onCoverRevealEnd(event){
+ if(event.target!==document.body||event.animationName!=='coverTableReveal')return;
+ if(!document.body.getAnimations().some(a=>a.animationName==='coverTableReveal')){
+  document.getElementById('app').classList.remove('opened-from-cover');
+ }
+ schedule();
+}
+document.body.addEventListener('animationend',onCoverRevealEnd);
+document.body.addEventListener('animationcancel',onCoverRevealEnd);
 touchView.addEventListener('change',schedule);
 const resize=new ResizeObserver(schedule);resize.observe(table);
 new MutationObserver(schedule).observe(document.body,{attributes:true,attributeFilter:['class']});
