@@ -1014,6 +1014,9 @@
     box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;pointer-events:none;
     transition:opacity .2s ease,transform .2s ease;max-width:min(94%,480px);text-align:left;line-height:1.5;overflow-wrap:anywhere;}
   .toast-in{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .toast.copy-result{width:max-content;}
+  .toast.copy-result .toast-in{display:block;max-height:55vh;max-height:55dvh;}
+  .toast .copied-value{color:#ffda83;overflow-wrap:anywhere;}
   .toast.show{opacity:1;transform:translate(-50%,0);}
 
   @media (prefers-reduced-motion:reduce){
@@ -1227,19 +1230,17 @@
   .opt-add input{width:100%;box-sizing:border-box;min-width:0;font-family:inherit;font-size:.9rem;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 11px;outline:none;}
   .opt-add input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(43,92,168,.12);}
   .opt-add button{width:100%;font-family:inherit;font-size:.88rem;font-weight:700;color:#fff;background:var(--accent);border:1px solid var(--accent);border-radius:9px;padding:9px 13px;cursor:pointer;}
-  .th-flt{display:inline-flex;align-items:center;justify-content:center;gap:4px;background:none;border:0;padding:3px 8px;margin:-3px -8px;border-radius:999px;color:inherit;font:inherit;cursor:pointer;
-    transition:background .16s ease,box-shadow .16s ease,gap .12s ease,padding .12s ease;}
-  .th-flt:focus{outline:none;}
-  /* TAB 選中:藏箭頭、文字置中,柔光膠囊焦點(避免右緣被裁) */
-  .th-flt:focus-visible{outline:none;gap:0;padding:3px 11px;background:rgba(255,255,255,.14);
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.92),0 0 0 3px rgba(255,255,255,.16),0 2px 10px rgba(0,0,0,.12);}
-  .th-flt:focus-visible .fmk{display:none;}
-  .th-flt .fmk{opacity:.55;font-size:.72em;line-height:1;transition:opacity .12s ease;}
-  .th-flt.on .fmk{opacity:1;color:#FFE08A;}   /* 已套用此欄篩選:標記加亮(比照物件總覽,不用背景 pill) */
+  .th-flt{position:absolute;inset:0;display:flex;width:100%;height:100%;align-items:center;justify-content:center;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;}
+  .th-flt:focus-visible{outline:1px solid currentColor;outline-offset:-2px;}
+  .th-flt .fmk{position:absolute;top:3px;right:3px;width:5px;height:5px;background:currentColor;opacity:.65;clip-path:polygon(0 0,100% 0,100% 100%);pointer-events:none;}
+  .th-flt.on{background:#c7def4;color:#183f69;}
+  [data-theme="dark"] .th-flt.on{background:#344d68;color:#deedff;}
+  .th-flt.on .fmk{opacity:1;}
   /* 搜尋範圍提示:搜尋框有字或聚焦時,「會被比對」的欄位標題轉琥珀色。
      補進 pType/pNum 後,目前表格 13 個欄位全部都在搜尋範圍 → 整排點亮;之後若新增「不搜尋」的欄位,改成逐欄列選擇器排除它 */
   .thead-wrap th .th-label{transition:color .15s;}
   .table-wrap.search-hint .thead-wrap th[data-field]:not([data-field="date"]) .th-label{color:#FFE08A;}
+  :root:not([data-theme="dark"]) :is(.table-wrap.search-hint .thead-wrap,#columnTextDialog .ct-preview.search-hint) th[data-field]:not([data-field="date"]) .th-flt.on .th-label{color:#694900;}
   #fltBg{z-index:60;}
   .fpanel{background:var(--card);width:100%;max-width:390px;max-height:80dvh;border-radius:20px;padding:15px 16px 16px;box-shadow:0 18px 50px rgba(22,34,42,.3);display:flex;flex-direction:column;}
   .fpanel-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:1.02rem;color:var(--ink);margin-bottom:8px;}
@@ -1499,6 +1500,7 @@
   .ptable.ro .tcell{cursor:pointer;}
   .ptable thead th{position:relative;}
   .col-resize{position:absolute;top:0;right:-6px;width:12px;height:100%;cursor:col-resize;touch-action:none;user-select:none;z-index:4;}
+  .th-flt + .col-resize{clip-path:polygon(50% 0,100% 0,100% 100%,0 100%,0 9px,50% 9px);}
   .col-resize::after{content:"";position:absolute;top:50%;left:50%;transform:translateY(-50%);width:1px;height:58%;background:rgba(255,255,255,.34);transition:background .12s ease;}
   /* 上行只做垂直置中;水平不再用 translateX(-50%),讓 1px 把手線左緣落在欄邊界、與 th 的 border-right 重疊,不再偏左半個像素 */
   .col-resize.dragging::after{background:rgba(255,255,255,.8);}
@@ -2889,7 +2891,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.25J";
+const APP_VERSION = "2026.11.26A";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3714,7 +3716,7 @@ function loadDiscreet(){
 let discreet = loadDiscreet();
 function visibleTableFields(){ return discreet.on ? T_FIELDS.filter(f => !discreet.fields.includes(f)) : T_FIELDS; }
 const DEFAULT_COLW = {date:84,area:120,cat:80,budget:112,rooms:88,pType:96,pNum:64,status:88,cust:120,tel:104,line:96,source:88,ask:116,shared:88};
-const COLW_MIN = 48, COLW_MAX = 640, DEL_W = 40;
+const COLW_MIN = 24, COLW_MAX = 640, DEL_W = 40;
 function loadColW(){ if (storageOK){ try { const s = JSON.parse(localStorage.getItem("customer_app_colw_v1") || "null"); if (s && typeof s === "object") return {...DEFAULT_COLW, ...s}; } catch(e){} } return {...DEFAULT_COLW}; }
 function saveColW(){ if (storageOK){ try { localStorage.setItem("customer_app_colw_v1", JSON.stringify(colW)); } catch(e){} } }
 let colW = loadColW();
@@ -3867,7 +3869,7 @@ function renderTable(list){
     const h = T_COLS[T_FIELDS.indexOf(f)];
     const rz = (f && f !== "need") ? `<span class="col-resize" data-field="${f}"></span>` : "";
     const lab = (f && FILTERABLE[f])
-      ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}"><span class="th-label">${h}</span><span class="fmk">▾</span></button>`
+      ? `<button type="button" class="th-flt${colFilterOn(f) ? " on" : ""}" data-flt="${f}"><span class="th-label">${h}</span><span class="fmk" aria-hidden="true"></span></button>`
       : `<span class="th-label">${h}</span>`;
     const gc = (f === "date") ? '<span class="gen-caret" aria-hidden="true">▾</span>' : "";
     return `<th data-field="${f}">${lab}${gc}${rz}</th>`;
@@ -6363,8 +6365,10 @@ function colHeaderMin(idx){
   const label = th.querySelector(".th-label");
   const cs = getComputedStyle(th);
   const pad = (parseFloat(cs.paddingLeft)||0) + (parseFloat(cs.paddingRight)||0);
-  const lw = label ? label.getBoundingClientRect().width : 0;
-  return Math.max(COLW_MIN, Math.ceil(lw + pad + 6));
+  const lw = label ? _measText(label.textContent, label) : 0;
+  const caret = th.querySelector(".gen-caret");
+  const caretWidth = caret?.offsetWidth ? caret.offsetWidth + parseFloat(getComputedStyle(caret).marginLeft) : 0;
+  return Math.max(COLW_MIN, Math.ceil(lw + pad + caretWidth + (parseFloat(cs.borderRightWidth)||0)));
 }
 function _measText(text, srcEl){
   if (!window._measEl){
@@ -6393,7 +6397,7 @@ function autoFitColumn(field){
     const pad = (parseFloat(cs.paddingLeft)||0) + (parseFloat(cs.paddingRight)||0);
     maxW = _measText(label.textContent, label) + pad;
   }
-  const hMin = Math.max(COLW_MIN, Math.ceil(maxW));
+  const hMin = colHeaderMin(idx);
   // 內容:量每格「文字實際寬度」(不受目前欄寬影響) + tcell 內距
   bodyTbl.querySelectorAll("tbody tr").forEach(tr => {
     const td = tr.children[idx]; if (!td) return;
@@ -6560,7 +6564,7 @@ tableWrap.addEventListener("click", e=>{
     if (it){
       const nm = buildBuyerName(it);
       if (nm){
-        const done = () => { genBtn.classList.remove("gen-flash"); void genBtn.offsetWidth; genBtn.classList.add("gen-flash"); setTimeout(() => genBtn.classList.remove("gen-flash"), 500); toast("已複製:" + nm); };
+        const done = () => { genBtn.classList.remove("gen-flash"); void genBtn.offsetWidth; genBtn.classList.add("gen-flash"); setTimeout(() => genBtn.classList.remove("gen-flash"), 500); toast("已複製：", nm); };
         if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(nm).then(done).catch(() => { if (legacyCopy(nm)) done(); }); }
         else if (legacyCopy(nm)){ done(); }
       } else { toast("此列資料不足,無法生成"); }
@@ -6710,7 +6714,7 @@ function copyCellText(cell){
   const ok = () => {
     cell.classList.remove("saved"); void cell.offsetWidth; cell.classList.add("saved");
     setTimeout(() => cell.classList.remove("saved"), 700);
-    toast("已複製：" + text);
+    toast("已複製：", text);
   };
   if (navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(ok).catch(() => { if (legacyCopy(text)) ok(); });
@@ -6735,7 +6739,7 @@ function copyFieldText(el){
   const ok = () => {
     el.classList.remove("copied"); void el.offsetWidth; el.classList.add("copied");
     setTimeout(() => el.classList.remove("copied"), 700);
-    toast("已複製：" + text);
+    toast("已複製：", text);
   };
   if (navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(ok).catch(() => { if (legacyCopy(text)) ok(); });
@@ -8403,11 +8407,18 @@ updateSortLabel();
 // ---- Toast + confirm dialog (native alert/confirm are blocked in the sandbox) ----
 const toastEl = document.getElementById("toast");
 let toastTimer = null;
-function toast(msg){
+function toast(msg, copiedText){
   toastEl.textContent = "";
   const _ti = document.createElement("div");
   _ti.className = "toast-in";
   _ti.textContent = msg;
+  toastEl.classList.toggle("copy-result", copiedText !== undefined);
+  if (copiedText !== undefined){
+    const value = document.createElement("span");
+    value.className = "copied-value";
+    value.textContent = copiedText;
+    _ti.append(value);
+  }
   toastEl.appendChild(_ti);
   toastEl.classList.add("show");
   clearTimeout(toastTimer);
@@ -9884,7 +9895,14 @@ function preventHeldDeleteScroll(e){
     if (document.caretPositionFromPoint){ const p=document.caretPositionFromPoint(x,y); if(p){ const r=document.createRange(); r.setStart(p.offsetNode,p.offset); r.collapse(true); return r; } }
     return null;
   }
-  function dsCopy(t){ if(!t) return; if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).catch(()=>legacyCopy(t)); else legacyCopy(t); }
+  async function dsCopy(text){
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      if (!legacyCopy(text)) return;
+    }
+    toast("已複製：", text);
+  }
   cardsEl.addEventListener("pointerdown", e => {
     copiedNote = null;
     if (editMode || selectMode || e.pointerType === "touch" || !e.isPrimary || e.button !== 0) return;
@@ -9918,7 +9936,6 @@ function preventHeldDeleteScroll(e){
       if (text){
         copiedNote = dsEl;
         dsCopy(text);
-        toast("已複製：" + text);
         setTimeout(() => {
           if (selection.rangeCount && selection.getRangeAt(0) === range) selection.removeAllRanges();
         }, 500);
@@ -12461,7 +12478,7 @@ const mountCustomerColorPalette = (() => {
     const th = scope+' th[data-field="'+field+'"]', head = th+' .th-label';
     const body = scope+' tbody tr[data-id] '+bodyTarget(field);
     const targets = {head,body:[body,body+' :is(span:not(.multi-dot),a,b,strong,em,s)',body+':empty::before',body+' :is(.topt-label,.tcat-label):empty::before'].join(',')};
-    const bounds=settings.head.size?th+' .th-flt{max-width:calc(100% + 16px)}'+head+'{display:inline-block;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;line-height:1.05}':'';
+    const bounds=settings.head.size?head+'{display:inline-block;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;line-height:1.05}':'';
     return bounds+parts.map(part=>{
       const look=settings[part];
       const css=(look.size?'font-size:'+look.size+'px!important;':'')+(look.color?'color:'+look.color+'!important;':'')+(look.weight?'font-weight:'+look.weight+'!important;':'');
