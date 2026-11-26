@@ -1320,6 +1320,21 @@
   .ptable:not(.ro) .tcell[contenteditable="false"][data-field]:focus{cursor:default;user-select:none;-webkit-user-select:none;}
   .ptable:not(.ro) .tcell[contenteditable="true"][data-field]{cursor:text;user-select:text;-webkit-user-select:text;}
   .tcell.saved{animation:tSaved .7s ease;}
+  #tableWrap .ptable .tcell[data-desktop-editor]:focus{
+    box-shadow:inset 0 0 0 1px var(--accent);
+  }
+  #tableWrap .ptable .tcell[data-desktop-editor]{white-space:pre;}
+  #tableWrap .ptable td:has(> [data-expanded-editor]){
+    position:relative;overflow:visible;z-index:7;
+  }
+  #tableWrap .ptable .tcell[data-expanded-editor]{
+    position:absolute;top:0;left:var(--editor-offset);width:var(--editor-width);
+    background:var(--card);text-overflow:clip;
+  }
+  #tableWrap .ptable .tcell[data-expanded-editor="wrap"]{
+    height:auto;min-height:var(--cell-height);max-height:8lh;white-space:pre-wrap;
+    overflow-wrap:anywhere;overflow-y:auto;
+  }
   /* 建檔日欄「生成買方名稱」面板:滑到該格最左窄感應帶,面板從左滑入覆蓋整格,點任一處生成並複製 */
   td.datewrap{position:relative;}
   .ptable thead th[data-field="date"]{padding-inline:2px;}
@@ -2891,7 +2906,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.26A";
+const APP_VERSION = "2026.11.26B";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -4004,7 +4019,7 @@ window.isTableBusy = function(){
   return false;
 };
 
-// LINE 組字期間不提交半成品；結束後沿用原有 200ms 自動儲存。
+// LINE 組字期間不提交半成品。
 tableWrap.addEventListener("compositionstart", e => {
   const cell = e.target.closest && e.target.closest('.tcell[data-field="line"]');
   if (cell){ cell._lineComposing = true; clearTimeout(cell._saveT); }
@@ -4012,8 +4027,8 @@ tableWrap.addEventListener("compositionstart", e => {
 tableWrap.addEventListener("compositionend", e => {
   const cell = e.target.closest && e.target.closest('.tcell[data-field="line"]');
   if (!cell) return;
-  cell._lineComposing = false; clearTimeout(cell._saveT);
-  cell._saveT = setTimeout(() => { if (cell.isConnected) tCommitCell(cell); }, 200);
+  cell._lineComposing = false;
+  tableDraftChanged(cell);
 }, true);
 // ---- inline editing ----
 function tFindItem(el){ const tr = el.closest("tr"); return tr ? items.find(x => x.id === tr.dataset.id) : null; }
@@ -4062,12 +4077,65 @@ function tCommitCell(cell){                       // 回傳 true=值有變更(�
 function caretEnd(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(false); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
 function caretStart(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(true); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
 function tCellIsEditing(cell){ return !!(cell && cell.classList && cell.classList.contains("tcell") && cell.dataset.field && cell.getAttribute("contenteditable") === "true"); }
+function startTableDraft(cell){
+  cell.toggleAttribute('data-desktop-editor', matchMedia('(any-pointer: fine)').matches || !!cell.closest('[data-quick-edit]'));
+  cell.setAttribute('contenteditable','true');
+  editorSizeObserver.disconnect();
+  if (cell.hasAttribute('data-desktop-editor')){
+    editorSizeObserver.observe(cell.closest('.tbody-wrap'));
+    editorSizeObserver.observe(cell.parentElement);
+  }
+}
+function sizeTableEditor(cell){
+  if (!cell?.hasAttribute('data-desktop-editor')) return;
+  const td = cell.parentElement, viewport = td.closest('.tbody-wrap');
+  const box = td.getBoundingClientRect(), original = box.width - td.clientLeft - parseFloat(getComputedStyle(td).borderRightWidth);
+  const left = viewport.getBoundingClientRect().left + viewport.clientLeft;
+  const right = left + viewport.clientWidth;
+  const css = getComputedStyle(cell);
+  const needed = _measText(cell.textContent, cell, true) + parseFloat(css.paddingLeft) + parseFloat(css.paddingRight);
+  if (needed <= original || box.right <= left || box.left >= right){
+    cell.removeAttribute('data-expanded-editor');
+    return;
+  }
+  const width = Math.min(Math.ceil(needed) + 1, viewport.clientWidth);
+  const x = Math.max(left, Math.min(box.left + (original - width) / 2, right - width));
+  cell.style.setProperty('--editor-width', width + 'px');
+  cell.style.setProperty('--editor-offset', (x - box.left) + 'px');
+  cell.dataset.expandedEditor = width < needed ? 'wrap' : 'line';
+}
+let editorResizeFrame = 0;
+function queueTableEditorSize(){
+  if (editorResizeFrame || !document.activeElement?.hasAttribute('data-desktop-editor')) return;
+  editorResizeFrame = requestAnimationFrame(() => {
+    editorResizeFrame = 0;
+    sizeTableEditor(document.activeElement);
+  });
+}
+tableWrap.addEventListener('scroll', queueTableEditorSize, true);
+window.addEventListener('resize', queueTableEditorSize);
+const editorSizeObserver = new ResizeObserver(queueTableEditorSize);
+function tableDraftChanged(cell){
+  clearTimeout(cell._saveT);
+  if (!tCellIsEditing(cell)) return;
+  if (cell.hasAttribute('data-desktop-editor')) sizeTableEditor(cell);
+  else if (!cell._lineComposing) cell._saveT = setTimeout(() => {
+    if (cell.isConnected && tCellIsEditing(cell)) tCommitCell(cell);
+  }, 200);
+}
 function tCellExitEdit(cell, opts){
   if (!tCellIsEditing(cell)) return;
   opts = opts || {};
   clearTimeout(cell._saveT);
   cell.setAttribute("contenteditable", "false");
-  if (opts.commit === false) return;
+  editorSizeObserver.disconnect();
+  cell.removeAttribute('data-desktop-editor');
+  cell.removeAttribute('data-expanded-editor');
+  if (opts.commit === false){
+    const value = tFindItem(cell)?.[cell.dataset.field] ?? '';
+    setCellText(cell, cell.dataset.field === 'line' ? normalizeLineSymbols(value) : String(value));
+    return;
+  }
   const run = () => {
     if (!cell.isConnected) return;
     if (tCommitCell(cell) && opts.flash !== false) tFlash(cell);
@@ -4103,7 +4171,7 @@ function tCellBeginType(cell){
   const active = document.activeElement;
   if (active && active !== cell && tCellIsEditing(active)) tCellExitEdit(active, {flash: false, defer: true});
   cell.textContent = "";
-  cell.setAttribute("contenteditable", "true");
+  startTableDraft(cell);
   cell.focus({ preventScroll: true });
   caretEnd(cell);
 }
@@ -4112,13 +4180,14 @@ function tCellEdit(cell, x, y, opts){
   if (!cell || !cell.classList.contains("tcell") || !cell.dataset.field || !editMode) return;
   const active = document.activeElement;
   if (active && active !== cell && tCellIsEditing(active)) tCellExitEdit(active, {flash: false, defer: true});
-  cell.setAttribute("contenteditable", "true");
+  startTableDraft(cell);
   cell.focus({ preventScroll: true });
   if (x != null && y != null){
     if (opts.syncCaret) tPlaceCaretAtPoint(cell, x, y);
     else requestAnimationFrame(() => tPlaceCaretAtPoint(cell, x, y));
   } else caretEnd(cell);
   tScrollFieldIntoView(cell);
+  sizeTableEditor(cell);
 }
 function tCellExtractPasteText(e){
   const cd = e.clipboardData || window.clipboardData;
@@ -4145,8 +4214,7 @@ function tCellPastePlain(cell, text){
   if (!cell || !text || !editMode) return;
   if (!tCellIsEditing(cell)) tCellBeginType(cell);
   tCellInsertPlainText(cell, text);
-  clearTimeout(cell._saveT);
-  cell._saveT = setTimeout(function(){ if (cell.isConnected) tCommitCell(cell); }, 200);
+  tableDraftChanged(cell);
 }
 function tCellCopyPlain(cell){
   if (!cell || !editMode) return "";
@@ -6351,10 +6419,7 @@ tableWrap.addEventListener("input", e => {
     const txt = cell.textContent; cell.textContent = txt;
     try { const r = document.createRange(); r.selectNodeContents(cell); r.collapse(false); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } catch(err){}
   }
-  // 邊打邊存的保險:一般格原本只在 blur 才 commit,這裡加 debounce 自動落地。
-  // 就算 App 被直接滑掉/強制關閉(visibilitychange、pagehide 未必觸發),資料也已寫進 items,最多只漏最後 ~0.2 秒的字。
-  clearTimeout(cell._saveT);
-  cell._saveT = setTimeout(function(){ if (cell.isConnected) tCommitCell(cell); }, 200);
+  tableDraftChanged(cell);
 });
 
 // ---- 欄寬拖曳 / 雙擊自適應 ----
@@ -6370,7 +6435,7 @@ function colHeaderMin(idx){
   const caretWidth = caret?.offsetWidth ? caret.offsetWidth + parseFloat(getComputedStyle(caret).marginLeft) : 0;
   return Math.max(COLW_MIN, Math.ceil(lw + pad + caretWidth + (parseFloat(cs.borderRightWidth)||0)));
 }
-function _measText(text, srcEl){
+function _measText(text, srcEl, preserveSpaces = false){
   if (!window._measEl){
     const m = document.createElement("span");
     m.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap;top:-9999px;left:-9999px;pointer-events:none;padding:0;margin:0;border:0;";
@@ -6378,6 +6443,7 @@ function _measText(text, srcEl){
     window._measEl = m;
   }
   const m = window._measEl, cs = getComputedStyle(srcEl);
+  m.style.whiteSpace = preserveSpaces ? 'pre' : 'nowrap';
   ["fontFamily","fontSize","fontWeight","fontStyle","letterSpacing","fontVariantNumeric","textTransform"].forEach(p => { m.style[p] = cs[p]; });
   m.textContent = text || "";
   return m.getBoundingClientRect().width;
@@ -6457,12 +6523,21 @@ window.addEventListener("pointercancel", _rzEnd);
 tableWrap.addEventListener("keydown", e=>{
   const c = e.target;
   if (!c.classList || !c.classList.contains("tcell") || !c.dataset.field) return;
+  if (e.isComposing || e.keyCode === 229){
+    if (tCellIsEditing(c) && (e.key === 'Escape' || e.key === 'Enter')) e.stopPropagation();
+    return;
+  }
   if (e.key === "Enter"){
     e.preventDefault();
     if (tCellIsEditing(c)) tCellExitEdit(c);
     tNavGrid(c, 1, 0);
   } else if (e.key === "Escape"){
-    if (tCellIsEditing(c)){ e.preventDefault(); tCellExitEdit(c); tCellSelect(c); }
+    if (tCellIsEditing(c)){
+      e.preventDefault();
+      e.stopPropagation();
+      tCellExitEdit(c, {commit: !c.hasAttribute('data-desktop-editor')});
+      tCellSelect(c);
+    }
     else c.blur();
   } else if (e.key === "F2"){
     e.preventDefault();
@@ -6486,8 +6561,7 @@ tableWrap.addEventListener("keydown", e => {
     e.preventDefault();
     tCellBeginType(c);
     try { document.execCommand("insertText", false, e.key); } catch(err){ c.textContent = e.key; caretEnd(c); }
-    clearTimeout(c._saveT);
-    c._saveT = setTimeout(function(){ if (c.isConnected) tCommitCell(c); }, 200);
+    tableDraftChanged(c);
   }
 }, true);
 tableWrap.addEventListener("compositionstart", e => {
@@ -12200,7 +12274,7 @@ let syncConnected = false, syncEmail = null;
   e.preventDefault();e.stopImmediatePropagation();const id=td.closest('tr').dataset.id,field=td.dataset.quickEdit;
   closeOptMenu();closeCatMenu();restoreCell(td);const tr=tableWrap.querySelector(`tr[data-id="${id}"]`),normal=tr?.cells[visibleTableFields().indexOf(field)]?.querySelector('.tcell');if(normal)copyCellText(normal);
  },true);
- window.addEventListener('keydown',e=>{const c=e.target.closest('[data-quick-edit] .tcell[contenteditable="true"]');if(!c||e.isComposing||e.keyCode===229)return;if(['Enter','Escape','Tab'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();const td=c.closest('td');tCellExitEdit(c);c.blur();restoreCell(td);}},true);
+ window.addEventListener('keydown',e=>{const c=e.target.closest('[data-quick-edit] .tcell[contenteditable="true"]');if(!c||e.isComposing||e.keyCode===229)return;if(['Enter','Escape','Tab'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();const td=c.closest('td');tCellExitEdit(c,{commit:e.key!=='Escape'});c.blur();restoreCell(td);}},true);
  window.addEventListener('paste',e=>{const c=e.target.closest('[data-quick-edit] .tcell[contenteditable="true"]');if(!c)return;e.preventDefault();e.stopImmediatePropagation();withEditing(()=>tCellPastePlain(c,tCellExtractPasteText(e)));},true);
  window.addEventListener('blur',e=>{if(e.target.closest?.('[data-quick-edit]'))queueMicrotask(cleanCells);},true);
  for(const node of [toptmenu,catmenu,document.getElementById('calBg')])new MutationObserver(()=>queueMicrotask(cleanCells)).observe(node,{attributes:true,attributeFilter:['class']});
