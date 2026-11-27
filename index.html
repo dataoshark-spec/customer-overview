@@ -2974,7 +2974,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27O";
+const APP_VERSION = "2026.11.27P";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3195,7 +3195,7 @@ function cardHTML(d){
         <dl class="profile-criteria"><div><dt>區域</dt><dd class="profile-area">${areas||missing}</dd></div>
           <div><dt>條件</dt><dd>${conditions}</dd></div></dl></div>
       <div class="ov-need"><div class="profile-note-label">客需</div><div class="ov-need-in">${brief||missing}</div></div>
-      <dl class="profile-meta"><div><dt>來源</dt><dd>${esc(String(d.source ?? "").trim())||missing}</dd></div><div class="shared"><dt>共有</dt><dd>${esc(shared)||missing}</dd></div><div class="date"><dt>建檔</dt><dd>${esc(String(d.date ?? "").trim())||missing}</dd></div></dl>
+      <dl class="profile-meta"><div><dt>來源</dt><dd>${esc(String(d.source ?? "").trim())||missing}</dd></div><div class="shared"><dt${shared ? "" : " hidden"}>共有</dt><dd>${esc(shared)||"無共有"}</dd></div><div class="date"><dt>建檔</dt><dd>${esc(String(d.date ?? "").trim())||missing}</dd></div></dl>
       <div class="agent"><div class="agent-info">LINE <b>${esc(normalizeLineSymbols(d.line).trim())||missing}</b></div>
         ${phone ? `<a class="tel" href="tel:${esc(phone)}" aria-label="撥打 ${esc(phone)}">${TELSVG}${esc(phone)}</a>` : `<span class="phone-empty">電話　${missing}</span>`}</div>
     </div></article>`;
