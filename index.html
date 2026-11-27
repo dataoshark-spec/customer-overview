@@ -1917,6 +1917,20 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
     </div>
     <div class="settings-body">
 
+      <div class="set-card" id="androidBrowserCard" hidden>
+        <label class="set-card-title" for="androidBrowserSelect">外部網站使用的瀏覽器</label>
+        <p class="set-card-desc" id="androidBrowserHint">請選擇這支手機已安裝的瀏覽器。若網站仍在客戶總覽內開啟，可改選另一款瀏覽器。</p>
+        <div class="set-actions">
+          <select class="s-btn" id="androidBrowserSelect" aria-describedby="androidBrowserHint">
+            <option value="">自動（沿用目前瀏覽器）</option>
+            <option value="com.android.chrome">Chrome</option>
+            <option value="com.microsoft.emmx">Microsoft Edge</option>
+            <option value="org.mozilla.firefox">Firefox</option>
+            <option value="com.sec.android.app.sbrowser">Samsung Internet</option>
+          </select>
+        </div>
+      </div>
+
       <div class="set-card" id="syncCard">
         <div class="set-card-title">Google 雲端同步</div>
         <p class="set-card-desc">連結 Google 帳號後，已儲存的客戶資料可在使用新版的裝置間同步。同一欄位自動採用較新的修改，取代前會保留備份。</p>
@@ -2950,7 +2964,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27G";
+const APP_VERSION = "2026.11.27H";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3004,15 +3018,37 @@ const safeUrl = u => {
   if (/^[a-z][a-z0-9+.-]*:/i.test(s)) return "";
   return "https://" + s.replace(/^\/+/, "");
 };
+const androidBrowserPrefKey="customer_external_browser_android_v1";
+const androidBrowserSelect=document.getElementById("androidBrowserSelect");
+function isAndroidStandalone(){
+  return /android/i.test(navigator.userAgent)&&matchMedia("(display-mode: standalone)").matches;
+}
+function showAndroidBrowserPreference(){
+  if(!isAndroidStandalone())return;
+  document.getElementById("androidBrowserCard").hidden=false;
+  try{androidBrowserSelect.value=localStorage.getItem(androidBrowserPrefKey)||"";}
+  catch{androidBrowserSelect.value="";}
+  if(androidBrowserSelect.selectedIndex<0)androidBrowserSelect.value="";
+}
+showAndroidBrowserPreference();
+window.addEventListener("storage",event=>{
+  if(event.key===androidBrowserPrefKey||event.key===null)showAndroidBrowserPreference();
+});
+androidBrowserSelect.addEventListener("change",()=>{
+  try{
+    if(androidBrowserSelect.value)localStorage.setItem(androidBrowserPrefKey,androidBrowserSelect.value);
+    else localStorage.removeItem(androidBrowserPrefKey);
+  }catch{toast("此設定只在這次開啟期間有效");}
+});
 function androidBrowserIntent(href){
-  if(!/android/i.test(navigator.userAgent)||!matchMedia("(display-mode: standalone)").matches)return "";
+  if(!isAndroidStandalone())return "";
   let url;
   try{url=new URL(href);}catch(_){return "";}
   if(!["https:","http:"].includes(url.protocol)||url.origin===location.origin)return "";
   const ua=navigator.userAgent;
-  const browserPackage=/SamsungBrowser/i.test(ua)?"com.sec.android.app.sbrowser"
+  const browserPackage=androidBrowserSelect.value||(/SamsungBrowser/i.test(ua)?"com.sec.android.app.sbrowser"
     : /EdgA\//i.test(ua)?"com.microsoft.emmx"
-    : /Firefox\//i.test(ua)?"org.mozilla.firefox":"com.android.chrome";
+    : /Firefox\//i.test(ua)?"org.mozilla.firefox":"com.android.chrome");
   return "intent:"+url.href.slice(url.protocol.length)+"#Intent;scheme="+url.protocol.slice(0,-1)
     +";action=android.intent.action.VIEW;package="+browserPackage+";B.create_new_tab=true;S.browser_fallback_url="+encodeURIComponent(url.href)+";end";
 }
