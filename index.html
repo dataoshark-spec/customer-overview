@@ -1804,8 +1804,10 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 .profile-card .profile-area span{display:inline-block;max-width:100%}
 .profile-card .ov-need{grid-template-columns:fit-content(32%) minmax(0,1fr);margin:8px 16px 0;padding:7px 10px;background:var(--surface-1);border:0;border-radius:6px}
 .profile-card .ov-need-in{display:block;min-width:0;font-size:.94rem;overflow-wrap:anywhere}
-.profile-card .profile-meta{display:grid;grid-template-columns:minmax(0,1fr) calc(5.2em + 8ch);gap:4px 12px;margin:10px 16px 0}
-.profile-meta .date{grid-column:2;grid-row:1}.profile-meta .shared{grid-column:1/-1}
+.profile-card .profile-meta{display:grid;grid-template-columns:minmax(0,1fr) fit-content(48%) minmax(0,1fr);gap:8px;align-items:start;margin:10px 16px 0}
+.profile-meta>div{display:flex;align-items:baseline;gap:4px;min-width:0}
+.profile-meta dt{flex:none}
+.profile-meta dd{min-width:0;overflow-wrap:anywhere}
 .profile-card .agent{margin-top:8px;border-top:1px solid var(--line);padding:6px 16px;flex-wrap:wrap}
 #cards > .card.profile-card .agent-info,#cards > .card.profile-card .agent-info b{color:var(--ink-soft)}
 .profile-card .tel{margin-inline-start:auto}.profile-card .tel svg{color:var(--ink-soft)}
@@ -2965,7 +2967,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27I";
+const APP_VERSION = "2026.11.27J";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3188,7 +3190,7 @@ function cardHTML(d){
         <dl class="profile-criteria"><div><dt>區域</dt><dd class="profile-area">${areas||missing}</dd></div>
           <div><dt>條件</dt><dd>${conditions}</dd></div></dl></div>
       <div class="ov-need"><div class="profile-note-label">${esc(needTitle(d,summary.sg))}</div><div class="ov-need-in">${brief||missing}</div></div>
-      <div class="profile-meta"><span>來源　${esc(String(d.source ?? "").trim())||missing}</span><span class="date">建檔日期　${esc(String(d.date ?? "").trim())||missing}</span><span class="shared">共有　${esc(shared)||missing}</span></div>
+      <dl class="profile-meta"><div><dt>來源</dt><dd>${esc(String(d.source ?? "").trim())||missing}</dd></div><div class="date"><dt>建檔日期</dt><dd>${esc(String(d.date ?? "").trim())||missing}</dd></div><div class="shared"><dt>共有</dt><dd>${esc(shared)||missing}</dd></div></dl>
       <div class="agent"><div class="agent-info">LINE <b>${esc(normalizeLineSymbols(d.line).trim())||missing}</b></div>
         ${phone ? `<a class="tel" href="tel:${esc(phone)}" aria-label="撥打 ${esc(phone)}">${TELSVG}${esc(phone)}</a>` : `<span class="phone-empty">電話　${missing}</span>`}</div>
     </div></article>`;
