@@ -1208,7 +1208,10 @@
     .row-area,.row-rooms{grid-template-columns:minmax(0,1fr) minmax(0,2fr);}
   }
   .cselect-txt.ph{color:var(--text-faint);}
-  .opt-menu{left:0;right:auto;width:max-content;min-width:max(210px,100%);max-width:min(320px,90vw);max-height:280px;overflow-y:auto;overflow-x:hidden;padding:6px 6px 0;}
+  .opt-menu{left:0;right:auto;width:max-content;min-width:max(210px,100%);max-width:min(320px,90vw);max-height:100vh;overflow-y:auto;overflow-x:hidden;padding:6px 6px 0;}
+  .opt-menu > *{flex-shrink:0;}
+  .opt-menu.opens-up{top:auto;bottom:calc(100% + 6px);}
+  .opt-menu.scroll-footer > .opt-add{position:static;}
   #pnumMenu,#sharedMenu{left:auto;right:0;}                                        /* 靠右欄位的下拉需留在視窗內 */
   .opt-menu .opt-add{margin:0 -6px;padding:9px 15px;border-radius:0 0 12px 12px;} /* 底部圓角補滿,不露底 */
   .pk-num .opt-menu{left:auto;right:0;}
@@ -2970,7 +2973,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27M";
+const APP_VERSION = "2026.11.27N";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -9378,6 +9381,33 @@ function optList(key,options=customOpts,records=items,order=optOrder){
   }
   return present;
 }
+// Keep the option list inside the visible part of the editor, including when the keyboard opens.
+function sizeFormOptionMenu(sel){
+  const menu=sel.querySelector(".opt-menu");
+  const anchor=sel.getBoundingClientRect();
+  const body=sel.closest(".modal-body").getBoundingClientRect();
+  const viewport=window.visualViewport;
+  const top=Math.max(body.top,viewport?.offsetTop ?? 0);
+  const bottom=Math.min(body.bottom,viewport ? viewport.offsetTop+viewport.height : innerHeight);
+  const gap=6;
+  const below=Math.max(0,Math.floor(bottom-anchor.bottom-gap));
+  const above=Math.max(0,Math.floor(anchor.top-top-gap));
+  const natural=menu.scrollHeight+menu.offsetHeight-menu.clientHeight;
+  const up=below<natural && above>below;
+  const available=up ? above : below;
+  menu.classList.toggle("opens-up",up);
+  menu.style.maxHeight=available+"px";
+  const footer=menu.querySelector(".opt-add");
+  menu.classList.toggle("scroll-footer",!!footer && available<footer.offsetHeight+56);
+}
+function resizeOpenFormMenu(){
+  const sel=document.querySelector("#modalBg .opt-sel.open");
+  if(sel) sizeFormOptionMenu(sel);
+}
+document.querySelector("#modalBg .modal-body").addEventListener("scroll",resizeOpenFormMenu,{passive:true});
+window.addEventListener("resize",resizeOpenFormMenu);
+window.visualViewport?.addEventListener("resize",resizeOpenFormMenu);
+window.visualViewport?.addEventListener("scroll",resizeOpenFormMenu);
 function makeOptSel(key, emptyLabel, multi){
   const sel = document.getElementById(key+"Sel"), btn = document.getElementById(key+"Btn"),
         txt = document.getElementById(key+"Txt"), menu = document.getElementById(key+"Menu");
@@ -9385,6 +9415,7 @@ function makeOptSel(key, emptyLabel, multi){
   function renderMenu(){
     const emptyOn = vals.length === 0;
     menu.innerHTML = buildOptMenuHTML(key, vals, multi, emptyOn, vals[0] || "");
+    if(sel.classList.contains("open")) sizeFormOptionMenu(sel);
   }
   function show(){
     const p = vals[0] || "";
@@ -9414,7 +9445,7 @@ function makeOptSel(key, emptyLabel, multi){
   });
   btn.addEventListener("click", e => { e.stopPropagation(); const was = sel.classList.contains("open");
     document.querySelectorAll(".opt-sel.open").forEach(x => x.classList.remove("open")); closeCatSel();
-    if (!was){ menu.classList.remove("opt-editing"); renderMenu(); sel.classList.add("open"); } });
+    if (!was){ menu.classList.remove("opt-editing"); sel.classList.add("open"); renderMenu(); menu.scrollTop=0; } });
   menu.addEventListener("click", e => {
     const rename=e.target.closest("[data-rename-option]");
     if(rename){
