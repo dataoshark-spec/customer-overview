@@ -868,6 +868,7 @@
   .cselect.open .cselect-btn{border-color:var(--accent);box-shadow:0 0 0 3px rgba(43,92,168,.12);}
   .cselect-txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}
   .cselect-chev{flex:none;font-size:.68rem;color:var(--ink-soft);transition:transform .18s ease;}
+  #modalBg .cselect-chev{width:0;height:0;border-inline:3px solid transparent;border-top:3px solid currentColor;}
   .cselect.open .cselect-chev{transform:rotate(180deg);}
   .cselect-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:20;min-width:158px;max-width:230px;
     background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;
@@ -2006,7 +2007,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
           <div class="cselect" id="catSel">
             <button type="button" class="cselect-btn" id="catSelBtn" aria-haspopup="listbox" aria-expanded="false">
               <span class="cselect-txt" id="catSelTxt"></span>
-              <span class="cselect-chev">▾</span>
+              <span class="cselect-chev" aria-hidden="true"></span>
             </button>
             <div class="cselect-menu" id="catSelMenu" role="listbox"></div>
           </div>
@@ -2014,11 +2015,11 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
         </div>
         <div class="row3">
           <label>來源
-            <div class="cselect opt-sel" id="sourceSel"><button type="button" class="cselect-btn" id="sourceBtn" aria-haspopup="listbox" aria-label="選擇客戶來源"><span class="cselect-txt" id="sourceTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="sourceMenu" role="listbox"></div></div>
+            <div class="cselect opt-sel" id="sourceSel"><button type="button" class="cselect-btn" id="sourceBtn" aria-haspopup="listbox" aria-label="選擇客戶來源"><span class="cselect-txt" id="sourceTxt"></span><span class="cselect-chev" aria-hidden="true"></span></button><div class="cselect-menu opt-menu" id="sourceMenu" role="listbox"></div></div>
           </label>
           <label>詢問案<input id="f_ask"></label>
           <label>共有
-            <div class="cselect opt-sel" id="sharedSel"><button type="button" class="cselect-btn" id="sharedBtn" aria-haspopup="listbox" aria-label="選擇共有名稱"><span class="cselect-txt" id="sharedTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="sharedMenu" role="listbox" aria-multiselectable="true"></div></div>
+            <div class="cselect opt-sel" id="sharedSel"><button type="button" class="cselect-btn" id="sharedBtn" aria-haspopup="listbox" aria-label="選擇共有名稱"><span class="cselect-txt" id="sharedTxt"></span><span class="cselect-chev" aria-hidden="true"></span></button><div class="cselect-menu opt-menu" id="sharedMenu" role="listbox" aria-multiselectable="true"></div></div>
           </label>
         </div>
         <div class="row3">
@@ -2028,22 +2029,22 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
         </div>
         <div class="row3">
           <label>狀態
-            <div class="cselect opt-sel" id="statusSel"><button type="button" class="cselect-btn" id="statusBtn" aria-haspopup="listbox"><span class="cselect-txt" id="statusTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="statusMenu" role="listbox"></div></div>
+            <div class="cselect opt-sel" id="statusSel"><button type="button" class="cselect-btn" id="statusBtn" aria-haspopup="listbox"><span class="cselect-txt" id="statusTxt"></span><span class="cselect-chev" aria-hidden="true"></span></button><div class="cselect-menu opt-menu" id="statusMenu" role="listbox"></div></div>
           </label>
           <label>需求區域
-            <div class="cselect opt-sel" id="areaSel"><button type="button" class="cselect-btn" id="areaBtn" aria-haspopup="listbox"><span class="cselect-txt" id="areaTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="areaMenu" role="listbox"></div></div>
+            <div class="cselect opt-sel" id="areaSel"><button type="button" class="cselect-btn" id="areaBtn" aria-haspopup="listbox"><span class="cselect-txt" id="areaTxt"></span><span class="cselect-chev" aria-hidden="true"></span></button><div class="cselect-menu opt-menu" id="areaMenu" role="listbox"></div></div>
           </label>
           <label>預算金額（萬）<input id="f_budget" placeholder="例:2000-2500、1500以內"></label>
         </div>
         <div class="row3">
           <label>需求房數
-            <div class="cselect opt-sel" id="roomsSel"><button type="button" class="cselect-btn" id="roomsBtn" aria-haspopup="listbox"><span class="cselect-txt" id="roomsTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="roomsMenu" role="listbox"></div></div>
+            <div class="cselect opt-sel" id="roomsSel"><button type="button" class="cselect-btn" id="roomsBtn" aria-haspopup="listbox"><span class="cselect-txt" id="roomsTxt"></span><span class="cselect-chev" aria-hidden="true"></span></button><div class="cselect-menu opt-menu" id="roomsMenu" role="listbox"></div></div>
           </label>
           <label>車位類型
-            <div class="cselect opt-sel" id="ptypeSel"><button type="button" class="cselect-btn" id="ptypeBtn" aria-haspopup="listbox"><span class="cselect-txt" id="ptypeTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="ptypeMenu" role="listbox"></div></div>
+            <div class="cselect opt-sel" id="ptypeSel"><button type="button" class="cselect-btn" id="ptypeBtn" aria-haspopup="listbox"><span class="cselect-txt" id="ptypeTxt"></span><span class="cselect-chev" aria-hidden="true"></span></button><div class="cselect-menu opt-menu" id="ptypeMenu" role="listbox"></div></div>
           </label>
           <label>車位數
-            <div class="cselect opt-sel" id="pnumSel"><button type="button" class="cselect-btn" id="pnumBtn" aria-haspopup="listbox"><span class="cselect-txt" id="pnumTxt"></span><span class="cselect-chev">▾</span></button><div class="cselect-menu opt-menu" id="pnumMenu" role="listbox"></div></div>
+            <div class="cselect opt-sel" id="pnumSel"><button type="button" class="cselect-btn" id="pnumBtn" aria-haspopup="listbox"><span class="cselect-txt" id="pnumTxt"></span><span class="cselect-chev" aria-hidden="true"></span></button><div class="cselect-menu opt-menu" id="pnumMenu" role="listbox"></div></div>
           </label>
         </div>
         <div class="f-need f-need3">
@@ -2969,7 +2970,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27K";
+const APP_VERSION = "2026.11.27L";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
