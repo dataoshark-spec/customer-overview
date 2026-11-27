@@ -1158,9 +1158,9 @@
   .exp-focus-on .tbody-wrap table:has(tr.exp-open) tbody tr:not(.exp-open):not(.needexp) > td{opacity:.32;transition:opacity .2s;}
   /* 展開聚焦切換鈕(只在表格檢視顯示) */
   .exp-focus-btn{display:none;}
-  .table-mode .exp-focus-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink-soft);cursor:pointer;flex:none;transition:all .15s;}
+  .table-mode .exp-focus-btn,#statusHideBtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink-soft);cursor:pointer;flex:none;transition:all .15s;}
   .exp-focus-btn svg{width:18px;height:18px;}
-  .exp-focus-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .exp-focus-btn.on,#statusHideBtn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
   .ptable .discreet-revealed{
     --reveal-tint:rgba(255,217,122,.50);
     --reveal-shadow:inset 2px 0 #c48b24,inset -2px 0 #c48b24,inset 0 0 0 100px var(--reveal-tint);
@@ -1174,18 +1174,20 @@
   @media(prefers-reduced-motion:reduce){
     .ptable .discreet-revealed{animation:none;box-shadow:var(--reveal-shadow);}
   }
-  #discreetBtn{-webkit-touch-callout:none;user-select:none;touch-action:manipulation;}
-  #discreetDialog{position:fixed;inset:0;margin:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;width:min(380px,calc(100vw - 28px));max-height:85dvh;overflow:auto;padding:18px;box-shadow:0 16px 50px rgba(22,34,42,.24);}
-  #discreetDialog::backdrop{background:rgba(12,20,18,.45);}
-  #discreetDialog h2{margin:0;font-size:1.1rem;}
-  #discreetDialog p{color:var(--ink-soft);font-size:.84rem;margin:8px 0;}
-  #discreetChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;}
-  #discreetChoices label{display:flex;align-items:center;gap:7px;min-height:36px;padding:5px 2px;cursor:pointer;}
-  #discreetChoices input{accent-color:var(--accent);width:16px;height:16px;}
-  #discreetDialog .fpanel-foot{justify-content:flex-end;border-top:1px solid var(--line);padding-top:12px;}
+  :is(#discreetBtn,#statusHideBtn){-webkit-touch-callout:none;user-select:none;touch-action:manipulation;}
+  .visibility-dialog{position:fixed;inset:0;margin:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;width:min(380px,calc(100vw - 28px));max-height:85dvh;overflow:auto;padding:18px;box-shadow:0 16px 50px rgba(22,34,42,.24);}
+  .visibility-dialog::backdrop{background:rgba(12,20,18,.45);}
+  .visibility-dialog h2{margin:0;font-size:1.1rem;}
+  .visibility-dialog p{color:var(--ink-soft);font-size:.84rem;margin:8px 0;}
+  .visibility-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;}
+  .visibility-choices label{display:flex;align-items:center;gap:7px;min-height:36px;padding:5px 2px;cursor:pointer;}
+  .visibility-choices input{accent-color:var(--accent);width:16px;height:16px;}
+  .visibility-dialog .fpanel-foot{justify-content:flex-end;border-top:1px solid var(--line);padding-top:12px;}
+  #statusHideChoices label{min-width:0;overflow-wrap:anywhere}
+  #statusHideChoices input{flex:none}
   .table-wrap .discreet-empty{margin:0;padding:28px 12px;color:var(--ink-soft);text-align:center;}
-  @media(max-width:440px){#discreetChoices{grid-template-columns:repeat(2,minmax(0,1fr));}}
-  @media(pointer:coarse){#discreetChoices label{min-height:44px;}}
+  @media(max-width:440px){.visibility-choices{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(pointer:coarse){.visibility-choices label{min-height:44px;}}
   @media(max-width:430px){
     .table-mode .ctrl-right{gap:4px;}
     .table-mode .sortsel{min-width:0;}
@@ -1910,6 +1912,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
         </div>
         <div class="ctrl-right">
           <button type="button" class="flt-clear-btn" id="fltClearAll" title="清除所有欄位篩選" aria-label="清除所有欄位篩選"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h14l-5.4 6.4V18l-3.2 1.6v-8.2L3.5 5Z"/><path d="m17 16 4.5 4.5M21.5 16 17 20.5"/></svg></button>
+          <button type="button" class="exp-focus-btn" id="statusHideBtn" title="隱藏狀態：點一下切換，長按選擇狀態" aria-label="隱藏狀態" aria-pressed="false" aria-haspopup="dialog" aria-controls="statusHideDialog"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h17l-6.5 7.5V18l-4 2v-7.5zM16 18h6"/></svg></button>
           <button type="button" class="exp-focus-btn" id="discreetBtn" title="低調模式：點一下切換，長按設定隱藏欄位" aria-label="低調模式" aria-pressed="false" aria-haspopup="dialog" aria-controls="discreetDialog"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M9.8 5.5a12.3 12.3 0 0 1 2.2-.2c6.2 0 10 6.7 10 6.7a18.6 18.6 0 0 1-3 3.9M6.1 6.9A18.1 18.1 0 0 0 2 12s3.8 6.7 10 6.7c1.8 0 3.5-.5 5-1.3M9.6 9.6a3.4 3.4 0 0 0 4.8 4.8"/></svg></button>
           <button type="button" class="exp-focus-btn" id="expFocusBtn" title="展開需求時聚焦：其他列變淡" aria-pressed="false" aria-label="展開聚焦"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="2.5" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="21.5" y2="12"/></svg></button>
           <button type="button" class="view-btn" id="viewBtn" title="切換檢視" aria-label="切換檢視"></button>
@@ -2148,13 +2151,22 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
   </div>
 
   <!-- ===== Toast ===== -->
-  <dialog id="discreetDialog" aria-labelledby="discreetTitle" aria-describedby="discreetDesc">
+  <dialog class="visibility-dialog" id="discreetDialog" aria-labelledby="discreetTitle" aria-describedby="discreetDesc">
     <h2 id="discreetTitle">低調模式設定</h2>
     <p id="discreetDesc">勾選開啟時要隱藏的欄位</p>
-    <div id="discreetChoices"></div>
+    <div class="visibility-choices" id="discreetChoices"></div>
     <div class="fpanel-foot">
       <button type="button" class="cal-fbtn cal-cancel" id="discreetCancel">取消</button>
       <button type="button" class="cal-fbtn cal-today" id="discreetApply">套用</button>
+    </div>
+  </dialog>
+  <dialog class="visibility-dialog" id="statusHideDialog" aria-labelledby="statusHideTitle" aria-describedby="statusHideDesc">
+    <h2 id="statusHideTitle">隱藏狀態</h2>
+    <p id="statusHideDesc">勾選要隱藏的客戶狀態。套用後，表格和卡片都會隱藏這些客戶。</p>
+    <div class="visibility-choices" id="statusHideChoices"></div>
+    <div class="fpanel-foot">
+      <button type="button" class="cal-fbtn cal-cancel" id="statusHideCancel">取消</button>
+      <button type="button" class="cal-fbtn cal-today" id="statusHideApply">套用</button>
     </div>
   </dialog>
   <!-- ===== Install banner ===== -->
@@ -2982,7 +2994,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27T";
+const APP_VERSION = "2026.11.27U";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3839,6 +3851,15 @@ function buildOptMenuHTML(optKey, curArr, multi, emptyOn, curSingle){
 }
 const T_COLS = ["建檔日","狀態","區域","類型","預算","房數","車類","車數","客戶","電話","LINE","來源","詢問","共有","客戶需求"];
 const T_FIELDS = ["date","status","area","cat","budget","rooms","pType","pNum","cust","tel","line","source","ask","shared","need"];
+const HIDDEN_STATUS_KEY = "customer_app_hidden_status_v1";
+function readHiddenStatus(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(HIDDEN_STATUS_KEY));
+    const values=new Set(Array.isArray(saved?.values)?saved.values.filter(v=>typeof v==="string"&&v.length):[]);
+    return {on:saved?.on===true&&values.size>0,values};
+  }catch{return {on:false,values:new Set()};}
+}
+let hiddenStatus=readHiddenStatus();
 const DISCREET_KEY = "customer_app_discreet_v1";
 function loadDiscreet(){
   try {
@@ -7348,7 +7369,15 @@ function commitTablePick(field,it,value,previousOpts,remove){
 }
 function setOptValue(v, opts, previousOpts){
   const it = tFindItem(toptTrigger);
-  if (toptField === "status") return commitTablePick("status",it,v,previousOpts);
+  if (toptField === "status"){
+    const result=commitTablePick("status",it,v,previousOpts);
+    if(result==="changed" && hiddenStatus.on && fieldVals(it,"status").some(value=>hiddenStatus.values.has(value))){
+      closeOptMenu();
+      applyFilter();
+      document.getElementById("statusHideBtn").focus({preventScroll:true});
+    }
+    return result;
+  }
   if (toptField === "shared"){
     const next=v ? clickMultiFieldVal(it?.shared,v,opts) : "";
     if (asFieldVals(next).length>500){
@@ -7996,20 +8025,52 @@ function applyExpFocus(){
 (function(){ const b = document.getElementById("expFocusBtn"); if (b) b.addEventListener("click", () => { expFocus = !expFocus; saveExpFocus(); applyExpFocus(); onLocalChange("settings"); toast(expFocus ? "展開聚焦：開" : "展開聚焦：關"); }); applyExpFocus(); })();
 
 // Local presentation preference. Customer records, filter criteria and synced preferences are independent.
-const discreetDialog = document.getElementById("discreetDialog");
-(function(){
-  const button = document.getElementById("discreetBtn");
-  const choices = document.getElementById("discreetChoices");
+function bindVisibilityButton(button,dialog,openDialog,toggle){
   let hold = null, suppressTap = false;
   // A touch that opens a native dialog can send its release-click to a checkbox
   // under the finger. Only a new gesture may activate a dialog control.
   let suppressDialogClick = false;
-  discreetDialog.addEventListener("pointerdown",() => { suppressDialogClick = false; },true);
-  discreetDialog.addEventListener("click", e => {
+  dialog.addEventListener("pointerdown",() => { suppressDialogClick = false; },true);
+  dialog.addEventListener("click", e => {
     if (suppressDialogClick && e.detail){
       suppressDialogClick = false; e.preventDefault(); e.stopImmediatePropagation();
     }
   },true);
+  function stopHold(){
+    if (hold) clearTimeout(hold.timer);
+    hold = null;
+  }
+  button.addEventListener("pointerdown", e => {
+    if (!e.isPrimary || e.button !== 0){ stopHold(); return; }
+    stopHold(); suppressTap = false;
+    hold = {id:e.pointerId,x:e.clientX,y:e.clientY,timer:setTimeout(() => {
+      suppressTap = true; suppressDialogClick = true; openDialog();
+    },550)};
+    button.setPointerCapture(e.pointerId);
+  });
+  button.addEventListener("pointermove", e => {
+    if (hold && e.pointerId === hold.id && Math.hypot(e.clientX-hold.x,e.clientY-hold.y)>10){ suppressTap = true; stopHold(); }
+  });
+  button.addEventListener("pointerup",stopHold);
+  button.addEventListener("pointercancel",() => { suppressTap = true; stopHold(); });
+  button.addEventListener("lostpointercapture",stopHold);
+  window.addEventListener("blur",stopHold);
+  button.addEventListener("contextmenu", e => e.preventDefault());
+  button.addEventListener("click", e => {
+    if (e.detail && suppressTap){ suppressTap = false; return; }
+    if (dialog.open) return;
+    toggle();
+  });
+  button.addEventListener("keydown", e => {
+    if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")){
+      e.preventDefault(); openDialog();
+    }
+  });
+}
+const discreetDialog = document.getElementById("discreetDialog");
+(function(){
+  const button = document.getElementById("discreetBtn");
+  const choices = document.getElementById("discreetChoices");
   function syncButton(){
     button.classList.toggle("on",discreet.on);
     button.setAttribute("aria-pressed",String(discreet.on));
@@ -8070,36 +8131,9 @@ const discreetDialog = document.getElementById("discreetDialog");
     discreetDialog.showModal();
     choices.querySelector('input[value="source"]').focus({preventScroll:true});
   }
-  function stopHold(){
-    if (hold) clearTimeout(hold.timer);
-    hold = null;
-  }
-  button.addEventListener("pointerdown", e => {
-    if (!e.isPrimary || e.button !== 0){ stopHold(); return; }
-    stopHold(); suppressTap = false;
-    hold = {id:e.pointerId,x:e.clientX,y:e.clientY,timer:setTimeout(() => {
-      suppressTap = true; suppressDialogClick = true; openDialog();
-    },550)};
-    button.setPointerCapture(e.pointerId);
-  });
-  button.addEventListener("pointermove", e => {
-    if (hold && e.pointerId === hold.id && Math.hypot(e.clientX-hold.x,e.clientY-hold.y)>10){ suppressTap = true; stopHold(); }
-  });
-  button.addEventListener("pointerup",stopHold);
-  button.addEventListener("pointercancel",() => { suppressTap = true; stopHold(); });
-  button.addEventListener("lostpointercapture",stopHold);
-  window.addEventListener("blur",stopHold);
-  button.addEventListener("contextmenu", e => e.preventDefault());
-  button.addEventListener("click", e => {
-    if (e.detail && suppressTap){ suppressTap = false; return; }
-    if (discreetDialog.open) return;
+  bindVisibilityButton(button,discreetDialog,openDialog,()=>{
     if (!discreet.on && !discreet.fields.length){ openDialog(); return; }
     setDiscreet(!discreet.on,discreet.fields);
-  });
-  button.addEventListener("keydown", e => {
-    if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")){
-      e.preventDefault(); openDialog();
-    }
   });
   document.getElementById("discreetCancel").onclick = () => discreetDialog.close();
   document.getElementById("discreetApply").onclick = () => {
@@ -8107,6 +8141,41 @@ const discreetDialog = document.getElementById("discreetDialog");
     if (setDiscreet(discreet.on && fields.length > 0,fields)) discreetDialog.close();
   };
   syncButton();
+})();
+const statusHideDialog=document.getElementById("statusHideDialog");
+(function(){
+  const button=document.getElementById("statusHideBtn"), choices=document.getElementById("statusHideChoices");
+  function refresh(){
+    button.classList.toggle("on",hiddenStatus.on);
+    button.setAttribute("aria-pressed",String(hiddenStatus.on));
+  }
+  function apply(on,values){
+    if(!commitOpenNeedEditors()||window._saveError)return false;
+    exitSelectMode();
+    hiddenStatus={on:on&&values.size>0,values};
+    refresh();applyFilter();
+    let message=hiddenStatus.on?"隱藏狀態：開":"隱藏狀態：關";
+    try{localStorage.setItem(HIDDEN_STATUS_KEY,JSON.stringify({on:hiddenStatus.on,values:[...values]}));}
+    catch{message+="。設定只套用於這次使用";}
+    toast(message);return true;
+  }
+  function open(){
+    if(statusHideDialog.open||!commitOpenNeedEditors())return;
+    closeOtherOverlays("");hideNeedHover();hideMultiHover();
+    const options=new Set([...optList("status"),...items.flatMap(d=>fieldVals(d,"status"))]);
+    choices.innerHTML=[...options].map(v=>`<label><input type="checkbox" value="${esc(v)}"${hiddenStatus.values.has(v)?" checked":""}><span>${esc(statusDisplayName(v))}</span></label>`).join("");
+    statusHideDialog.showModal();
+  }
+  bindVisibilityButton(button,statusHideDialog,open,()=>{
+    if(!hiddenStatus.values.size){open();return;}
+    apply(!hiddenStatus.on,hiddenStatus.values);
+  });
+  document.getElementById("statusHideCancel").onclick=()=>statusHideDialog.close();
+  document.getElementById("statusHideApply").onclick=()=>{
+    const values=new Set([...choices.querySelectorAll(":checked")].map(input=>input.value));
+    if(apply(values.size>0,values))statusHideDialog.close();
+  };
+  refresh();
 })();
 document.getElementById("modeBtn").addEventListener("click", () => setEditMode(!editMode));
 document.getElementById("fltClearAll").addEventListener("click", () => {
@@ -8438,6 +8507,7 @@ function customersMatchingSearch(){
   // 沒打「/」時行為與原本完全相同(單一關鍵字)。
   const terms = searchEl.value.toLowerCase().split(/[\/／]/).map(t => t.trim()).filter(Boolean);
   let list = currentCat ? items.filter(d => fieldHas(d, "cat", currentCat)) : items.slice();
+  if (hiddenStatus.on) list = list.filter(d => !fieldVals(d,"status").some(value=>hiddenStatus.values.has(value)));
   if (terms.length) list = list.filter(d => { const hay = searchHay(d); return terms.every(t => hay.includes(t) || lineSearchMatches(d.line, t)); });
   return list;
 }
@@ -8807,6 +8877,7 @@ function trapFocusKey(e, container){
   try { nodes[j].focus(); } catch(err){}
 }
 function tabTrapTarget(){
+  if (statusHideDialog.open) return statusHideDialog;
   if (discreetDialog.open) return discreetDialog;
   const tint=document.getElementById("tint-panel");if(tint&&tint.getClientRects().length)return tint;
   const dataDlg=document.querySelector("dialog.data-dialog[open]");if(dataDlg)return dataDlg;
@@ -10413,7 +10484,7 @@ modalBg.addEventListener("click", e => { if (e.target === modalBg && _mbDownOnBg
 function tabModeToggleAllowed(){
   if (!searchHelpPop.hidden || document.activeElement?.closest(".search-box, #searchHelpBtn")) return false;
   if (document.querySelector("#optionRenameDialog[open]")) return false;
-  if (discreetDialog.open) return false;
+  if (statusHideDialog.open || discreetDialog.open) return false;
   const tint=document.getElementById("tint-panel");if(tint&&tint.getClientRects().length)return false;
   if(needOrderBusy)return false;
   const on = (id, cls) => { const el = document.getElementById(id); return !!(el && el.classList.contains(cls)); };
@@ -10441,7 +10512,7 @@ document.addEventListener("keydown", e => {
   trapFocusKey(e, tabTrapTarget());       // Shift+TAB / 浮層內:維持原本的欄位切換
 }, true);
 document.addEventListener("keydown", e => {
-  if (discreetDialog.open || e.target.closest?.("#columnTextDialog,#mark-color-dialog")) return;
+  if (statusHideDialog.open || discreetDialog.open || e.target.closest?.("#columnTextDialog,#mark-color-dialog")) return;
   if (e.key === "Enter" && confirmBg.classList.contains("open")){ e.preventDefault(); document.getElementById("confirmOk").click(); return; }
   if (e.key === "Tab") return;   // Tab 已由 capture 階段 trapFocusKey 處理
   if (e.key !== "Escape") return;
@@ -11129,7 +11200,7 @@ document.addEventListener("pointercancel", endCatDrag);
   let sx = 0, sy = 0, st = 0, track = false, skip = false, detailWasOpen = false;
 
   function overlayOpen(){
-    return discreetDialog.open || modalBg.classList.contains("open")
+    return statusHideDialog.open || discreetDialog.open || modalBg.classList.contains("open")
         || detailBg.classList.contains("open")
         || catBg.classList.contains("open")
         || confirmBg.classList.contains("open")
