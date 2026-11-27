@@ -1668,7 +1668,8 @@
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) :is(.tcell:not([contenteditable="true"]:focus),.topt-label,.tcat-label,.tcat-badge):empty::before{color:var(--status-faint)}
 #cards > .card[data-status-tint] :is(.name,.agent-info b){color:var(--status-ink)}
 #cards > .card[data-status-tint] :is(.addr,.addr-sep,.agent-info,.cv-empty,.price .unit){color:var(--status-soft)}
-#cards > .card :is(.price .num,.price-tag){color:var(--card-budget-ink);background-color:var(--card-budget-surface);border-radius:4px;box-shadow:0 0 0 2px var(--card-budget-surface)}
+#cards > .card .price .num{color:var(--card-budget-ink);background-color:var(--card-budget-surface);border-radius:4px;box-shadow:0 0 0 2px var(--card-budget-surface)}
+#cards > .compact-card .price-tag{color:var(--card-budget-ink);background:transparent;box-shadow:none}
 #cards > .card[data-status-tint] .name .seg-plain{color:var(--status-ink)}
 #cards > .card[data-status-tint] .card-top,
 #cards > .compact-card[data-status-tint] .addr .opt-orphan,
@@ -2979,7 +2980,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27R";
+const APP_VERSION = "2026.11.27S";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
