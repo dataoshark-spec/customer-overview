@@ -1804,12 +1804,17 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 :root[data-theme="dark"] .profile-price .num{background:#dbe5ef;border-radius:4px}
 .profile-card .budget-unit{font-size:.74rem;margin-left:3px}
 .profile-card .profile-criteria{display:grid;gap:4px;min-width:0;color:var(--ink);font-size:.94rem}
-.profile-card .profile-criteria>div,.profile-card .ov-need{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:9px;align-items:baseline}
+.profile-card .profile-criteria>div{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:9px;align-items:baseline}
 .profile-card .profile-area span{display:inline-block;max-width:100%}
-.profile-card .ov-need{grid-template-columns:fit-content(32%) minmax(0,1fr);margin:8px 16px 0;padding:7px 10px;background:var(--surface-1);border:0;border-radius:6px}
+.profile-card{--brief-bg:#f4f8fb;--brief-line:#acc4d7;--brief-label:#496e88;--meta-ink:#697680}
+[data-theme="dark"] .profile-card{--brief-bg:#202e38;--brief-line:#4f697c;--brief-label:#a7c6db;--meta-ink:#a3b0b9}
+.profile-card .ov-need{position:relative;display:block;margin:16px 9px 0;padding:9px 6px 4px;background:var(--brief-bg);border:1px solid var(--brief-line);border-radius:11px}
+.profile-card .profile-note-label{position:absolute;z-index:1;top:0;left:3px;transform:translateY(-55%);padding:0 4px;font-size:11px;line-height:1.1;letter-spacing:.045em;color:var(--brief-label);background:linear-gradient(var(--card) 50%,var(--brief-bg) 50%)}
 .profile-card .ov-need-in{display:block;min-width:0;font-size:.94rem;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .profile-card .ov-need-in .need-link{display:inline-block;font-weight:inherit;line-height:1.25}
 .profile-card .profile-meta{display:grid;grid-template-columns:minmax(0,1fr) fit-content(clamp(3em, calc(100% - 15em), 30%)) minmax(0,1fr);gap:6px;align-items:start;margin:10px 16px 0}
+.profile-card .profile-meta{color:var(--meta-ink);font-family:system-ui,"Microsoft JhengHei","PingFang TC",sans-serif;font-size:.75rem;font-weight:400}
+.profile-card .profile-meta :is(dt,dd,.profile-missing){color:inherit;font-family:inherit;font-size:inherit;font-weight:inherit}
 .profile-meta>div{display:flex;align-items:baseline;gap:4px;min-width:0}
 .profile-meta dt{flex:none}
 .profile-meta dd{min-width:0;overflow-wrap:anywhere}
@@ -2974,7 +2979,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27Q";
+const APP_VERSION = "2026.11.27R";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
