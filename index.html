@@ -626,7 +626,7 @@
   .body{padding:16px 16px 14px;flex:1;min-width:0;}
 
   .card-head{display:flex;align-items:center;gap:10px;}
-  .name{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.4rem;line-height:1.25;flex:1;}
+  .name{font-family:"Noto Serif TC",serif;font-weight:700;font-size:1.48rem;line-height:1.25;flex:1;min-width:0;overflow-wrap:anywhere;}
   /* 類別字樣:灰色純文字(膠囊試過覺得太搶,退回原樣) */
   .badge{flex:none;font-size:.98rem;font-weight:700;color:var(--text-faint);opacity:.72;letter-spacing:.03em;}
   /* 客戶狀態小標:放在名字左邊,accent 淡底 pill */
@@ -736,8 +736,9 @@
   .compact-card{cursor:pointer;}
   .compact-card .body{padding:13px 15px;}
   .compact-card .card-head{align-items:center;gap:10px;}
-  .compact-card .name{font-size:1.04rem;}
-  .compact-card .price-tag small{font-size:.72rem;font-weight:700;color:var(--ink-soft);margin-left:2px;}
+  .compact-card .name{font-size:1.24rem;}
+  .card .budget-unit{font-size:.92rem;font-weight:700;margin-inline-start:4px;}
+  .compact-card .budget-unit{font-size:.72rem;margin-inline-start:2px;}
   .compact-card .sub-row{display:flex;align-items:baseline;gap:10px;margin-top:8px;}
   .compact-card .sub-row .addr{flex:1;min-width:0;font-size:.84rem;color:var(--ink-soft);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .compact-card .price-tag{flex:none;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:1.05rem;font-weight:800;color:var(--accent-deep);}
@@ -1656,7 +1657,7 @@
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) .tneed-ph{color:var(--status-faint)}
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) :is(.tcell:not([contenteditable="true"]:focus),.topt-label,.tcat-label,.tcat-badge):empty::before{color:var(--status-faint)}
 #cards > .card[data-status-tint] :is(.name,.agent-info b){color:var(--status-ink)}
-#cards > .card[data-status-tint] :is(.addr,.addr-sep,.agent-info,.cv-empty,.price .unit,.price-tag small){color:var(--status-soft)}
+#cards > .card[data-status-tint] :is(.addr,.addr-sep,.agent-info,.cv-empty,.price .unit){color:var(--status-soft)}
 #cards > .card :is(.price .num,.price-tag){color:var(--card-budget-ink);background-color:var(--card-budget-surface);border-radius:4px;box-shadow:0 0 0 2px var(--card-budget-surface)}
 #cards > .card[data-status-tint] .name .seg-plain{color:var(--status-ink)}
 #cards > .card[data-status-tint] .card-top,
@@ -2914,7 +2915,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27A";
+const APP_VERSION = "2026.11.27B";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3035,6 +3036,20 @@ function parkingDisplayName(raw){
 function statusDisplayName(value){
   return Array.isArray(value) ? value.map(v=>optionDisplayName("status",v)).join(",") : optionDisplayName("status",value);
 }
+// The budget field also accepts notes and other units. Format only amounts in 萬.
+function cardBudgetHTML(raw){
+  const value=String(raw??"").trim();
+  const text=value.replace(/[０-９．，]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xfee0));
+  const amount=/(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?/.source;
+  const match=text.match(new RegExp("^(約?\\s*)("+amount+")(\\s*萬)?(?:\\s*([-~～－–—至到])\\s*("+amount+")(?:\\s*萬)?)?\\s*(以內|以下|以上|左右|上下|內|起|[?？])?$"));
+  if(!match)return esc(value);
+  const [,prefix,first,firstUnit,separator,last,qualifier]=match;
+  const group=number=>number.replace(/^[\d,]+/,integer=>integer.replace(/,/g,"").replace(/\B(?=(\d{3})+(?!\d))/g,","));
+  const unit='<small class="budget-unit">萬</small>';
+  let result=esc(prefix+group(first));
+  if(last)result+=(firstUnit?unit:"")+esc(separator+group(last));
+  return result+unit+esc(qualifier||"");
+}
 function cardHTML(d){
   const sel = selected.has(d.id) ? " selected" : "";
   const nameHTML = d.cust ? segCopyHTML(d.cust) : `<span class="cv-empty">（未填稱呼）</span>`;
@@ -3064,7 +3079,7 @@ function cardHTML(d){
       </div>
       <div class="sub-row">
         <span class="addr">${csub}</span>
-        ${d.budget ? `<span class="price-tag" data-copy="${esc(d.budget)}">${esc(d.budget)}</span>` : ``}
+        ${d.budget || d.budget===0 ? `<span class="price-tag" data-copy="${esc(d.budget)}">${cardBudgetHTML(d.budget)}</span>` : ``}
       </div>
     </div>
   </article>`;
@@ -3085,8 +3100,8 @@ function cardHTML(d){
         <h3 class="name">${nameHTML}</h3>
         <span class="badge multi-wrap" title="${esc(catTip)}"><span class="multi-pri">${esc(catLabel)}</span>${catDot}</span>
       </div>
-      ${d.budget ? `<div class="price">
-        <span class="price-value"><span class="num" data-copy="${esc(d.budget)}">${esc(d.budget)}</span></span>
+      ${d.budget || d.budget===0 ? `<div class="price">
+        <span class="price-value"><span class="num" data-copy="${esc(d.budget)}">${cardBudgetHTML(d.budget)}</span></span>
       </div>` : ``}
       ${(roomsPri || d.parking) ? `<div class="meta">
         ${roomsPri ? `<span class="card-room-chip" data-copy="${esc(roomsTip)}" title="${esc(roomsTip)}"><i class="ml">房數</i><span class="card-rooms">${roomsHTML}</span></span>` : ``}
