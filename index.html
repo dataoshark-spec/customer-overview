@@ -1807,7 +1807,8 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 .profile-card .profile-criteria>div,.profile-card .ov-need{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:9px;align-items:baseline}
 .profile-card .profile-area span{display:inline-block;max-width:100%}
 .profile-card .ov-need{grid-template-columns:fit-content(32%) minmax(0,1fr);margin:8px 16px 0;padding:7px 10px;background:var(--surface-1);border:0;border-radius:6px}
-.profile-card .ov-need-in{display:block;min-width:0;font-size:.94rem;overflow-wrap:anywhere}
+.profile-card .ov-need-in{display:block;min-width:0;font-size:.94rem;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-card .ov-need-in .need-link{display:inline-block;font-weight:inherit;line-height:1.25}
 .profile-card .profile-meta{display:grid;grid-template-columns:minmax(0,1fr) fit-content(clamp(3em, calc(100% - 15em), 30%)) minmax(0,1fr);gap:6px;align-items:start;margin:10px 16px 0}
 .profile-meta>div{display:flex;align-items:baseline;gap:4px;min-width:0}
 .profile-meta dt{flex:none}
@@ -2973,7 +2974,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27N";
+const APP_VERSION = "2026.11.27O";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3183,9 +3184,7 @@ function cardHTML(d){
   const missing = '<span class="profile-missing" aria-label="未填">—</span>';
   const conditions = [esc(catTip) || missing, roomsHTML || missing, esc(parkingLabel) || missing].join(" ／<wbr> ");
   const shared = fieldVals(d,"shared").join("／");
-  const summary = needSummaryInfo(d);
-  const lines = summary.html.split("\n").filter(line => line.trim());
-  const brief = lines.slice(0, needToPlain(summary.raw).trim().split("\n")[0].trim().length <= 5 ? 2 : 1).join("　");
+  const brief = cardNeedBriefHTML(d);
   const phone = String(d.tel ?? "").trim();
   return `<article class="card profile-card${sel}" data-id="${esc(d.id)}"${statusColorRowAttrs(d)}><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}<div class="body">
@@ -3195,7 +3194,7 @@ function cardHTML(d){
       <div class="profile-facts">
         <dl class="profile-criteria"><div><dt>區域</dt><dd class="profile-area">${areas||missing}</dd></div>
           <div><dt>條件</dt><dd>${conditions}</dd></div></dl></div>
-      <div class="ov-need"><div class="profile-note-label">${esc(needTitle(d,summary.sg))}</div><div class="ov-need-in">${brief||missing}</div></div>
+      <div class="ov-need"><div class="profile-note-label">客需</div><div class="ov-need-in">${brief||missing}</div></div>
       <dl class="profile-meta"><div><dt>來源</dt><dd>${esc(String(d.source ?? "").trim())||missing}</dd></div><div class="shared"><dt>共有</dt><dd>${esc(shared)||missing}</dd></div><div class="date"><dt>建檔</dt><dd>${esc(String(d.date ?? "").trim())||missing}</dd></div></dl>
       <div class="agent"><div class="agent-info">LINE <b>${esc(normalizeLineSymbols(d.line).trim())||missing}</b></div>
         ${phone ? `<a class="tel" href="tel:${esc(phone)}" aria-label="撥打 ${esc(phone)}">${TELSVG}${esc(phone)}</a>` : `<span class="phone-empty">電話　${missing}</span>`}</div>
@@ -4482,7 +4481,19 @@ function needSummaryInfo(it){
   return {sg:1,raw:"",html:""};
 }
 function needSummaryText(it, summary=needSummaryInfo(it)){return needToPlain(summary.raw);}
-// 收合摘要與卡片預覽保留舊式 # 整行標題，與展開內容使用相同標題範圍。
+function cardNeedBriefHTML(it){
+  const parts = [];
+  for (const sg of [1,2,3]){
+    for (const line of needDisplayText(needSeg(it,sg)).split("\n")){
+      const text = line.replace(/^#\s+/,"").replace(/\u200B/g,"").trim();
+      if (!text) continue;
+      const part = linkifyNeed(text,false).trim();
+      if (part) parts.push(part);
+    }
+  }
+  return parts.join("／");
+}
+// 表格收合摘要保留舊式 # 整行標題，與展開內容使用相同標題範圍。
 function needPreviewHTML(text){
   return needDisplayText(text).split("\n").map(line => {
     const heading = /^#\s+([\s\S]*)$/.exec(line);
@@ -5938,7 +5949,7 @@ function maskNeedURLs(value){
     return String(value == null ? "" : value).replace(restoreRE, (key, index) => urls[+index] ? urls[+index].url : key);
   }};
 }
-function inlineHTML(t, seg){
+function inlineHTML(t, seg, formatMarks=true){
   const masked = maskNeedURLs(t);
   const originalSeg = seg;
   seg = text => originalSeg(masked.restore(text));
@@ -5956,20 +5967,21 @@ function inlineHTML(t, seg){
     const slice = t.slice(pos + mlen, close);
     if (tag === "s" && !slice.replace(/[\u200B\s]/g, "") && !/https?:\/\//i.test(slice)){ i = close + mlen; continue; }   // 略過空的 ~~..~~,避免幽靈標記
     const inner = render(slice);
-    out += (tag === "h") ? `<span class="need-h">${inner}</span>` : `<s class="need-del">${inner}</s>`;
+    if (!formatMarks) out += inner;
+    else out += (tag === "h") ? `<span class="need-h">${inner}</span>` : `<s class="need-del">${inner}</s>`;
     i = close + mlen;
   }
   return out;
   }
   return render(masked.text);
 }
-function linkifyNeed(text){
+function linkifyNeed(text, formatMarks=true){
   // tabindex=-1:表格用 TAB 走儲存格即可,不要再鑽進每個「連結」(仍可滑鼠點、role=link 供輔助技術)
   const seg = t => needTokens(t).map(tk => tk.t === "url"
     ? `<span class="need-link" role="link" tabindex="-1" data-url="${esc(tk.v)}">連結</span>`
     : esc(tk.v)).join("");
   // 必須逐行(與 needToEditHTML 一致):若整段丟進 inlineHTML,~~ 會跨 \n 配對 → 表格看得到刪線、展開卻沒有
-  return String(text == null ? "" : text).split("\n").map(ln => inlineHTML(ln, seg)).join("\n");
+  return String(text == null ? "" : text).split("\n").map(ln => inlineHTML(ln, seg, formatMarks)).join("\n");
 }
 // 編輯用:~~..~~ → 細刪除線;網址 → 原子化「連結」標籤(contenteditable=false),原始 URL 存在 data-url
 function editLineInner(text){
@@ -12529,10 +12541,20 @@ let syncConnected = false, syncEmail = null;
     const d=changes[0],to=back?d.before:d.after,from=back?d.after:d.before;
     if(!to||!from)return [["客戶",to?"已回到清單":"已移出清單"]];
     const row=items.find(item=>item.id===d.id)||{};
-    return d.fields.map(k=>{
+    let fields=d.fields;
+    if(fields.includes("parking")){
+      const options=["pType","pNum"];
+      if(options.some(k=>fields.includes(k))){
+        fields=fields.filter(k=>k!=="parking");
+      }else{
+        const selected=options.filter(k=>fieldVals(row,k).length);
+        if(selected.length)fields=fields.flatMap(k=>k==="parking"?selected:[k]);
+      }
+    }
+    return fields.map(k=>{
       const match=/^(font:)?need([23]?)$/.exec(k);
       const label=match?needTitle(row,Number(match[2]||1))+(match[1]?"字級":""):labels[k]||k;
-      let value=to[k];
+      let value=d.fields.includes(k)?to[k]:row[k];
       if(k==="priorityMark")value=value?"已標記":"已取消標記";
       else if(k.startsWith("url"))value=!value?"已清空網址":back?"已還原網址":from[k]?"已換成新網址":"已填入網址";
       else if(k.startsWith("font:"))value=(value??100)+"%";
