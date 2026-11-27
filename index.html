@@ -88,6 +88,9 @@
     --line:#E1E7EA;
     --accent:#2B5CA8;
     --accent-deep:#1F4480;
+    --card-budget-ink:#193653;
+    --card-budget-surface:transparent;
+    --card-pill-surface:rgba(255,255,255,.42);
     --cover-bg:#0F1B30;
     --cover-grid:rgba(255,255,255,.05);
     --cover-text:#EEF2F8;
@@ -116,6 +119,8 @@
   [data-theme="dark"]{
     --paper:#0F1519;
     --card:#1A232A;
+    --card-budget-surface:#dbe5ef;
+    --card-pill-surface:rgba(255,255,255,.12);
     --ink:#E6EDF1;
     --ink-soft:#96A4AC;
     --line:#2A353C;
@@ -625,8 +630,7 @@
   /* 類別字樣:灰色純文字(膠囊試過覺得太搶,退回原樣) */
   .badge{flex:none;font-size:.98rem;font-weight:700;color:var(--text-faint);opacity:.72;letter-spacing:.03em;}
   /* 客戶狀態小標:放在名字左邊,accent 淡底 pill */
-  .card-status{flex:none;font-size:.8rem;font-weight:800;color:var(--accent-deep);background:var(--accent-tint);border:1px solid var(--accent-tint-bd);border-radius:7px;padding:1px 7px;cursor:pointer;}
-  .compact-card .card-status{font-size:.74rem;padding:0 6px;}
+  .card-status{flex:none;font-size:.82rem;font-weight:650;line-height:1.3;color:var(--status-ink,var(--ink));background:var(--card-pill-surface);border-radius:999px;padding:3px 9px;cursor:pointer;}
   .addr{font-size:.86rem;color:var(--ink-soft);margin-top:6px;}
   .addr-sep{color:var(--ink-soft);margin:0 2px;pointer-events:none;}   /* 「／」分隔:不可點,各段自行複製 */
 
@@ -684,7 +688,7 @@
   .chip .ext{font-size:.72em;opacity:.7;}
 
   /* 卡片「正常」模式:點欄位複製內容(柔和綠色高亮、限制在欄框內、不外突不碰鄰字 + toast) */
-  .card [data-copy]{border-radius:6px;}
+  .card [data-copy]:where(:not(.card-status)){border-radius:6px;}
   .card .cv{display:inline-block;border-radius:6px;}     /* 案名/地址:內層文字容器,高亮只貼住文字、不拉滿版 */
   .agent-info [data-copy]{display:inline-block;}
   .cards.cmode-view [data-copy]{cursor:pointer;}
@@ -1653,7 +1657,7 @@
 .ptable tbody tr[data-status-tint]:not(.exp-open):not(.tsel-row) :is(.tcell:not([contenteditable="true"]:focus),.topt-label,.tcat-label,.tcat-badge):empty::before{color:var(--status-faint)}
 #cards > .card[data-status-tint] :is(.name,.agent-info b){color:var(--status-ink)}
 #cards > .card[data-status-tint] :is(.addr,.addr-sep,.agent-info,.cv-empty,.price .unit,.price-tag small){color:var(--status-soft)}
-#cards > .card[data-status-tint] :is(.price .num,.price-tag){color:var(--status-accent)}
+#cards > .card :is(.price .num,.price-tag){color:var(--card-budget-ink);background-color:var(--card-budget-surface);border-radius:4px;box-shadow:0 0 0 2px var(--card-budget-surface)}
 #cards > .card[data-status-tint] .name .seg-plain{color:var(--status-ink)}
 #cards > .card[data-status-tint] .card-top,
 #cards > .compact-card[data-status-tint] .addr .opt-orphan,
@@ -2910,7 +2914,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.26F";
+const APP_VERSION = "2026.11.27A";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -8955,7 +8959,7 @@ function statusColorFor(name, preview=true){
 function statusColorBackground(value){ return "color-mix(in srgb,"+value.hex+" "+value.alpha+"%,var(--card))"; }
 // Presentation only: never modify the chosen color, percentage, records, or preferences.
 const statusTextColorCache=new Map();
-const STATUS_ROW_STYLE_KEYS=["--status-bg","--status-dot","--status-hover-bg","--status-ink","--status-soft","--status-faint","--status-accent","--status-badge","--status-badge-opacity"];
+const STATUS_ROW_STYLE_KEYS=["--status-bg","--status-dot","--status-hover-bg","--status-ink","--status-soft","--status-faint","--status-accent","--status-badge","--status-badge-opacity","--card-budget-surface","--card-pill-surface"];
 function statusColorRGB(value){
   const text=String(value).trim();
   if(/^#[0-9a-f]{6}$/i.test(text))return [1,3,5].map(i=>parseInt(text.slice(i,i+2),16));
@@ -8989,11 +8993,11 @@ function statusReadableText(original,backgrounds,opacity=1){
   return {color:chosen?"rgb("+chosen.color.map(n=>n.toFixed(3)).join(",")+")":null,opacity:1};
 }
 function statusTextColors(value){
-  const root=getComputedStyle(document.documentElement),keys=["--card","--ink","--ink-soft","--text-faint","--accent-deep"];
+  const root=getComputedStyle(document.documentElement),keys=["--card","--ink","--ink-soft","--text-faint","--accent-deep","--card-budget-ink"];
   const mode=value.textMode||"auto";
   const colors=keys.map(key=>root.getPropertyValue(key).trim()),cacheKey=[value.hex,value.alpha,mode,...colors].join("|");
   if(statusTextColorCache.has(cacheKey))return statusTextColorCache.get(cacheKey);
-  const [card,ink,soft,faint,accent]=colors.map(statusColorRGB),pure=statusColorRGB(value.hex);
+  const [card,ink,soft,faint,accent,budgetInk]=colors.map(statusColorRGB),pure=statusColorRGB(value.hex);
   const background=statusColorMix(pure,card,value.alpha/100);
   let hover=statusColorMix(pure,background,.03);
   const maximum=Math.max(...[[0,0,0],[255,255,255]].map(fg=>Math.min(statusColorContrast(fg,background),statusColorContrast(fg,hover))));
@@ -9012,6 +9016,10 @@ function statusTextColors(value){
     for(const key of ["ink","soft","faint","accent","badge"])result["--status-"+key]=mode==="white"?"#ffffff":"#000000";
     result["--status-badge-opacity"]="1";
   }
+  result["--card-budget-surface"]=surfaces.some(bg=>statusColorContrast(budgetInk,bg)<4.5)?"#dbe5ef":"transparent";
+  const pillInk=statusColorRGB(result["--status-ink"])||ink;
+  const lightPill=statusColorMix([255,255,255],background,.42);
+  result["--card-pill-surface"]=statusColorContrast(pillInk,lightPill)>=4.5?"rgba(255,255,255,.42)":"rgba(0,0,0,.64)";
   if(statusTextColorCache.size>=512)statusTextColorCache.clear();
   statusTextColorCache.set(cacheKey,result);return result;
 }
