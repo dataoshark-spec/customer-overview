@@ -1282,6 +1282,8 @@
   /* 需求內容裡的網址 → 顯示為醒目的淺藍膠囊「連結」;正常/編輯/表單所有地方外觀一致 */
   .need-link,.need-link-chip{color:var(--accent);font-weight:700;text-decoration:none;background:var(--accent-tint);border:1px solid var(--accent-tint-bd);border-radius:6px;padding:0 6px;white-space:nowrap;-webkit-user-drag:none;}   /* -webkit-user-drag:none:連結在行尾時,從它上面按下往前拖不會被瀏覽器當成「拖曳連結」而中斷選字(WebKit/iOS) */
   .need-link{cursor:pointer;}
+  /* Truncate before the whole link chip when it cannot fit in the table summary. */
+  .tneed .need-link{display:inline-block;line-height:1.25;}
   .need-link:hover{background:var(--accent-tint-bd);color:var(--accent-deep);}
   /* user-select:none 已移除:它會讓拖曳選取一碰到標籤就中斷 → 沒辦法把含連結的整行選起來(複製/加刪除線都做不到)。
      移除後選取會把「連結」字樣一起框進去,但複製時會由序列化把它還原成原始網址,不會複製到字面文字。 */
@@ -2915,7 +2917,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27B";
+const APP_VERSION = "2026.11.27C";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
