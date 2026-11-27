@@ -1228,7 +1228,7 @@
   .opt-editing .opt-rename-btn{display:none;}
   #areaMenu{left:50%;transform:translateX(-50%);width:max-content;min-width:min(272px,calc(100vw - 50px));max-width:min(320px,calc(100vw - 50px));}
   #toptmenu:has(.opt-rename-row),#catmenu:has(.opt-rename-row){min-width:min(248px,calc(100vw - 20px));}
-  #catSelMenu{min-width:min(248px,calc(100vw - 30px));right:0;}
+  #catSelMenu{left:auto;min-width:min(248px,calc(100vw - 30px));right:0;}
   #catmenu:has(.opt-rename-row){max-width:min(300px,calc(100vw - 20px));}
   #ptypeMenu{left:50%;right:auto;transform:translateX(-50%);}
   .opt-del{flex:0 0 auto;display:none;align-items:center;justify-content:center;width:28px;height:28px;padding:0;
@@ -2013,7 +2013,7 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
               <span class="cselect-txt" id="catSelTxt"></span>
               <span class="cselect-chev" aria-hidden="true"></span>
             </button>
-            <div class="cselect-menu" id="catSelMenu" role="listbox"></div>
+            <div class="cselect-menu opt-menu" id="catSelMenu" role="listbox"></div>
           </div>
         </label>
         </div>
@@ -2974,7 +2974,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27P";
+const APP_VERSION = "2026.11.27Q";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -7095,6 +7095,7 @@ function catMenuSyncIdx(){
   catMenuHighlight();
 }
 function onCatMenuKey(e){
+  if(e.target.closest(".opt-add") && e.key!=="Escape")return;
   if(e.target.closest("[data-rename-option],#optionRenameDialog"))return;
   if (!catmenu.classList.contains("show")) return;
   const opts = catmenu.querySelectorAll(".catmenu-opt");
@@ -7123,7 +7124,7 @@ function renderCatMenu(){
     const pri = on && cur[0] === c.key;
     const option=`<button type="button" aria-keyshortcuts="F2" class="catmenu-opt${on?" sel":""}${pri?" is-pri":""}" data-key="${esc(c.key)}"><span class="dot" style="background:${safeColor(c.color)}"></span><span class="nm">${esc(optionDisplayName("cat",c.key))}</span>${on?(pri?`<span class="pri-pin" data-pin="1" title="目前優先顯示">優</span>`:`<span class="pri-pin is-set" data-pin="1" title="設為優先顯示">設為優先</span>`):""}<span class="chk">✓</span></button>`;
     return namedOptionRow(option,"cat",c.key);
-  }).join("");
+  }).join("")+categoryFooter;
   catMenuSyncIdx();
 }
 function openCatMenu(trigger){
@@ -7135,25 +7136,7 @@ function openCatMenu(trigger){
   catmenu.classList.add("show");
   if (window.refreshLed) window.refreshLed();
   catMenuSyncIdx();
-  // Reset the prior opening's limit; phone layout retains the original 280px CSS cap.
-  catmenu.style.maxHeight = "";
-  const w = catmenu.offsetWidth;
-  let left = Math.min(r.left, window.innerWidth - w - 10); left = Math.max(10, left);
-  let top = r.bottom + 5;
-  if (window.matchMedia("(min-width:820px)").matches){
-    // Match the area picker: use the side with enough space and scroll only when needed.
-    const gap = 6, mgn = 10;
-    const spaceBelow = window.innerHeight - r.bottom - gap - mgn;
-    const spaceAbove = r.top - gap - mgn;
-    const natural = catmenu.scrollHeight + catmenu.offsetHeight - catmenu.clientHeight;
-    const below = natural <= spaceBelow || spaceBelow >= spaceAbove;
-    const maxH = Math.max(1, below ? spaceBelow : spaceAbove);
-    catmenu.style.maxHeight = maxH + "px";
-    top = below ? r.bottom + gap : Math.max(mgn, r.top - gap - Math.min(natural, maxH));
-  } else if (top + catmenu.offsetHeight > window.innerHeight - 8){
-    top = Math.max(8, r.top - catmenu.offsetHeight - 5);
-  }
-  catmenu.style.left = left + "px"; catmenu.style.top = top + "px";
+  positionTableOptionMenu();
   setTimeout(()=>document.addEventListener("click", catMenuOutside), 0);
 }
 function catMenuOutside(e){ if (eventWithin(e,catmenu) || e.target.closest(".tcat-trigger")) return; closeCatMenu(); }
@@ -7242,25 +7225,32 @@ function openOptMenu(trigger){
   renderToptMenu();
   toptmenu.classList.add("show");
   if (window.refreshLed) window.refreshLed();
-  toptmenu.style.maxHeight = "";
-  const r = trigger.getBoundingClientRect();/* menu-scroll-anchor:start */optMenuAnchorBox=r;/* menu-scroll-anchor:end */
-  const w = toptmenu.offsetWidth;
-  let left = Math.min(r.left, window.innerWidth - w - 10); left = Math.max(10, left);
-  const gap = 6, mgn = 10;
-  const spaceBelow = window.innerHeight - r.bottom - mgn;
-  const spaceAbove = r.top - gap - mgn;
-  const natural = toptmenu.scrollHeight;
-  let top, maxH;
-  if (natural <= spaceBelow || spaceBelow >= spaceAbove){
-    top = r.bottom + gap; maxH = window.innerHeight - top - mgn;
-  } else {
-    maxH = spaceAbove; top = Math.max(mgn, r.top - gap - Math.min(natural, maxH));
-  }
-  toptmenu.style.maxHeight = Math.max(140, maxH) + "px";
-  toptmenu.style.left = left + "px"; toptmenu.style.top = top + "px";
+  positionTableOptionMenu();
   toptMenuSyncIdx();
   setTimeout(() => document.addEventListener("click", toptOutside), 0);
 }
+function positionTableOptionMenu(){
+  const category=catTrigger && catmenu.classList.contains("show");
+  const popup=category?catmenu:toptmenu;
+  const anchor=category?catTrigger:toptTrigger;
+  if(!anchor || !popup.classList.contains("show"))return;
+  const view=window.visualViewport,viewTop=view?.offsetTop??0,viewLeft=view?.offsetLeft??0;
+  const bottom=viewTop+(view?.height??innerHeight),right=viewLeft+(view?.width??innerWidth);
+  const r=anchor.getBoundingClientRect();
+  if(category)catMenuAnchorBox=r;else optMenuAnchorBox=r;
+  const w=popup.offsetWidth,left=Math.max(viewLeft+10,Math.min(r.left,right-w-10));
+  const below=Math.max(0,bottom-r.bottom-16),above=Math.max(0,r.top-viewTop-16);
+  const natural=popup.scrollHeight+popup.offsetHeight-popup.clientHeight;
+  const up=natural>below && above>below;
+  const minimum=(popup.querySelector(".opt-add")?.offsetHeight??0)+48;
+  popup.style.maxHeight=Math.max(0,Math.min(bottom-viewTop-20,Math.max(up?above:below,minimum)))+"px";
+  const y=up?r.top-6-popup.offsetHeight:r.bottom+6;
+  popup.style.top=Math.max(viewTop+10,Math.min(y,bottom-10-popup.offsetHeight))+"px";
+  popup.style.left=left+"px";
+}
+window.addEventListener("resize",positionTableOptionMenu);
+window.visualViewport?.addEventListener("resize",positionTableOptionMenu);
+window.visualViewport?.addEventListener("scroll",positionTableOptionMenu);
 function toptOutside(e){ if (eventWithin(e,toptmenu) || e.target.closest(".topt-trigger")) return; closeOptMenu(); }
 function closeOptMenu(){
   if ((toptField === "status" || toptField === "shared") && toptTrigger) verifyAbandonedStatus();
@@ -8910,6 +8900,56 @@ const catSel = document.getElementById("catSel");
 const catSelBtn = document.getElementById("catSelBtn");
 const catSelTxt = document.getElementById("catSelTxt");
 const catSelMenu = document.getElementById("catSelMenu");
+const categoryFooter="<div class=\"opt-add\"><input data-new-category aria-label=\"自訂類別名稱\" placeholder=\"自訂…\" autocomplete=\"off\"><button type=\"button\" data-add-category>加入</button></div>";
+function installCategoryAdd(menu,form){
+  const footerClass="opt-add";
+  menu.addEventListener("keydown",e=>{
+    if(!e.target.matches("[data-new-category]"))return;
+    if(e.key==="Enter"){
+      e.preventDefault();e.stopPropagation();
+      if(!e.isComposing && e.keyCode!==229)menu.querySelector("[data-add-category]").click();
+    }
+  });
+  menu.addEventListener("click",e=>{
+    if(!e.target.closest("."+footerClass))return;
+    e.stopPropagation();
+    if(!e.target.closest("[data-add-category]"))return;
+    const input=menu.querySelector("[data-new-category]");
+    const name=input.value.trim();
+    if(!name){input.focus();return;}
+    const existing=cats.find(c=>c.key===name || optionDisplayName("cat",c.key)===name);
+    if(!existing && (name.length>100 || cats.length>=200)){
+      toast(name.length>100?"類別名稱最多 100 字":"類別數量已達 200 個");return;
+    }
+    const key=existing?.key??name;
+    const item=form?null:(catTrigger && tFindItem(catTrigger));
+    if(!form && !item)return;
+    if(!storageOK || window._storageCorrupt || window._saveError){toast("請先確認本機資料已安全儲存");return;}
+    const previousCats=cats;
+    const previousValue=item?.cat,previousTime=item?.updatedAt;
+    const values=asFieldVals(form?formCats:item.cat);
+    const value=packFieldVals(values.includes(key)?values:[...values,key]);
+    const changed=item && !DataCore.equal(asFieldVals(item.cat),asFieldVals(value));
+    if(!existing)cats=[...cats,{key,label:"",color:nextColor()}];
+    if(changed){item.cat=value;item.updatedAt=Date.now();}
+    if(!existing || changed){
+      if(!storeCurrentState()){
+        cats=previousCats;
+        if(changed){item.cat=previousValue;item.updatedAt=previousTime;}
+        toast("類別尚未儲存");return;
+      }
+      if(!existing)saveCats();
+      if(!existing)window.touchCats?.();
+      window.scheduleSync?.();
+    }
+    if(form){setFormCat(value);closeCatSel();saveFormDraft();}
+    else{closeCatMenu();}
+    if(!existing){renderCover();renderTabs();renderCatOptions();}
+    if(!form)applyFilter();
+  });
+}
+installCategoryAdd(catSelMenu,true);
+installCategoryAdd(catmenu,false);
 let formCats = [];
 function renderCatOptions(){
   catSelMenu.innerHTML = cats.map(c => {
@@ -8923,7 +8963,7 @@ function renderCatOptions(){
       <span class="chk">✓</span>
     </button>`;
     return namedOptionRow(option,"cat",c.key);
-  }).join("");
+  }).join("")+categoryFooter;
 }
 function showFormCat(){
   const p = formCats[0] || "";
@@ -8945,6 +8985,7 @@ function openCatSel(){
   document.querySelectorAll("#modalBg .opt-sel.open").forEach(el => el.classList.remove("open"));
   renderCatOptions();
   catSel.classList.add("open");
+  sizeFormOptionMenu(catSel);
   catSelBtn.setAttribute("aria-expanded","true");
 }
 function closeCatSel(){ catSel.classList.remove("open"); catSelBtn.setAttribute("aria-expanded","false"); }
@@ -9410,13 +9451,28 @@ function sizeFormOptionMenu(sel){
   menu.classList.toggle("opens-up",up);
   menu.style.maxHeight=available+"px";
   const footer=menu.querySelector(".opt-add");
-  menu.classList.toggle("scroll-footer",!!footer && available<footer.offsetHeight+56);
+
+  // With the keyboard open the anchor itself can sit outside the visible area.
+  // If neither side fits the input and its action, let the menu overlap the anchor.
+  const editing=menu.contains(document.activeElement) && document.activeElement.matches(".opt-add input");
+  const availableTop=up ? anchor.top-6-available : anchor.bottom+6;
+  const overlap=editing && ((up && anchor.top-6>bottom) || available<footer.offsetHeight+56 || availableTop<top || availableTop+Math.min(available,footer.offsetHeight+56)>bottom);
+  if(overlap){
+    menu.style.maxHeight=Math.max(0,bottom-top-4)+"px";
+    menu.style.top=(top+2-anchor.top)+"px";
+    menu.style.bottom="auto";
+  }else{
+    menu.style.removeProperty("top");
+    menu.style.removeProperty("bottom");
+  }
+  menu.classList.toggle("scroll-footer",!editing && available<footer.offsetHeight+56);
 }
 function resizeOpenFormMenu(){
-  const sel=document.querySelector("#modalBg .opt-sel.open");
+  const sel=document.querySelector("#modalBg .opt-sel.open,#catSel.open");
   if(sel) sizeFormOptionMenu(sel);
 }
 document.querySelector("#modalBg .modal-body").addEventListener("scroll",resizeOpenFormMenu,{passive:true});
+document.querySelector("#modalBg").addEventListener("focusin",e=>{if(e.target.matches(".opt-add input"))resizeOpenFormMenu();});
 window.addEventListener("resize",resizeOpenFormMenu);
 window.visualViewport?.addEventListener("resize",resizeOpenFormMenu);
 window.visualViewport?.addEventListener("scroll",resizeOpenFormMenu);
