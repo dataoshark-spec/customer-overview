@@ -1063,7 +1063,11 @@
     .tdel{padding:6px 5px;}
     /* 手機:編輯/新增表單改整頁滿版(桌機維持底部面板);確認框用 .modal-bg.center 較具體,仍維持置中小視窗 */
     .modal-bg{align-items:stretch;}
-    #detailBg.modal-bg.center{align-items:stretch;padding:0;}   /* 客戶資料檢視:手機全畫面顯示 */
+    /* 卡片唯讀明細保留四周空間，內文沿用原本的捲動容器。 */
+    #detailBg.modal-bg.center{align-items:center;padding:max(14px,var(--safe-top)) 14px max(14px,var(--safe-bottom));}
+    #detailBg > .modal{max-width:480px;height:auto;border-radius:20px;padding-bottom:0;
+      max-height:min(90dvh,calc(100dvh - max(14px,var(--safe-top)) - max(14px,var(--safe-bottom))));}
+    #detailBg .modal-head{flex-shrink:0;}
     .modal{max-width:none;max-height:none;height:calc(100dvh - var(--safe-top));padding-bottom:var(--safe-bottom);border-radius:0;animation:modalUp .22s ease;}
     .modal-body{flex:1;min-height:0;}
     .modal-body .row3{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
@@ -2917,7 +2921,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27D";
+const APP_VERSION = "2026.11.27E";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
