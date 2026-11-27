@@ -735,13 +735,15 @@
   .cards.compact{gap:10px;}
   .compact-card{cursor:pointer;}
   .compact-card .body{padding:13px 15px;}
-  .compact-card .card-head{align-items:center;gap:10px;}
-  .compact-card .name{font-size:1.24rem;}
+  .compact-card .card-head{align-items:center;gap:10px;min-height:1.55rem;}
+  .compact-card .name{font-size:1.24rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .compact-card .name .cv{display:inline}
+  .compact-card .card-status,.compact-card .badge{max-width:28%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .card .budget-unit{font-size:.92rem;font-weight:700;margin-inline-start:4px;}
   .compact-card .budget-unit{font-size:.72rem;margin-inline-start:2px;}
-  .compact-card .sub-row{display:flex;align-items:baseline;gap:10px;margin-top:8px;}
-  .compact-card .sub-row .addr{flex:1;min-width:0;font-size:.84rem;color:var(--ink-soft);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .compact-card .price-tag{flex:none;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:1.05rem;font-weight:800;color:var(--accent-deep);}
+  .compact-card .sub-row{display:flex;align-items:center;gap:10px;margin-top:8px;min-height:1.7rem;}
+  .compact-card .sub-row .addr{flex:1;min-width:0;margin-top:0;font-size:.84rem;color:var(--ink-soft);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .compact-card .price-tag{flex:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:1.05rem;font-weight:800;color:var(--accent-deep);}
 
   .add-obj{flex:none;margin-left:auto;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
     background:var(--accent);color:#fff;border:none;font-family:inherit;font-weight:700;font-size:.9rem;
@@ -1633,10 +1635,10 @@
 .card .card-rooms{min-width:0;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
 .card .card-room-value{white-space:normal}
 .card .card-room-value.opt-orphan{color:var(--text-faint);font-weight:500}
-.compact-card .sub-row{flex-wrap:wrap}
-.compact-card .sub-row .addr{flex:1 1 160px;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.compact-card .addr:not(:empty) + .price-tag{max-width:58%}
 .compact-card .sub-row .price-tag{margin-left:auto}
 .compact-card .cv.card-rooms{display:inline}
+.compact-card .card-rooms,.compact-card .card-room-value{white-space:nowrap}
 /* Keep compact-card metadata on one text baseline; retain the multi-value dot layout. */
 .compact-card .sub-row .addr .cv{vertical-align:baseline}
 .compact-card .sub-row .addr .cv.multi-wrap{display:inline-flex}
@@ -2980,7 +2982,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27S";
+const APP_VERSION = "2026.11.27T";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3181,7 +3183,7 @@ function cardHTML(d){
       </div>
       <div class="sub-row">
         <span class="addr">${csub}</span>
-        ${d.budget || d.budget===0 ? `<span class="price-tag" data-copy="${esc(d.budget)}">${cardBudgetHTML(d.budget)}</span>` : ``}
+        ${String(d.budget??"").trim() ? `<span class="price-tag" data-copy="${esc(d.budget)}">${cardBudgetHTML(d.budget)}</span>` : ``}
       </div>
     </div>
   </article>`;
