@@ -1799,15 +1799,19 @@ tr.history-highlight>td{box-shadow:inset 0 2px #60ae93,inset 0 -2px #60ae93!impo
 :root[data-theme="dark"] .profile-price .num{background:#dbe5ef;border-radius:4px}
 .profile-card .budget-unit{font-size:.74rem;margin-left:3px}
 .profile-card .profile-criteria{display:grid;gap:5px;align-content:start;min-width:0;border-inline-start:1px solid var(--line);padding-inline-start:12px;color:var(--ink);font-size:.94rem}
+.profile-card .profile-criteria > div:last-child dd{min-height:2lh}
 .profile-card .profile-area span{display:inline-block;max-width:100%}
 .profile-card .ov-need{margin:12px 16px 0;padding:8px 11px;background:var(--surface-1);border:0;border-radius:6px}
-.profile-card .ov-need-in{font-size:.94rem;-webkit-line-clamp:2}
-.profile-card .profile-meta{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;margin:10px 16px 0}
+.profile-card .ov-need-in{font-size:.94rem;min-height:3.2em;-webkit-line-clamp:2}
+.profile-card .profile-meta{display:grid;grid-template-columns:minmax(0,1fr) calc(5.2em + 8ch);gap:4px 12px;margin:10px 16px 0}
 .profile-meta .date{grid-column:2;grid-row:1}.profile-meta .shared{grid-column:1/-1}
 .profile-card .agent{margin-top:12px;border-top:1px solid var(--line);padding:6px 16px;flex-wrap:wrap}
 #cards > .card.profile-card .agent-info,#cards > .card.profile-card .agent-info b{color:var(--ink-soft)}
 .profile-card .tel{margin-inline-start:auto}.profile-card .tel svg{color:var(--ink-soft)}
-.profile-card .body:not(:has(.agent)){padding-bottom:13px}</style>
+.profile-missing{color:var(--ink-soft);font-weight:400}
+.profile-card .agent{min-height:57px}
+.profile-card .phone-empty{margin-inline-start:auto;font-size:.88rem;color:var(--ink-soft)}
+</style>
 </head>
 <body>
 <div id="dataNotice" class="data-notice" role="status" hidden></div>
@@ -2946,7 +2950,7 @@ return {create};
 <script>
 const historyKey="customer_local_history_v1";
 const historyLimit=20;
-const APP_VERSION = "2026.11.27F";
+const APP_VERSION = "2026.11.27G";
 // ---- Seed data (示範資料;實際資料請用「設定→匯入備份檔」或雲端同步帶入) ----
 const SEED = [
   {"date": "1150713", "area": "北屯區", "cat": "大樓", "budget": "2000-2500萬", "bMin": 2000, "bMax": 2500, "rooms": "3房", "parking": "平面車位", "pType": "平面車位", "pNum": 1, "cust": "王先生", "tel": "0912345678", "line": "wang168", "ask": "麗晨卓爾", "need": "# 主要條件\n近捷運、屋齡新、雙衛浴", "need2": "麗晨卓爾／坤峰硯", "t2": "想看", "need3": "6/28 坤峰硯→嫌車位小", "t3": "看過"},
@@ -3131,23 +3135,24 @@ function cardHTML(d){
   </article>`;
   }
   const areas = fieldVals(d, "area").map((v,i,all) => `<span${isOptOrphan("area",v) ? ' class="opt-orphan"' : ""}>${esc(v)}${i+1<all.length ? "、" : ""}</span>`).join("<wbr>");
-  const conditions = [esc(catTip), roomsHTML, esc(parkingLabel)].filter(Boolean).join(" ／<wbr> ");
+  const missing = '<span class="profile-missing" aria-label="未填">—</span>';
+  const conditions = [esc(catTip) || missing, roomsHTML || missing, esc(parkingLabel) || missing].join(" ／<wbr> ");
   const shared = fieldVals(d,"shared").join("／");
   const summary = needSummaryInfo(d);
   const lines = summary.html.split("\n").filter(line => line.trim());
   const brief = lines.slice(0, needToPlain(summary.raw).trim().split("\n")[0].trim().length <= 5 ? 2 : 1).join("　");
-  const meta = [d.source && `<span>來源　${esc(d.source)}</span>`, d.date && `<span class="date">建檔日期　${esc(d.date)}</span>`, shared && `<span class="shared">共有　${esc(shared)}</span>`].filter(Boolean).join("");
+  const phone = String(d.tel ?? "").trim();
   return `<article class="card profile-card${sel}" data-id="${esc(d.id)}"${statusColorRowAttrs(d)}><svg class="lp-ring" aria-hidden="true"><rect class="lp-track"/><rect class="lp-draw" pathLength="100"/><rect class="lp-tip" pathLength="100"/></svg>
     ${selMark(d)}<div class="body">
       <div class="card-head"><h3 class="name"><button type="button" aria-haspopup="dialog">${esc(d.cust || "（未填稱呼）")}</button></h3>
-        ${statusLabel ? `<span class="card-status${statusOrphan ? " opt-orphan" : ""}">${esc(statusLabel)}</span>` : ""}</div>
-      <div class="profile-facts"><dl class="profile-price"><dt>預算</dt><dd><span class="num">${cardBudgetHTML(d.budget)||"—"}</span></dd></dl>
-        <dl class="profile-criteria">${areas ? `<div><dt>區域</dt><dd class="profile-area">${areas}</dd></div>` : ""}
-          ${conditions ? `<div><dt>條件</dt><dd>${conditions}</dd></div>` : ""}</dl></div>
-      ${brief ? `<div class="ov-need"><div class="profile-note-label">${esc(needTitle(d,summary.sg))}</div><div class="ov-need-in">${brief}</div></div>` : ""}
-      ${meta ? `<div class="profile-meta">${meta}</div>` : ""}
-      ${(d.line || d.tel) ? `<div class="agent"><div class="agent-info">${d.line ? `LINE <b>${esc(normalizeLineSymbols(d.line))}</b>` : ""}</div>
-        ${d.tel ? `<a class="tel" href="tel:${esc(d.tel)}" aria-label="撥打 ${esc(d.tel)}">${TELSVG}${esc(d.tel)}</a>` : ""}</div>` : ""}
+        <span class="card-status${statusOrphan ? " opt-orphan" : ""}">${esc(statusLabel)||missing}</span></div>
+      <div class="profile-facts"><dl class="profile-price"><dt>預算</dt><dd><span class="num">${cardBudgetHTML(d.budget)||missing}</span></dd></dl>
+        <dl class="profile-criteria"><div><dt>區域</dt><dd class="profile-area">${areas||missing}</dd></div>
+          <div><dt>條件</dt><dd>${conditions}</dd></div></dl></div>
+      <div class="ov-need"><div class="profile-note-label">${esc(needTitle(d,summary.sg))}</div><div class="ov-need-in">${brief||missing}</div></div>
+      <div class="profile-meta"><span>來源　${esc(String(d.source ?? "").trim())||missing}</span><span class="date">建檔日期　${esc(String(d.date ?? "").trim())||missing}</span><span class="shared">共有　${esc(shared)||missing}</span></div>
+      <div class="agent"><div class="agent-info">LINE <b>${esc(normalizeLineSymbols(d.line).trim())||missing}</b></div>
+        ${phone ? `<a class="tel" href="tel:${esc(phone)}" aria-label="撥打 ${esc(phone)}">${TELSVG}${esc(phone)}</a>` : `<span class="phone-empty">電話　${missing}</span>`}</div>
     </div></article>`;
 }
 
